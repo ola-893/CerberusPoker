@@ -1,0 +1,2 @@
+instructions::deal_card_callback::DealCardOutput: arcium_anchor::HasSize
+arcium_anchor::SignedComputationOutputs<instructions::deal_card_callback::DealCardOutput>

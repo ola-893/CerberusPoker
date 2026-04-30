@@ -1,0 +1,2 @@
+instructions::atomic_showdown_callback::AtomicShowdownOutput: arcium_anchor::HasSize
+arcium_anchor::SignedComputationOutputs<instructions::atomic_showdown_callback::AtomicShowdownOutput>

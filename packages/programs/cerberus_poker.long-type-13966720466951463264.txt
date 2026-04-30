@@ -1,0 +1,2 @@
+instructions::shuffle_deck_callback::ShuffleDeckOutput: arcium_anchor::HasSize
+arcium_anchor::SignedComputationOutputs<instructions::shuffle_deck_callback::ShuffleDeckOutput>
