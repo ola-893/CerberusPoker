@@ -1,0 +1,21 @@
+{
+  "name": "cerberus-poker",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Solana SDK for multiplayer card games with complete information privacy via Arcium MPC and Confidential SPL tokens",
+  "workspaces": [
+    "packages/sdk/core",
+    "packages/sdk/deck",
+    "packages/sdk/wager",
+    "examples/poker-ui"
+  ],
+  "scripts": {
+    "build": "npm run build --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "clean": "npm run clean --workspaces --if-present && rm -rf node_modules"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}
