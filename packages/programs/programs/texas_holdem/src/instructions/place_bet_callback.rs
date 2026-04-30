@@ -20,6 +20,7 @@ pub fn handler(
     ctx: Context<PlaceBetCallback>,
     output: SignedComputationOutputs<PlaceBetOutput>,
 ) -> Result<()> {
+    // Verify the MXE output signature — ensures result is authentic
     let result = match output.verify_output(
         &ctx.accounts.cluster_account,
         &ctx.accounts.computation_account,
@@ -31,8 +32,27 @@ pub fn handler(
         }
     };
 
+    // Verify the computation was successful
     require!(result.success, TexasHoldemError::AbortedComputation);
-    msg!("Bet stored in MXE for player {}", result.player_index);
+
+    // Validate player index is within bounds
+    require!(
+        result.player_index < 10,
+        TexasHoldemError::InvalidGameState
+    );
+
+    msg!(
+        "Encrypted bet amount stored in MXE state for player {}",
+        result.player_index
+    );
+
+    // Note: The encrypted bet amount (Enc<Mxe, u64>) is stored in MXE state,
+    // not in the PokerTable account. The MXE maintains the mapping:
+    // player_index -> Enc<Mxe, u64>
+    //
+    // At showdown, the MXE will reveal the winner and correct pot distribution
+    // based on these encrypted bet amounts.
+
     Ok(())
 }
 

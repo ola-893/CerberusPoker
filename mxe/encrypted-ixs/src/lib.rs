@@ -6,6 +6,7 @@
 pub mod shuffle;
 pub mod deal;
 pub mod reveal;
+pub mod wager;
 
 #[cfg(test)]
 mod tests;
