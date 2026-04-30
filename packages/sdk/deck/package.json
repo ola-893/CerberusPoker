@@ -1,0 +1,24 @@
+{
+  "name": "@cerberus-poker/deck",
+  "version": "0.1.0",
+  "description": "Deck module — encrypted shuffle, deal, and reveal via Arcium MPC",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@cerberus-poker/core": "workspace:*",
+    "@solana/web3.js": "^2.0.0",
+    "@coral-xyz/anchor": "^0.30.1",
+    "@arcium-hq/arcium-js": "^0.9.7"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "vitest": "^1.6.0"
+  }
+}
