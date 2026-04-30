@@ -5,6 +5,9 @@ members = [
 ]
 resolver = "2"
 
+[patch.crates-io]
+indexmap = { git = "https://github.com/indexmap-rs/indexmap", tag = "2.13.0" }
+
 [workspace.dependencies]
 anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 anchor-spl = { version = "0.32.1", features = ["token", "token_2022"] }
