@@ -1,0 +1,40 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Wallet Adapter Button Color Customization */
+.wallet-adapter-button {
+  background-color: #c9a84c !important;
+  color: #0a0f0a !important;
+}
+
+.wallet-adapter-button:not([disabled]):hover {
+  background-color: rgba(201, 168, 76, 0.9) !important;
+}
+
+/* Remove yellow/gold background from wallet list items in modal */
+.wallet-adapter-modal-list .wallet-adapter-button {
+  background-color: transparent !important;
+  color: #fff !important;
+}
+
+.wallet-adapter-modal-list .wallet-adapter-button:not([disabled]):hover {
+  background-color: #1a2a1a !important;
+}
+
+@layer base {
+  body {
+    @apply bg-background text-zinc-100 font-sans antialiased;
+  }
+
+  /* Custom table oval shape */
+  .table-oval {
+    border-radius: 50% / 40%;
+  }
+}
+
+@layer utilities {
+  .shadow-gold-glow {
+    box-shadow: 0 0 20px rgba(201, 168, 76, 0.3);
+  }
+}

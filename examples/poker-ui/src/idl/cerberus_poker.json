@@ -1,0 +1,154 @@
+{
+  "version": "0.1.0",
+  "name": "cerberus_poker",
+  "instructions": [
+    {
+      "name": "createGame",
+      "accounts": [
+        { "name": "gameSession", "isMut": true, "isSigner": false },
+        { "name": "creator", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "gameId", "type": "u64" },
+        { "name": "maxPlayers", "type": "u8" },
+        { "name": "deckSize", "type": "u8" }
+      ]
+    },
+    {
+      "name": "joinGame",
+      "accounts": [
+        { "name": "gameSession", "isMut": true, "isSigner": false },
+        { "name": "player", "isMut": true, "isSigner": true }
+      ],
+      "args": [
+        { "name": "gameId", "type": "u64" }
+      ]
+    },
+    {
+      "name": "startShuffle",
+      "accounts": [
+        { "name": "gameSession", "isMut": true, "isSigner": false },
+        { "name": "player", "isMut": true, "isSigner": true }
+      ],
+      "args": [
+        { "name": "gameId", "type": "u64" },
+        { "name": "computationOffset", "type": "u64" }
+      ]
+    },
+    {
+      "name": "dealCards",
+      "accounts": [
+        { "name": "gameSession", "isMut": true, "isSigner": false },
+        { "name": "player", "isMut": true, "isSigner": true }
+      ],
+      "args": [
+        { "name": "gameId", "type": "u64" },
+        { "name": "assignments", "type": { "vec": { "defined": "CardAssignment" } } },
+        { "name": "computationOffset", "type": "u64" }
+      ]
+    },
+    {
+      "name": "timeoutShuffle",
+      "accounts": [
+        { "name": "gameSession", "isMut": true, "isSigner": false },
+        { "name": "caller", "isMut": false, "isSigner": true }
+      ],
+      "args": [
+        { "name": "gameId", "type": "u64" }
+      ]
+    },
+    {
+      "name": "timeoutReveal",
+      "accounts": [
+        { "name": "gameSession", "isMut": true, "isSigner": false },
+        { "name": "caller", "isMut": false, "isSigner": true }
+      ],
+      "args": [
+        { "name": "gameId", "type": "u64" }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "GameSession",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "gameId", "type": "u64" },
+          { "name": "state", "type": { "defined": "GameState" } },
+          { "name": "maxPlayers", "type": "u8" },
+          { "name": "deckSize", "type": "u8" },
+          { "name": "numPlayers", "type": "u8" },
+          { "name": "players", "type": { "array": ["publicKey", 10] } },
+          { "name": "activeComputationOffset", "type": "u64" },
+          { "name": "encryptedDeckHash", "type": { "array": ["u8", 32] } },
+          { "name": "shuffleBitmap", "type": "u16" },
+          { "name": "revealBitmap", "type": { "array": ["u64", 1] } },
+          { "name": "unmaskedCards", "type": { "array": ["u8", 52] } },
+          { "name": "cardAssignedTo", "type": { "array": ["u8", 52] } },
+          { "name": "cardValueUsed", "type": { "array": ["u64", 1] } },
+          { "name": "createdAt", "type": "i64" },
+          { "name": "shuffleDeadline", "type": "i64" },
+          { "name": "revealDeadline", "type": "i64" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "GameState",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          { "name": "Lobby" },
+          { "name": "Shuffle" },
+          { "name": "Deal" },
+          { "name": "Active" },
+          { "name": "Showdown" },
+          { "name": "Complete" }
+        ]
+      }
+    },
+    {
+      "name": "CardAssignment",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "cardIndex", "type": "u8" },
+          { "name": "playerIndex", "type": "u8" }
+        ]
+      }
+    }
+  ],
+  "events": [
+    {
+      "name": "GameCreated",
+      "fields": [
+        { "name": "gameId", "type": "u64" },
+        { "name": "creator", "type": "publicKey" },
+        { "name": "maxPlayers", "type": "u8" },
+        { "name": "deckSize", "type": "u8" }
+      ]
+    },
+    {
+      "name": "PlayerJoined",
+      "fields": [
+        { "name": "gameId", "type": "u64" },
+        { "name": "player", "type": "publicKey" },
+        { "name": "playerIndex", "type": "u8" }
+      ]
+    },
+    {
+      "name": "ShuffleStarted",
+      "fields": [
+        { "name": "gameId", "type": "u64" },
+        { "name": "computationOffset", "type": "u64" }
+      ]
+    }
+  ],
+  "metadata": {
+    "address": "CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  }
+}
