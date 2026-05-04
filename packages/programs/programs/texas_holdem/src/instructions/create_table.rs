@@ -67,6 +67,10 @@ pub fn handler(
     // Initialize hand counter
     table.hand_number = 0;
     
+    // Initialize last action time to current time
+    let clock = Clock::get()?;
+    table.last_action_time = clock.unix_timestamp;
+    
     // Store PDA bump seed for future verification
     table.bump = ctx.bumps.poker_table;
 

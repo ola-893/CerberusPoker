@@ -1,7 +1,11 @@
 use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use arcium_anchor::prelude::*;
+use arcium_macros::comp_def_offset;
 use crate::errors::TexasHoldemError;
 use crate::Action;
+
+const COMP_DEF_OFFSET_PLACE_BET: u32 = comp_def_offset("place_bet");
 
 /// Handles all player betting actions during a poker hand
 ///
@@ -37,6 +41,7 @@ pub fn handler(
 ) -> Result<()> {
     let table = &mut ctx.accounts.poker_table;
     let player_index = table.current_player;
+    let clock = Clock::get()?;
 
     // Validate it's this player's turn
     // The payer must be the current player (we don't have player registry yet,
@@ -80,11 +85,47 @@ pub fn handler(
                 TexasHoldemError::InvalidAction
             );
             
-            // In a full implementation, we would:
-            // 1. Transfer tokens from player stack to pot
-            // 2. Queue MXE computation to store encrypted bet amount
-            // For now, we just validate and log
-            msg!("Player {} called {}", player_index, table.current_bet);
+            let call_amount = table.current_bet;
+            
+            // Transfer USDC+ from player to escrow PDA (standard SPL transfer)
+            let cpi_accounts = Transfer {
+                from: ctx.accounts.player_token_account.to_account_info(),
+                to: ctx.accounts.escrow_account.to_account_info(),
+                authority: ctx.accounts.payer.to_account_info(),
+            };
+            let cpi_program = ctx.accounts.token_program.to_account_info();
+            let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+            
+            token::transfer(cpi_ctx, call_amount)?;
+            
+            msg!("Player {} called {} — transferred to escrow", player_index, call_amount);
+            
+            // Queue MXE computation to store encrypted bet amount
+            let args = ArgBuilder::new()
+                .add_u64(call_amount)
+                .add_u8(player_index)
+                .build();
+
+            queue_computation(
+                &ctx.accounts.arcium_program,
+                &ctx.accounts.sign_pda_account,
+                &ctx.accounts.mxe_account,
+                &ctx.accounts.mempool_account,
+                &ctx.accounts.executing_pool,
+                &ctx.accounts.computation_account,
+                &ctx.accounts.comp_def_account,
+                &ctx.accounts.cluster_account,
+                &ctx.accounts.pool_account,
+                &ctx.accounts.clock_account,
+                &ctx.accounts.address_lookup_table,
+                &ctx.accounts.lut_program,
+                &ctx.accounts.system_program,
+                &ctx.accounts.payer,
+                _computation_offset,
+                args,
+            )?;
+            
+            msg!("Queued MXE computation to store encrypted call bet for player {}", player_index);
         }
         
         Action::Raise => {
@@ -97,13 +138,48 @@ pub fn handler(
                 TexasHoldemError::RaiseTooSmall
             );
             
+            // Transfer USDC+ from player to escrow PDA (standard SPL transfer)
+            let cpi_accounts = Transfer {
+                from: ctx.accounts.player_token_account.to_account_info(),
+                to: ctx.accounts.escrow_account.to_account_info(),
+                authority: ctx.accounts.payer.to_account_info(),
+            };
+            let cpi_program = ctx.accounts.token_program.to_account_info();
+            let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
+            
+            token::transfer(cpi_ctx, amount)?;
+            
+            msg!("Player {} raised to {} — transferred to escrow", player_index, amount);
+            
             // Update current bet to the new raise amount
             table.current_bet = amount;
             
-            // In a full implementation, we would:
-            // 1. Transfer tokens from player stack to pot
-            // 2. Queue MXE computation to store encrypted bet amount
-            msg!("Player {} raised to {}", player_index, amount);
+            // Queue MXE computation to store encrypted bet amount
+            let args = ArgBuilder::new()
+                .add_u64(amount)
+                .add_u8(player_index)
+                .build();
+
+            queue_computation(
+                &ctx.accounts.arcium_program,
+                &ctx.accounts.sign_pda_account,
+                &ctx.accounts.mxe_account,
+                &ctx.accounts.mempool_account,
+                &ctx.accounts.executing_pool,
+                &ctx.accounts.computation_account,
+                &ctx.accounts.comp_def_account,
+                &ctx.accounts.cluster_account,
+                &ctx.accounts.pool_account,
+                &ctx.accounts.clock_account,
+                &ctx.accounts.address_lookup_table,
+                &ctx.accounts.lut_program,
+                &ctx.accounts.system_program,
+                &ctx.accounts.payer,
+                _computation_offset,
+                args,
+            )?;
+            
+            msg!("Queued MXE computation to store encrypted raise bet for player {}", player_index);
         }
         
         Action::AllIn => {
@@ -146,6 +222,9 @@ pub fn handler(
         msg!("Betting round complete — all players folded or all-in");
     }
 
+    // Update last action time for timeout enforcement
+    table.last_action_time = clock.unix_timestamp;
+
     Ok(())
 }
 
@@ -159,6 +238,20 @@ pub struct PlayerAction<'info> {
         bump = poker_table.bump,
     )]
     pub poker_table: Account<'info, PokerTable>,
+
+    /// Player's USDC+ token account (source of funds for Call/Raise)
+    #[account(mut)]
+    pub player_token_account: Account<'info, TokenAccount>,
+
+    /// Escrow PDA token account (destination — holds all player deposits)
+    #[account(
+        mut,
+        constraint = escrow_account.key() == poker_table.escrow_account @ TexasHoldemError::InvalidGameState
+    )]
+    pub escrow_account: Account<'info, TokenAccount>,
+
+    /// SPL Token program for USDC+ transfers
+    pub token_program: Program<'info, Token>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -188,7 +281,7 @@ pub struct PlayerAction<'info> {
     /// CHECK: computation
     pub computation_account: UncheckedAccount<'info>,
 
-    #[account(address = derive_comp_def_pda!(arcium_macros::comp_def_offset("place_bet")))]
+    #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLACE_BET))]
     pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
 
     #[account(mut, address = derive_cluster_pda!(mxe_account, TexasHoldemError::InvalidGameState))]

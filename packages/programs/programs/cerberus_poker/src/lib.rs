@@ -28,7 +28,8 @@ declare_id!("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
 // Computation definition offsets — derived from instruction names via sha256
 // These identify each MXE circuit on-chain
 const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck");
-const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card");
+const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card_to_recipient");
+const COMP_DEF_OFFSET_REVEAL_CARD: u32 = comp_def_offset("reveal_card");
 const COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD: u32 = comp_def_offset("reveal_community_card");
 const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown");
 
@@ -46,6 +47,11 @@ pub mod cerberus_poker {
 
     pub fn init_deal_card_comp_def(ctx: Context<InitDealCardCompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, COMP_DEF_OFFSET_DEAL_CARD, None, None)?;
+        Ok(())
+    }
+
+    pub fn init_reveal_card_comp_def(ctx: Context<InitRevealCardCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, COMP_DEF_OFFSET_REVEAL_CARD, None, None)?;
         Ok(())
     }
 
@@ -96,12 +102,20 @@ pub mod cerberus_poker {
         instructions::shuffle_deck_callback::handler(ctx, output)
     }
 
-    #[arcium_callback(encrypted_ix = "deal_card")]
+    #[arcium_callback(encrypted_ix = "deal_card_to_recipient")]
     pub fn deal_card_callback(
-        ctx: Context<DealCardCallback>,
+        ctx: Context<DealCardToRecipientCallback>,
         output: SignedComputationOutputs<DealCardOutput>,
     ) -> Result<()> {
         instructions::deal_card_callback::handler(ctx, output)
+    }
+
+    #[arcium_callback(encrypted_ix = "reveal_card")]
+    pub fn reveal_card_callback(
+        ctx: Context<RevealCardCallback>,
+        output: SignedComputationOutputs<RevealCardOutput>,
+    ) -> Result<()> {
+        instructions::reveal_card_callback::handler(ctx, output)
     }
 
     #[arcium_callback(encrypted_ix = "reveal_community_card")]
@@ -129,6 +143,15 @@ pub mod cerberus_poker {
         computation_offset: u64,
     ) -> Result<()> {
         instructions::deal_cards::handler(ctx, game_id, assignments, computation_offset)
+    }
+
+    pub fn reveal_card(
+        ctx: Context<RevealCard>,
+        game_id: u64,
+        card_index: u8,
+        computation_offset: u64,
+    ) -> Result<()> {
+        instructions::reveal_card::handler(ctx, game_id, card_index, computation_offset)
     }
 
     pub fn timeout_shuffle(ctx: Context<TimeoutShuffle>, game_id: u64) -> Result<()> {

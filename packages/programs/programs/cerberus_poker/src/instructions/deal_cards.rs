@@ -1,11 +1,10 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_macros::comp_def_offset;
 
 use crate::errors::CerberusPokerError;
-use crate::state::{GameSession, GameState, CardDealt, COMMUNITY_CARD, UNASSIGNED};
+use crate::state::{GameSession, GameState, CardDealt, UNASSIGNED, REVEAL_TIMEOUT_SECS};
 
-const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card");
+const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card_to_recipient");
 
 pub fn handler(
     ctx: Context<DealCards>,
@@ -36,11 +35,29 @@ pub fn handler(
 
     game.active_computation_offset = computation_offset;
 
-    // Queue deal_card computation for the first assigned card
-    // The MXE will re-encrypt the card for the specific recipient
-    // Subsequent cards are queued in the deal_card_callback
+    // Set reveal deadline for timeout enforcement
+    // This allows timeout_reveal to be called if card dealing stalls
+    let clock = Clock::get()?;
+    game.reveal_deadline = clock.unix_timestamp + REVEAL_TIMEOUT_SECS;
+
+    // Queue deal_card_to_recipient computation for the first assigned card.
+    // The MXE will perform threshold decryption to reveal the card value
+    // to the specific recipient.
+    //
+    // Arguments for deal_card_to_recipient(card: Enc<Mxe, EncryptedCard>, card_index: u8):
+    // - Encrypted card from the shuffled deck (Enc<Mxe, EncryptedCard>)
+    // - Card index (plaintext u8)
+    //
+    // The encrypted deck is passed via the encrypted_card_c1 and encrypted_card_c2 accounts
+    // which contain the ElGamal ciphertext (C1, C2) for the card at the specified index.
+    let first_card_index = assignments.first()
+        .ok_or(CerberusPokerError::CardNotAssigned)?
+        .0;
+
     let args = ArgBuilder::new()
-        .plaintext_u128(computation_offset as u128)
+        .encrypted_u8(ctx.accounts.encrypted_card_c1.key().to_bytes())
+        .encrypted_u8(ctx.accounts.encrypted_card_c2.key().to_bytes())
+        .plaintext_u8(first_card_index)
         .build();
 
     ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
@@ -49,7 +66,7 @@ pub fn handler(
         ctx.accounts,
         computation_offset,
         args,
-        vec![DealCardCallback::callback_ix(
+        vec![crate::instructions::deal_card_callback::DealCardToRecipientCallback::callback_ix(
             computation_offset,
             &ctx.accounts.mxe_account,
             &[],
@@ -58,6 +75,7 @@ pub fn handler(
         0,
     )?;
 
+    msg!("Queued deal_card_to_recipient computation for card {} (offset: {})", first_card_index, computation_offset);
     Ok(())
 }
 
@@ -134,4 +152,11 @@ pub struct DealCards<'info> {
 
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+
+    // Encrypted card input for deal_card_to_recipient MXE instruction
+    // The card is represented as an ElGamal ciphertext (C1, C2)
+    /// CHECK: encrypted_card_c1 - first component of ElGamal ciphertext
+    pub encrypted_card_c1: UncheckedAccount<'info>,
+    /// CHECK: encrypted_card_c2 - second component of ElGamal ciphertext
+    pub encrypted_card_c2: UncheckedAccount<'info>,
 }

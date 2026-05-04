@@ -50,6 +50,14 @@ pub mod texas_holdem {
         instructions::advance_phase::handler(ctx, game_id)
     }
 
+    pub fn verify_hole_cards(
+        ctx: Context<VerifyHoleCards>,
+        game_id: u64,
+        player_index: u8,
+    ) -> Result<()> {
+        instructions::verify_hole_cards::handler(ctx, game_id, player_index)
+    }
+
     pub fn showdown(ctx: Context<Showdown>, game_id: u64) -> Result<()> {
         instructions::showdown::handler(ctx, game_id)
     }
@@ -75,6 +83,17 @@ pub mod texas_holdem {
         output: SignedComputationOutputs<PlaceBetOutput>,
     ) -> Result<()> {
         instructions::place_bet_callback::handler(ctx, output)
+    }
+
+    // MXE callback for atomic_showdown — settles pot to winner(s)
+    #[arcium_callback(encrypted_ix = "atomic_showdown")]
+    pub fn settle_showdown(
+        ctx: Context<SettleShowdown>,
+        game_id: u64,
+        output: SignedComputationOutputs<AtomicShowdownOutput>,
+        community_cards: [u8; 5],
+    ) -> Result<()> {
+        instructions::settle_showdown::handler(ctx, game_id, output, community_cards)
     }
 }
 

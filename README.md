@@ -6,7 +6,7 @@
 CerberusPoker is a Solana SDK that bundles two privacy primitives into one composable package:
 
 - **`@cerberus-poker/deck`** — encrypted card operations via [Arcium](https://arcium.com) MPC (Cerberus protocol). Shuffle, deal, and reveal cards with no player ever seeing what they shouldn't.
-- **`@cerberus-poker/wager`** — confidential wagering via [Confidential SPL tokens](https://spl.solana.com/token-2022/extensions#confidential-transfer). Bet amounts, stack sizes, and pot contributions are hidden from everyone until showdown.
+- **`@cerberus-poker/wager`** — confidential wagering with a two-phase strategy: Phase 1 uses MXE-encrypted amounts + USDC+ escrow (buildable now), Phase 2 will use Arcium's Confidential SPL tokens when available (full end-to-end encryption). See [C-SPL Upgrade Path](packages/sdk/wager/C-SPL-UPGRADE-PATH.md) for details.
 
 The core guarantee: **before showdown, nobody — not opponents, not validators, not MEV bots — sees your cards or your bets.** At showdown, everything is revealed atomically and verified on-chain.
 
