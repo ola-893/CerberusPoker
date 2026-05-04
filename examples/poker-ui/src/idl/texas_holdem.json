@@ -1,0 +1,150 @@
+{
+  "version": "0.1.0",
+  "name": "texas_holdem",
+  "instructions": [
+    {
+      "name": "createTable",
+      "accounts": [
+        { "name": "pokerTable", "isMut": true, "isSigner": false },
+        { "name": "gameSession", "isMut": false, "isSigner": false },
+        { "name": "creator", "isMut": true, "isSigner": true },
+        { "name": "systemProgram", "isMut": false, "isSigner": false }
+      ],
+      "args": [
+        { "name": "gameId", "type": "u64" },
+        { "name": "smallBlind", "type": "u64" },
+        { "name": "bigBlind", "type": "u64" }
+      ]
+    },
+    {
+      "name": "postBlinds",
+      "accounts": [
+        { "name": "pokerTable", "isMut": true, "isSigner": false },
+        { "name": "gameSession", "isMut": false, "isSigner": false },
+        { "name": "smallBlindPlayer", "isMut": true, "isSigner": true },
+        { "name": "bigBlindPlayer", "isMut": true, "isSigner": true }
+      ],
+      "args": [
+        { "name": "gameId", "type": "u64" },
+        { "name": "numPlayers", "type": "u8" }
+      ]
+    },
+    {
+      "name": "playerAction",
+      "accounts": [
+        { "name": "pokerTable", "isMut": true, "isSigner": false },
+        { "name": "gameSession", "isMut": false, "isSigner": false },
+        { "name": "player", "isMut": true, "isSigner": true }
+      ],
+      "args": [
+        { "name": "gameId", "type": "u64" },
+        { "name": "action", "type": { "defined": "Action" } },
+        { "name": "amount", "type": "u64" },
+        { "name": "computationOffset", "type": "u64" }
+      ]
+    },
+    {
+      "name": "placeBet",
+      "accounts": [
+        { "name": "pokerTable", "isMut": true, "isSigner": false },
+        { "name": "player", "isMut": true, "isSigner": true }
+      ],
+      "args": [
+        { "name": "gameId", "type": "u64" },
+        { "name": "amount", "type": "u64" },
+        { "name": "playerIndex", "type": "u8" },
+        { "name": "computationOffset", "type": "u64" }
+      ]
+    },
+    {
+      "name": "advancePhase",
+      "accounts": [
+        { "name": "pokerTable", "isMut": true, "isSigner": false },
+        { "name": "gameSession", "isMut": false, "isSigner": false },
+        { "name": "caller", "isMut": false, "isSigner": true }
+      ],
+      "args": [
+        { "name": "gameId", "type": "u64" }
+      ]
+    },
+    {
+      "name": "showdown",
+      "accounts": [
+        { "name": "pokerTable", "isMut": true, "isSigner": false },
+        { "name": "gameSession", "isMut": false, "isSigner": false },
+        { "name": "caller", "isMut": false, "isSigner": true }
+      ],
+      "args": [
+        { "name": "gameId", "type": "u64" }
+      ]
+    },
+    {
+      "name": "timeoutBet",
+      "accounts": [
+        { "name": "pokerTable", "isMut": true, "isSigner": false },
+        { "name": "caller", "isMut": false, "isSigner": true }
+      ],
+      "args": [
+        { "name": "gameId", "type": "u64" }
+      ]
+    }
+  ],
+  "accounts": [
+    {
+      "name": "PokerTable",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "gameSession", "type": "publicKey" },
+          { "name": "phase", "type": { "defined": "PokerPhase" } },
+          { "name": "dealerIndex", "type": "u8" },
+          { "name": "currentPlayer", "type": "u8" },
+          { "name": "potMint", "type": "publicKey" },
+          { "name": "potAccount", "type": "publicKey" },
+          { "name": "escrowAccount", "type": "publicKey" },
+          { "name": "playerStacks", "type": { "array": ["publicKey", 10] } },
+          { "name": "playerBets", "type": { "array": ["publicKey", 10] } },
+          { "name": "currentBet", "type": "u64" },
+          { "name": "foldedBitmap", "type": "u16" },
+          { "name": "allInBitmap", "type": "u16" },
+          { "name": "handVerifiedBitmap", "type": "u16" },
+          { "name": "smallBlind", "type": "u64" },
+          { "name": "bigBlind", "type": "u64" },
+          { "name": "handNumber", "type": "u32" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    }
+  ],
+  "types": [
+    {
+      "name": "PokerPhase",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          { "name": "PreFlop" },
+          { "name": "Flop" },
+          { "name": "Turn" },
+          { "name": "River" },
+          { "name": "Showdown" }
+        ]
+      }
+    },
+    {
+      "name": "Action",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          { "name": "Fold" },
+          { "name": "Check" },
+          { "name": "Call" },
+          { "name": "Raise" },
+          { "name": "AllIn" }
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "address": "TxHldXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"
+  }
+}
