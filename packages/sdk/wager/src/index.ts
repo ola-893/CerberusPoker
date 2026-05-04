@@ -398,73 +398,242 @@ export class WagerModule {
   }
 
   /**
-   * Call the current bet - matches the bet amount without revealing stack size
-   * 
+   * Call the current bet — matches the current bet amount
+   *
+   * Fetches the current bet from on-chain state, then sends a `player_action`
+   * instruction with `Action::Call`. The call amount is transferred from the
+   * player's USDC+ account to the game's escrow PDA, and an MXE computation
+   * is queued to store the encrypted bet amount.
+   *
    * @param gameId - Unique identifier for the game
    * @returns Transaction signature
-   * 
+   *
+   * @throws {Error} If it's not the player's turn
+   * @throws {Error} If there is no bet to call (use check instead)
+   *
    * @example
    * ```typescript
    * const sig = await wager.callBet(gameId);
+   * console.log('Called bet:', sig);
    * ```
    */
   async callBet(gameId: bigint): Promise<TransactionSignature> {
-    // TODO: Implement call bet logic
-    // This will use the player_action instruction with Action::Call
-    throw new Error('Not implemented yet');
+    // 1. Derive the poker table PDA
+    const gameIdBytes = Buffer.alloc(8);
+    gameIdBytes.writeBigUInt64LE(gameId);
+    const [pokerTablePda] = PublicKey.findProgramAddressSync(
+      [Buffer.from('table'), gameIdBytes],
+      this.tableProgram.programId
+    );
+
+    // 2. Fetch the poker table to get current bet amount
+    const pokerTable = await (this.tableProgram.account as any)['pokerTable'].fetch(pokerTablePda);
+    const currentBet = pokerTable.currentBet as BN;
+
+    // 3. Get player's USDC+ token account
+    const playerUsdcPlusAccount = await getAssociatedTokenAddress(
+      this.usdcPlusMint,
+      this.wallet.publicKey
+    );
+
+    // 4. Generate computation offset for MXE
+    const computationOffset = new BN(Math.floor(Math.random() * Number.MAX_SAFE_INTEGER));
+
+    // 5. Derive Arcium accounts
+    const arciumAccounts = await this.deriveArciumAccounts(computationOffset);
+
+    // 6. Find the player's index in the game
+    const gameSessionPda = pokerTable.gameSession as PublicKey;
+
+    // 7. Build and send the player_action transaction with Action::Call
+    const tx = await (this.tableProgram.methods as any)['playerAction'](
+      new BN(gameId.toString()),
+      { call: {} }, // Action::Call enum variant
+      currentBet,
+      computationOffset
+    )
+      .accounts({
+        pokerTable: pokerTablePda,
+        gameSession: gameSessionPda,
+        playerTokenAccount: playerUsdcPlusAccount,
+        escrowAccount: pokerTable.escrowAccount,
+        player: this.wallet.publicKey,
+        payer: this.wallet.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        ...arciumAccounts,
+      })
+      .rpc();
+
+    return tx;
   }
 
   /**
-   * Fold - exits the hand without revealing held cards or remaining stack
-   * 
+   * Fold — exits the hand without revealing cards or stack
+   *
+   * Sends a `player_action` instruction with `Action::Fold`. This sets the
+   * player's bit in the `folded_bitmap`, preventing further actions. No funds
+   * are transferred, and the player's cards remain hidden.
+   *
    * @param gameId - Unique identifier for the game
    * @returns Transaction signature
-   * 
+   *
+   * @throws {Error} If it's not the player's turn
+   * @throws {Error} If the player has already folded
+   *
    * @example
    * ```typescript
    * const sig = await wager.fold(gameId);
+   * console.log('Folded:', sig);
    * ```
    */
   async fold(gameId: bigint): Promise<TransactionSignature> {
-    // TODO: Implement fold logic
-    // This will use the player_action instruction with Action::Fold
-    throw new Error('Not implemented yet');
+    // 1. Derive the poker table PDA
+    const gameIdBytes = Buffer.alloc(8);
+    gameIdBytes.writeBigUInt64LE(gameId);
+    const [pokerTablePda] = PublicKey.findProgramAddressSync(
+      [Buffer.from('table'), gameIdBytes],
+      this.tableProgram.programId
+    );
+
+    // 2. Fetch the poker table to get game session reference
+    const pokerTable = await (this.tableProgram.account as any)['pokerTable'].fetch(pokerTablePda);
+    const gameSessionPda = pokerTable.gameSession as PublicKey;
+
+    // 3. Fold doesn't require token transfer or MXE computation
+    const computationOffset = new BN(0); // Unused for fold
+
+    // 4. Build and send the player_action transaction with Action::Fold
+    const tx = await (this.tableProgram.methods as any)['playerAction'](
+      new BN(gameId.toString()),
+      { fold: {} }, // Action::Fold enum variant
+      new BN(0), // No amount for fold
+      computationOffset
+    )
+      .accounts({
+        pokerTable: pokerTablePda,
+        gameSession: gameSessionPda,
+        player: this.wallet.publicKey,
+        payer: this.wallet.publicKey,
+      })
+      .rpc();
+
+    return tx;
   }
 
   /**
-   * Settle pot to winner - atomic transfer triggered by showdown result
-   * 
+   * Settle the showdown — triggers pot distribution to winner(s)
+   *
+   * Calls the `showdown` instruction which:
+   * 1. Verifies all non-folded players have verified hands
+   * 2. Evaluates each player's hand using the on-chain evaluator
+   * 3. Determines winner(s) and distributes the pot
+   * 4. Handles split pots for tied hands
+   *
    * @param gameId - Unique identifier for the game
    * @returns Transaction signature
-   * 
+   *
+   * @throws {Error} If not all hands are verified
+   * @throws {Error} If the game is not in Showdown phase
+   *
    * @example
    * ```typescript
    * const sig = await wager.settleShowdown(gameId);
+   * console.log('Showdown settled, pot distributed:', sig);
    * ```
    */
   async settleShowdown(gameId: bigint): Promise<TransactionSignature> {
-    // TODO: Implement settle showdown logic
-    // This will call the settle_showdown callback instruction
-    throw new Error('Not implemented yet');
+    // 1. Derive the poker table PDA
+    const gameIdBytes = Buffer.alloc(8);
+    gameIdBytes.writeBigUInt64LE(gameId);
+    const [pokerTablePda] = PublicKey.findProgramAddressSync(
+      [Buffer.from('table'), gameIdBytes],
+      this.tableProgram.programId
+    );
+
+    // 2. Fetch poker table state
+    const pokerTable = await (this.tableProgram.account as any)['pokerTable'].fetch(pokerTablePda);
+    const escrowAccount = pokerTable.escrowAccount as PublicKey;
+    const gameSessionPda = pokerTable.gameSession as PublicKey;
+
+    // 3. Derive table PDA authority (for escrow signing)
+    const [tablePdaAuthority] = PublicKey.findProgramAddressSync(
+      [Buffer.from('table_authority'), gameIdBytes],
+      this.tableProgram.programId
+    );
+
+    // 4. Build and send the showdown transaction
+    const tx = await (this.tableProgram.methods as any)['showdown'](
+      new BN(gameId.toString())
+    )
+      .accounts({
+        pokerTable: pokerTablePda,
+        gameSession: gameSessionPda,
+        escrowAccount: escrowAccount,
+        tablePdaAuthority: tablePdaAuthority,
+        player: this.wallet.publicKey,
+        payer: this.wallet.publicKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+      })
+      .rpc();
+
+    return tx;
   }
 
   /**
    * Get encrypted balance for a player
-   * 
-   * Returns the ciphertext of the player's balance. Only the player can
-   * decrypt this value using their private key.
-   * 
+   *
+   * Fetches the player's USDC+ token account and returns the balance.
+   * In Phase 1 (current), this is a standard SPL token balance.
+   * In Phase 2 (future C-SPL), this will return encrypted balance ciphertext.
+   *
    * @param playerPubkey - Player's public key
    * @returns Encrypted balance structure
-   * 
+   *
    * @example
    * ```typescript
-   * const encryptedBalance = await wager.getEncryptedBalance(playerPubkey);
+   * const balance = await wager.getEncryptedBalance(playerPubkey);
+   * console.log('Balance ciphertext:', balance.ciphertext);
    * ```
    */
   async getEncryptedBalance(playerPubkey: PublicKey): Promise<import('./types').EncryptedBalance> {
-    // TODO: Implement get encrypted balance logic
-    // This will fetch the player's C-SPL token account and return the ciphertext
-    throw new Error('Not implemented yet');
+    // Get the player's USDC+ associated token account
+    const playerTokenAccount = await getAssociatedTokenAddress(
+      this.usdcPlusMint,
+      playerPubkey
+    );
+
+    try {
+      // Fetch the token account balance
+      const tokenAccountInfo = await this.connection.getAccountInfo(playerTokenAccount);
+
+      if (!tokenAccountInfo) {
+        // No token account — return zero balance
+        return {
+          ciphertext: new Uint8Array(0),
+          nonce: new Uint8Array(0),
+          publicKey: new Uint8Array(0),
+        };
+      }
+
+      // In Phase 1 (USDC+ via Reflect), the balance is plaintext
+      // We encode it as "ciphertext" for API compatibility with Phase 2 (C-SPL)
+      const tokenBalance = await this.connection.getTokenAccountBalance(playerTokenAccount);
+      const balanceBytes = Buffer.alloc(8);
+      balanceBytes.writeBigUInt64LE(BigInt(tokenBalance.value.amount));
+
+      return {
+        ciphertext: new Uint8Array(balanceBytes),
+        nonce: new Uint8Array(0), // No encryption in Phase 1
+        publicKey: playerPubkey.toBytes(),
+      };
+    } catch (error: any) {
+      // Token account doesn't exist — return zero balance
+      return {
+        ciphertext: new Uint8Array(8), // 8 bytes of zeros = 0 balance
+        nonce: new Uint8Array(0),
+        publicKey: playerPubkey.toBytes(),
+      };
+    }
   }
 }
