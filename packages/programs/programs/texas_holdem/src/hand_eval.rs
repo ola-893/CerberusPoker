@@ -903,4 +903,27 @@ mod tests {
         // hand1 has J-high straight flush, hand2 has 9-high straight flush
         assert!(tb1 > tb2);
     }
+
+    // Task 14.6: Write property test for hand evaluator correctness (Property 7)
+    #[test]
+    fn property_test_hand_evaluator_correctness() {
+        // Generate 1000 pseudo-random 7-card hands to ensure evaluate_hand never panics 
+        // and always returns a valid HandRank (0-9).
+        let mut seed = 123456789u32;
+        for _ in 0..1000 {
+            let mut cards = [0u8; 7];
+            let mut i = 0;
+            while i < 7 {
+                seed = seed.wrapping_mul(1664525).wrapping_add(1013904223);
+                let card = (seed % 52) as u8;
+                if !cards[..i].contains(&card) {
+                    cards[i] = card;
+                    i += 1;
+                }
+            }
+            
+            let (rank, _) = evaluate_hand(&cards);
+            assert!((rank as u8) <= 9, "Rank should be between 0 and 9");
+        }
+    }
 }

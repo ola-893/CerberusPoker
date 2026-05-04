@@ -13,7 +13,19 @@
     "build": "npm run build --workspaces --if-present",
     "test": "npm run test --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
-    "clean": "npm run clean --workspaces --if-present && rm -rf node_modules"
+    "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
+    "dev": "concurrently --kill-others --names \"VALIDATOR,PROGRAMS,UI\" -c \"bgBlue.bold,bgMagenta.bold,bgGreen.bold\" \"npm run dev:validator\" \"npm run dev:programs\" \"npm run dev:ui\"",
+    "dev:validator": "solana-test-validator --reset",
+    "dev:programs": "wait-on tcp:8899 && cd packages/programs && anchor build && anchor deploy && echo '✅ Programs deployed! Update program IDs in Anchor.toml and examples/poker-ui/src/lib/anchor.ts'",
+    "dev:ui": "wait-on tcp:8899 && cd examples/poker-ui && npm run dev",
+    "start": "npm run dev",
+    "setup:local": "node scripts/setup-local.js",
+    "deploy:local": "cd packages/programs && anchor build && anchor deploy",
+    "verify": "bash scripts/verify-setup.sh"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2",
+    "wait-on": "^7.2.0"
   },
   "engines": {
     "node": ">=20.0.0"
