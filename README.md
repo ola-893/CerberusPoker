@@ -157,6 +157,8 @@ cerberus_poker::cpi::deal_cards(cpi_ctx, assignments)?;
 
 ## 📚 Documentation
 
+- **[QUICKSTART.md](./QUICKSTART.md)** - Get started in under 5 minutes
+- **[TESTER_GUIDE.md](./TESTER_GUIDE.md)** - Guide for testers (one command to start)
 - **[SETUP.md](./SETUP.md)** - Complete local setup guide
 - **[ARCHITECTURE.md](./ARCHITECTURE.md)** - Technical architecture and design decisions
 - **[DEVELOPMENT.md](./DEVELOPMENT.md)** - Development guide, testing, deployment
