@@ -1,108 +1,140 @@
-# CerberusPoker
+# 🎴 CerberusPoker
 
-> Trustless multiplayer card games with complete information privacy on Solana.
-> No dealer. No server. Just math.
+**Fully private multiplayer poker on Solana — powered by Arcium MPC**
 
-CerberusPoker is a Solana SDK that bundles two privacy primitives into one composable package:
+> No one sees your cards. Not even the server.
 
-- **`@cerberus-poker/deck`** — encrypted card operations via [Arcium](https://arcium.com) MPC (Cerberus protocol). Shuffle, deal, and reveal cards with no player ever seeing what they shouldn't.
-- **`@cerberus-poker/wager`** — confidential wagering with a two-phase strategy: Phase 1 uses MXE-encrypted amounts + USDC+ escrow (buildable now), Phase 2 will use Arcium's Confidential SPL tokens when available (full end-to-end encryption). See [C-SPL Upgrade Path](packages/sdk/wager/C-SPL-UPGRADE-PATH.md) for details.
-
-The core guarantee: **before showdown, nobody — not opponents, not validators, not MEV bots — sees your cards or your bets.** At showdown, everything is revealed atomically and verified on-chain.
-
-Texas Hold'em ships as the reference implementation. Any card game with a shared deck (Blackjack, Bridge, UNO, Truco) can plug into the same shuffle/deal/reveal/wager layer by swapping only the game logic on top.
+CerberusPoker is a game-agnostic privacy protocol for card games on Solana. It uses Arcium's Multi-party eXecution Environment (MXE) for confidential deck shuffling, card dealing via threshold decryption, and atomic showdowns — all on-chain. The included Texas Hold'em implementation demonstrates a complete poker game with encrypted betting via USDC+ (Reflect Protocol).
 
 ---
 
-## Why This Is Only Possible on Solana
-
-Mental Poker is the canonical Multi-Party Computation thought experiment, invented by Shamir, Rivest, and Adleman in 1979. CerberusPoker is the first implementation to solve it using **actual MPC** on a public blockchain:
-
-- **Arcium** launched mainnet in February 2026 — the first decentralised MPC network on Solana
-- **Cerberus protocol** provides dishonest-majority security — secure even if all players except one are actively malicious
-- **Confidential SPL** provides encrypted token transfers — bet amounts hidden at the protocol level
-- Solana's sub-second finality makes the multi-round betting flow practical
-
----
-
-## Architecture
+## 🏗️ Architecture
 
 ```
-┌─────────────────────────────────────────────────────────────┐
-│  Client (@cerberus-poker/sdk)                               │
-│  deck module          wager module         core             │
-└──────────────────────────┬──────────────────────────────────┘
-                           │ Solana transactions
-          ┌────────────────┼────────────────┐
-          ▼                ▼                ▼
-   Arcium MXE       cerberus_poker    Confidential
-   (Cerberus MPC)   texas_holdem      SPL Token
-   shuffle/deal/    game state        encrypted
-   reveal           hand evaluation   balances
+┌──────────────────────────────────────────────────────┐
+│                   Frontend (React)                    │
+│            examples/poker-ui (Vite + React)           │
+└──────────┬────────────────────────────┬───────────────┘
+           │                            │
+  ┌────────▼──────┐           ┌─────────▼─────────┐
+  │ @cerberus-    │           │ @cerberus-poker/  │
+  │ poker/core    │           │   deck + wager    │
+  │ (SDK)         │           │   (SDK modules)   │
+  └────────┬──────┘           └─────────┬─────────┘
+           │                            │
+  ┌────────▼────────────────────────────▼──────────┐
+  │         Solana Programs (Anchor 0.32.1)         │
+  │  ┌──────────────────┐  ┌─────────────────────┐ │
+  │  │  cerberus_poker   │  │   texas_holdem      │ │
+  │  │  (game-agnostic)  │──│  (game-specific)    │ │
+  │  │  shuffle/deal/    │  │  betting/eval/      │ │
+  │  │  reveal/timeout   │  │  showdown/settle    │ │
+  │  └────────┬─────────┘  └─────────┬───────────┘ │
+  └───────────┼──────────────────────┼─────────────┘
+              │    CPI + Callbacks   │
+  ┌───────────▼──────────────────────▼─────────────┐
+  │          Arcium MXE (Devnet)                    │
+  │  ┌─────────────┐  ┌────────────┐  ┌──────────┐ │
+  │  │ shuffle_deck │  │ deal_card  │  │ reveal   │ │
+  │  │ (ArcisRNG)  │  │ (threshold)│  │ (public) │ │
+  │  └─────────────┘  └────────────┘  └──────────┘ │
+  └────────────────────────────────────────────────┘
 ```
 
----
+## 📦 Packages
 
-## Quick Start
+| Package | Description |
+|---------|-------------|
+| `packages/programs/cerberus_poker` | Game-agnostic protocol: shuffle, deal, reveal, timeout |
+| `packages/programs/texas_holdem` | Texas Hold'em: betting, hand eval, pot settlement |
+| `packages/sdk/core` | SDK: wallet adapter, transaction builder, event subscriptions |
+| `packages/sdk/deck` | Deck module: encrypted shuffle, deal, decrypt, reveal |
+| `packages/sdk/wager` | Wager module: USDC+ betting, fold, call, settle |
+| `mxe/` | Arcium MXE circuits: encrypted instructions |
+| `examples/poker-ui` | React frontend: full poker table UI |
+
+## 🚀 Quick Start
 
 ### Prerequisites
 
-- [Rust](https://rustup.rs/) 1.75+
-- [Solana CLI](https://docs.solana.com/cli/install-solana-cli-tools) 1.18+
-- [Anchor CLI](https://www.anchor-lang.com/docs/installation) 0.30+
-- [Node.js](https://nodejs.org/) 20+
+- [Solana CLI 2.3.0](https://docs.solana.com/cli/install-solana-cli-tools)
+- [Anchor 0.32.1](https://www.anchor-lang.com/docs/installation) (`avm install 0.32.1`)
+- [Arcium CLI 0.9.7](https://docs.arcium.com/) (`curl --proto '=https' --tlsv1.2 -sSfL https://install.arcium.com/ | bash`)
+- Node.js ≥ 20
 
 ### Setup
 
 ```bash
-# Install dependencies
+# Clone and install
+git clone https://github.com/your-org/CerberusPoker.git
+cd CerberusPoker
 npm install
 
-# Build all Solana programs
-make build
+# Configure Solana for devnet
+solana config set --url devnet
 
-# Run tests
-make test
+# Build Solana programs
+cd packages/programs
+anchor build
 
-# Deploy to devnet
-make deploy-devnet
+# Run frontend
+cd ../../examples/poker-ui
+npm run dev
 ```
 
----
+### Run Tests
 
-## Project Structure
+```bash
+# Anchor tests (Solana programs)
+cd packages/programs
+anchor test
 
-```
-cerberus-poker/
-├── packages/
-│   ├── sdk/
-│   │   ├── core/        # @cerberus-poker/core — SDK entry point, wallet, events
-│   │   ├── deck/        # @cerberus-poker/deck — shuffle, deal, reveal
-│   │   └── wager/       # @cerberus-poker/wager — bet, call, fold, settle
-│   └── programs/        # Solana programs (Anchor/Rust)
-│       └── programs/
-│           ├── cerberus_poker/   # Game-agnostic protocol program
-│           └── texas_holdem/     # Texas Hold'em reference implementation
-├── mxe/                 # Arcium MXE program (confidential compute)
-└── examples/
-    └── poker-ui/        # React frontend — playable Texas Hold'em demo
+# SDK tests
+cd packages/sdk/core && npm test
+cd packages/sdk/deck && npm test
+cd packages/sdk/wager && npm test
+
+# MXE tests
+cd mxe
+arcium test
 ```
 
----
+## 🎯 Deployed Contracts (Devnet)
 
-## Building a New Card Game
+| Program | Address |
+|---------|---------|
+| Arcium MXE | `A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V` |
+| CerberusPoker | `Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS` |
+| Texas Hold'em | `HmbTLCmaGvZhKnn1Zfa1JVnp7vkMV4DYVxPLWBVoN65` |
 
-CerberusPoker is game-agnostic. To build Blackjack on top of it:
+## 🔐 How It Works
 
-1. Deploy your own Solana program that calls `cerberus_poker` via CPI
-2. Use `@cerberus-poker/deck` for shuffle/deal/reveal
-3. Optionally use `@cerberus-poker/wager` for confidential betting
-4. Implement your game rules — the privacy layer is handled for you
+### 1. Confidential Shuffle
+Each player contributes a secret permutation. The MXE combines all permutations using `ArcisRNG::shuffle`, producing a cryptographically uniform deck ordering that no single player can predict or control.
 
-See `ARCHITECTURE.md` for a detailed walkthrough.
+### 2. Threshold Deal
+Cards are dealt using threshold decryption. The MXE encrypts each card specifically for its recipient using `Enc<Shared, u8>` — only the recipient's private key can decrypt it. No one else (including the MXE nodes) learns the card value.
 
----
+### 3. Community Card Reveal
+Community cards are revealed publicly via full MXE decryption. The plaintext value is stored on-chain with an MXE attestation proving correctness.
 
-## License
+### 4. Atomic Showdown
+At showdown, all hole cards are revealed atomically in a single MXE computation. The on-chain hand evaluator determines the winner, and the pot is settled via USDC+ transfer from the escrow PDA.
+
+### 5. Encrypted Betting (Phase 1)
+Bet amounts are transferred as USDC+ (Reflect Protocol) to an escrow PDA, and encrypted bet amounts are stored in the MXE as `Enc<Mxe, u64>`. In Phase 2, this will upgrade to Arcium's Confidential SPL (C-SPL) tokens.
+
+## 🏗️ Building New Card Games
+
+CerberusPoker is game-agnostic! To build a new card game (e.g., Blackjack):
+
+1. **Use `cerberus_poker` as-is** for shuffle, deal, and reveal
+2. **Create a new program** (like `texas_holdem`) for your game logic
+3. **Call `cerberus_poker` via CPI** for card operations
+4. **Use the SDK modules** (`@cerberus-poker/core` + `@cerberus-poker/deck`) in your frontend
+
+See [ARCHITECTURE.md](./ARCHITECTURE.md) for detailed design rationale.
+
+## 📄 License
 
 MIT
