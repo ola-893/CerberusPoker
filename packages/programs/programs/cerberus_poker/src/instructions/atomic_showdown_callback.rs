@@ -1,16 +1,16 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_macros::comp_def_offset;
+use arcium_macros::circuit_hash;
 
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, GameState, ShowdownComplete};
 
-const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown");
+const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = circuit_hash!("atomic_showdown");
 
 /// Output from atomic_showdown MXE instruction.
 /// Returns [u8; 12] — up to 6 players × 2 hole cards, all revealed atomically.
 /// Fits within the 1232 byte callback limit (12 bytes << 1232).
-#[derive(AnchorDeserialize)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct AtomicShowdownOutput {
     /// All hole card values: [p0_card0, p0_card1, p1_card0, p1_card1, ...]
     pub revealed_hands: [u8; 12],
@@ -65,9 +65,12 @@ pub fn handler(
     Ok(())
 }
 
-#[callback_accounts("atomic_showdown")]
+#[derive(Accounts)]
 #[derive(Accounts)]
 pub struct AtomicShowdownCallback<'info> {
+    /// CHECK: instructions_sysvar, checked by arcium program.
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions_sysvar: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
 
     #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_ATOMIC_SHOWDOWN))]
@@ -87,4 +90,8 @@ pub struct AtomicShowdownCallback<'info> {
 
     #[account(mut)]
     pub game_session: Account<'info, GameSession>,
+}
+
+impl arcium_anchor::HasSize for AtomicShowdownOutput {
+    const SIZE: usize = 13;
 }

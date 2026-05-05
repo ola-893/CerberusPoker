@@ -1,11 +1,11 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_macros::comp_def_offset;
+use arcium_macros::circuit_hash;
 
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, REVEAL_TIMEOUT_SECS};
 
-const COMP_DEF_OFFSET_REVEAL_CARD: u32 = comp_def_offset("reveal_card");
+const COMP_DEF_OFFSET_REVEAL_CARD: u32 = circuit_hash!("reveal_card");
 
 /// Queue a reveal_card computation to reveal a community card.
 ///
@@ -82,6 +82,9 @@ pub fn handler(
 #[derive(Accounts)]
 #[instruction(game_id: u64, card_index: u8, computation_offset: u64)]
 pub struct RevealCard<'info> {
+    /// CHECK: instructions_sysvar, checked by arcium program.
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions_sysvar: UncheckedAccount<'info>,
     #[account(
         mut,
         seeds = [b"game", game_id.to_le_bytes().as_ref()],

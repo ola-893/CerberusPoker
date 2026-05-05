@@ -1,10 +1,11 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
+use arcium_macros::circuit_hash;
 
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, GameState, CardDealt, UNASSIGNED, REVEAL_TIMEOUT_SECS};
 
-const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card_to_recipient");
+const COMP_DEF_OFFSET_DEAL_CARD: u32 = circuit_hash!("deal_card_to_recipient");
 
 pub fn handler(
     ctx: Context<DealCards>,
@@ -66,7 +67,7 @@ pub fn handler(
         ctx.accounts,
         computation_offset,
         args,
-        vec![crate::instructions::deal_card_callback::DealCardToRecipientCallback::callback_ix(
+        vec![crate::instructions::deal_card_to_recipient_callback::DealCardToRecipientCallback::callback_ix(
             computation_offset,
             &ctx.accounts.mxe_account,
             &[],
@@ -83,6 +84,9 @@ pub fn handler(
 #[derive(Accounts)]
 #[instruction(game_id: u64, assignments: Vec<(u8, u8)>, computation_offset: u64)]
 pub struct DealCards<'info> {
+    /// CHECK: instructions_sysvar, checked by arcium program.
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions_sysvar: UncheckedAccount<'info>,
     #[account(
         mut,
         seeds = [b"game", game_id.to_le_bytes().as_ref()],

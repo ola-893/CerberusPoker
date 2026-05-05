@@ -1,0 +1,10 @@
+[package]
+name = "getrandom"
+version = "0.3.4"
+edition = "2021"
+
+[dependencies]
+cfg-if = "1.0"
+
+[target.'cfg(target_os = "solana")'.dependencies]
+# No dependencies for Solana - we provide a stub implementation

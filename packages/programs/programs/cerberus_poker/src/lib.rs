@@ -1,3 +1,4 @@
+pub mod random;
 /// CerberusPoker — Game-Agnostic Mental Poker Protocol Program
 ///
 /// This program handles the full lifecycle of a private card game session:
@@ -16,6 +17,7 @@
 
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
+use arcium_macros::circuit_hash;
 
 pub mod errors;
 pub mod instructions;
@@ -23,15 +25,15 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 // Computation definition offsets — derived from instruction names via sha256
 // These identify each MXE circuit on-chain
-const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck");
-const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card_to_recipient");
-const COMP_DEF_OFFSET_REVEAL_CARD: u32 = comp_def_offset("reveal_card");
-const COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD: u32 = comp_def_offset("reveal_community_card");
-const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown");
+const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = circuit_hash!("shuffle_deck");
+const COMP_DEF_OFFSET_DEAL_CARD: u32 = circuit_hash!("deal_card_to_recipient");
+const COMP_DEF_OFFSET_REVEAL_CARD: u32 = circuit_hash!("reveal_card");
+const COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD: u32 = circuit_hash!("reveal_community_card");
+const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = circuit_hash!("atomic_showdown");
 
 #[arcium_program]
 pub mod cerberus_poker {
@@ -41,31 +43,31 @@ pub mod cerberus_poker {
     // Each must be called once after deployment to register the MXE circuit on-chain
 
     pub fn init_shuffle_deck_comp_def(ctx: Context<InitShuffleDeckCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, COMP_DEF_OFFSET_SHUFFLE_DECK, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
     pub fn init_deal_card_comp_def(ctx: Context<InitDealCardCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, COMP_DEF_OFFSET_DEAL_CARD, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
     pub fn init_reveal_card_comp_def(ctx: Context<InitRevealCardCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, COMP_DEF_OFFSET_REVEAL_CARD, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
     pub fn init_reveal_community_card_comp_def(
         ctx: Context<InitRevealCommunityCardCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
     pub fn init_atomic_showdown_comp_def(
         ctx: Context<InitAtomicShowdownCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, COMP_DEF_OFFSET_ATOMIC_SHOWDOWN, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -103,11 +105,11 @@ pub mod cerberus_poker {
     }
 
     #[arcium_callback(encrypted_ix = "deal_card_to_recipient")]
-    pub fn deal_card_callback(
+    pub fn deal_card_to_recipient_callback(
         ctx: Context<DealCardToRecipientCallback>,
-        output: SignedComputationOutputs<DealCardOutput>,
+        output: SignedComputationOutputs<DealCardToRecipientOutput>,
     ) -> Result<()> {
-        instructions::deal_card_callback::handler(ctx, output)
+        instructions::deal_card_to_recipient_callback::handler(ctx, output)
     }
 
     #[arcium_callback(encrypted_ix = "reveal_card")]

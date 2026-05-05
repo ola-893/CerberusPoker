@@ -1,11 +1,11 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_macros::comp_def_offset;
+use arcium_macros::circuit_hash;
 
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, GameState, ShuffleStarted, SHUFFLE_TIMEOUT_SECS};
 
-const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck");
+const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = circuit_hash!("shuffle_deck");
 
 pub fn handler(
     ctx: Context<StartShuffle>,
@@ -67,6 +67,9 @@ pub fn handler(
 #[derive(Accounts)]
 #[instruction(game_id: u64, computation_offset: u64)]
 pub struct StartShuffle<'info> {
+    /// CHECK: instructions_sysvar, checked by arcium program.
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions_sysvar: UncheckedAccount<'info>,
     #[account(
         mut,
         seeds = [b"game", game_id.to_le_bytes().as_ref()],

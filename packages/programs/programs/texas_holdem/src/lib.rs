@@ -17,7 +17,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("TxHldXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+declare_id!("HmbTLCmaGvZhKnn1Zfa1JVnp7vkMV4DYVxPLWBVoN65");
 
 #[arcium_program]
 pub mod texas_holdem {

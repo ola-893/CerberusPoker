@@ -1,23 +1,24 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
+use arcium_macros::circuit_hash;
 
 use crate::errors::CerberusPokerError;
 
-const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card_to_recipient");
+const COMP_DEF_OFFSET_DEAL_CARD: u32 = circuit_hash!("deal_card_to_recipient");
 
 /// Output from the deal_card_to_recipient MXE instruction.
 /// Returns plaintext u8 — the card value after threshold decryption.
 /// The MXE performs threshold decryption and reveals the card value
 /// to the specific recipient through this callback.
-#[derive(AnchorDeserialize)]
-pub struct DealCardOutput {
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub struct DealCardToRecipientOutput {
     /// The card value (0-51) after threshold decryption
     pub card_value: u8,
 }
 
 pub fn handler(
     ctx: Context<DealCardToRecipientCallback>,
-    output: SignedComputationOutputs<DealCardOutput>,
+    output: SignedComputationOutputs<DealCardToRecipientOutput>,
 ) -> Result<()> {
     let result = match output.verify_output(
         &ctx.accounts.cluster_account,
@@ -56,7 +57,7 @@ impl DealtCard {
     pub const SPACE: usize = 8 + 8 + 1 + 1;
 }
 
-#[callback_accounts("deal_card_to_recipient")]
+#[derive(Accounts)]
 #[derive(Accounts)]
 pub struct DealCardToRecipientCallback<'info> {
     pub arcium_program: Program<'info, Arcium>,
@@ -96,4 +97,8 @@ pub struct DealCardToRecipientCallback<'info> {
     
     /// CHECK: Required by Arcium callback macro
     pub instructions_sysvar: UncheckedAccount<'info>,
+}
+
+impl arcium_anchor::HasSize for DealCardToRecipientOutput {
+    const SIZE: usize = 1;
 }

@@ -1,36 +1,21 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
-const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck");
-const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card");
-const COMP_DEF_OFFSET_REVEAL_CARD: u32 = comp_def_offset("reveal_card");
-const COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD: u32 = comp_def_offset("reveal_community_card");
-const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown");
-
 /// Accounts for initializing the shuffle_deck computation definition.
-/// Called once after deployment.
+#[init_computation_definition_accounts("shuffle_deck", payer)]
 #[derive(Accounts)]
 pub struct InitShuffleDeckCompDef<'info> {
-    #[account(
-        init,
-        payer = payer,
-        space = ComputationDefinitionAccount::SPACE,
-        seeds = [b"comp_def", &COMP_DEF_OFFSET_SHUFFLE_DECK.to_le_bytes()],
-        bump,
-    )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(mut)]
+    /// CHECK: initialized via CPI
+    pub comp_def_account: UncheckedAccount<'info>,
 
-    #[account(address = derive_mxe_pda!())]
+    #[account(mut)]
     pub mxe_account: Account<'info, MXEAccount>,
 
-    #[account(
-        mut,
-        address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot)
-    )]
+    #[account(mut)]
     /// CHECK: address_lookup_table
     pub address_lookup_table: UncheckedAccount<'info>,
 
-    #[account(address = LUT_PROGRAM_ID)]
     /// CHECK: lut_program
     pub lut_program: UncheckedAccount<'info>,
 
@@ -41,29 +26,21 @@ pub struct InitShuffleDeckCompDef<'info> {
     pub arcium_program: Program<'info, Arcium>,
 }
 
-/// Accounts for initializing the deal_card computation definition.
+/// Accounts for initializing the deal_card_to_recipient computation definition.
+#[init_computation_definition_accounts("deal_card_to_recipient", payer)]
 #[derive(Accounts)]
 pub struct InitDealCardCompDef<'info> {
-    #[account(
-        init,
-        payer = payer,
-        space = ComputationDefinitionAccount::SPACE,
-        seeds = [b"comp_def", &COMP_DEF_OFFSET_DEAL_CARD.to_le_bytes()],
-        bump,
-    )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(mut)]
+    /// CHECK: initialized via CPI
+    pub comp_def_account: UncheckedAccount<'info>,
 
-    #[account(address = derive_mxe_pda!())]
+    #[account(mut)]
     pub mxe_account: Account<'info, MXEAccount>,
 
-    #[account(
-        mut,
-        address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot)
-    )]
+    #[account(mut)]
     /// CHECK: address_lookup_table
     pub address_lookup_table: UncheckedAccount<'info>,
 
-    #[account(address = LUT_PROGRAM_ID)]
     /// CHECK: lut_program
     pub lut_program: UncheckedAccount<'info>,
 
@@ -75,28 +52,20 @@ pub struct InitDealCardCompDef<'info> {
 }
 
 /// Accounts for initializing the reveal_card computation definition.
+#[init_computation_definition_accounts("reveal_card", payer)]
 #[derive(Accounts)]
 pub struct InitRevealCardCompDef<'info> {
-    #[account(
-        init,
-        payer = payer,
-        space = ComputationDefinitionAccount::SPACE,
-        seeds = [b"comp_def", &COMP_DEF_OFFSET_REVEAL_CARD.to_le_bytes()],
-        bump,
-    )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(mut)]
+    /// CHECK: initialized via CPI
+    pub comp_def_account: UncheckedAccount<'info>,
 
-    #[account(address = derive_mxe_pda!())]
+    #[account(mut)]
     pub mxe_account: Account<'info, MXEAccount>,
 
-    #[account(
-        mut,
-        address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot)
-    )]
+    #[account(mut)]
     /// CHECK: address_lookup_table
     pub address_lookup_table: UncheckedAccount<'info>,
 
-    #[account(address = LUT_PROGRAM_ID)]
     /// CHECK: lut_program
     pub lut_program: UncheckedAccount<'info>,
 
@@ -108,28 +77,20 @@ pub struct InitRevealCardCompDef<'info> {
 }
 
 /// Accounts for initializing the reveal_community_card computation definition.
+#[init_computation_definition_accounts("reveal_community_card", payer)]
 #[derive(Accounts)]
 pub struct InitRevealCommunityCardCompDef<'info> {
-    #[account(
-        init,
-        payer = payer,
-        space = ComputationDefinitionAccount::SPACE,
-        seeds = [b"comp_def", &COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD.to_le_bytes()],
-        bump,
-    )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(mut)]
+    /// CHECK: initialized via CPI
+    pub comp_def_account: UncheckedAccount<'info>,
 
-    #[account(address = derive_mxe_pda!())]
+    #[account(mut)]
     pub mxe_account: Account<'info, MXEAccount>,
 
-    #[account(
-        mut,
-        address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot)
-    )]
+    #[account(mut)]
     /// CHECK: address_lookup_table
     pub address_lookup_table: UncheckedAccount<'info>,
 
-    #[account(address = LUT_PROGRAM_ID)]
     /// CHECK: lut_program
     pub lut_program: UncheckedAccount<'info>,
 
@@ -141,28 +102,20 @@ pub struct InitRevealCommunityCardCompDef<'info> {
 }
 
 /// Accounts for initializing the atomic_showdown computation definition.
+#[init_computation_definition_accounts("atomic_showdown", payer)]
 #[derive(Accounts)]
 pub struct InitAtomicShowdownCompDef<'info> {
-    #[account(
-        init,
-        payer = payer,
-        space = ComputationDefinitionAccount::SPACE,
-        seeds = [b"comp_def", &COMP_DEF_OFFSET_ATOMIC_SHOWDOWN.to_le_bytes()],
-        bump,
-    )]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+    #[account(mut)]
+    /// CHECK: initialized via CPI
+    pub comp_def_account: UncheckedAccount<'info>,
 
-    #[account(address = derive_mxe_pda!())]
+    #[account(mut)]
     pub mxe_account: Account<'info, MXEAccount>,
 
-    #[account(
-        mut,
-        address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot)
-    )]
+    #[account(mut)]
     /// CHECK: address_lookup_table
     pub address_lookup_table: UncheckedAccount<'info>,
 
-    #[account(address = LUT_PROGRAM_ID)]
     /// CHECK: lut_program
     pub lut_program: UncheckedAccount<'info>,
 

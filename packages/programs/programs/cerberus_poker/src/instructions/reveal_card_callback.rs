@@ -1,11 +1,21 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_macros::comp_def_offset;
+use arcium_macros::circuit_hash;
 
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, CardRevealed};
 
-const COMP_DEF_OFFSET_REVEAL_CARD: u32 = comp_def_offset("reveal_card");
+const COMP_DEF_OFFSET_REVEAL_CARD: u32 = circuit_hash!("reveal_card");
+
+/// Output type for reveal_card MXE computation
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
+pub struct RevealCardOutput {
+    pub card_value: u8,
+}
+
+impl arcium_anchor::HasSize for RevealCardOutput {
+    const SIZE: usize = 1;
+}
 
 /// Callback handler for reveal_card MXE computation.
 ///
@@ -23,9 +33,9 @@ const COMP_DEF_OFFSET_REVEAL_CARD: u32 = comp_def_offset("reveal_card");
 /// - Marks card as revealed to prevent double-reveals
 pub fn handler(
     ctx: Context<RevealCardCallback>,
-    output: SignedComputationOutputs<u8>,
+    output: SignedComputationOutputs<RevealCardOutput>,
 ) -> Result<()> {
-    let card_value = match output.verify_output(
+    let result = match output.verify_output(
         &ctx.accounts.cluster_account,
         &ctx.accounts.computation_account,
     ) {
@@ -35,6 +45,8 @@ pub fn handler(
             return Err(CerberusPokerError::AbortedComputation.into());
         }
     };
+
+    let card_value = result.card_value;
 
     let game = &mut ctx.accounts.game_session;
 
@@ -75,9 +87,12 @@ pub fn handler(
     Ok(())
 }
 
-#[callback_accounts("reveal_card")]
+#[derive(Accounts)]
 #[derive(Accounts)]
 pub struct RevealCardCallback<'info> {
+    /// CHECK: instructions_sysvar, checked by arcium program.
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions_sysvar: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
 
     #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL_CARD))]

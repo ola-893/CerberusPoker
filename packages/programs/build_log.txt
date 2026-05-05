@@ -1,0 +1,26 @@
+   Compiling ppv-lite86 v0.2.21
+   Compiling ahash v0.8.12
+   Compiling ring v0.17.14
+   Compiling getrandom v0.1.16
+   Compiling cpufeatures v0.2.17
+   Compiling serde_bytes v0.11.19
+   Compiling bytes v1.11.1
+   Compiling bv v0.11.1
+error: target is not supported, for more information see: https://docs.rs/getrandom/#unsupported-targets
+   --> src/lib.rs:267:9
+    |
+267 | /         compile_error!("\
+268 | |             target is not supported, for more information see: \
+269 | |             https://docs.rs/getrandom/#unsupported-targets\
+270 | |         ");
+    | |__________^
+
+error[E0433]: failed to resolve: use of undeclared crate or module `imp`
+   --> src/lib.rs:291:5
+    |
+291 |     imp::getrandom_inner(dest)
+    |     ^^^ use of undeclared crate or module `imp`
+
+For more information about this error, try `rustc --explain E0433`.
+error: could not compile `getrandom` (lib) due to 2 previous errors
+warning: build failed, waiting for other jobs to finish...

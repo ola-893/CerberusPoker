@@ -1,15 +1,15 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_macros::comp_def_offset;
+use arcium_macros::circuit_hash;
 
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, CardRevealed};
 
-const COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD: u32 = comp_def_offset("reveal_community_card");
+const COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD: u32 = circuit_hash!("reveal_community_card");
 
 /// Output from reveal_community_card MXE instruction.
 /// Returns plaintext u8 — community cards are public after reveal.
-#[derive(AnchorDeserialize)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
 pub struct RevealCommunityCardOutput {
     /// Plaintext card value (0-51) — revealed to all
     pub card_value: u8,
@@ -61,9 +61,12 @@ pub fn handler(
     Ok(())
 }
 
-#[callback_accounts("reveal_community_card")]
+#[derive(Accounts)]
 #[derive(Accounts)]
 pub struct RevealCommunityCardCallback<'info> {
+    /// CHECK: instructions_sysvar, checked by arcium program.
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    pub instructions_sysvar: UncheckedAccount<'info>,
     pub arcium_program: Program<'info, Arcium>,
 
     #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD))]
@@ -83,4 +86,8 @@ pub struct RevealCommunityCardCallback<'info> {
 
     #[account(mut)]
     pub game_session: Account<'info, GameSession>,
+}
+
+impl arcium_anchor::HasSize for RevealCommunityCardOutput {
+    const SIZE: usize = 2;
 }
