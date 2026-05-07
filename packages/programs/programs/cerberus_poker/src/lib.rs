@@ -29,11 +29,29 @@ declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 // Computation definition offsets — derived from instruction names via sha256
 // These identify each MXE circuit on-chain
-const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = circuit_hash!("shuffle_deck");
-const COMP_DEF_OFFSET_DEAL_CARD: u32 = circuit_hash!("deal_card_to_recipient");
-const COMP_DEF_OFFSET_REVEAL_CARD: u32 = circuit_hash!("reveal_card");
-const COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD: u32 = circuit_hash!("reveal_community_card");
-const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = circuit_hash!("atomic_showdown");
+const COMP_DEF_HASH_SHUFFLE_DECK: [u8; 32] = circuit_hash!("shuffle_deck");
+const COMP_DEF_HASH_DEAL_CARD: [u8; 32] = circuit_hash!("deal_card_to_recipient");
+const COMP_DEF_HASH_REVEAL_CARD: [u8; 32] = circuit_hash!("reveal_card");
+const COMP_DEF_HASH_REVEAL_COMMUNITY_CARD: [u8; 32] = circuit_hash!("reveal_community_card");
+const COMP_DEF_HASH_ATOMIC_SHOWDOWN: [u8; 32] = circuit_hash!("atomic_showdown");
+
+// Convert first 4 bytes of hash to u32 for PDA derivation
+const fn hash_to_offset(hash: &[u8; 32]) -> u32 {
+    u32::from_le_bytes([hash[0], hash[1], hash[2], hash[3]])
+}
+
+const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = hash_to_offset(&COMP_DEF_HASH_SHUFFLE_DECK);
+const COMP_DEF_OFFSET_DEAL_CARD: u32 = hash_to_offset(&COMP_DEF_HASH_DEAL_CARD);
+const COMP_DEF_OFFSET_REVEAL_CARD: u32 = hash_to_offset(&COMP_DEF_HASH_REVEAL_CARD);
+const COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD: u32 = hash_to_offset(&COMP_DEF_HASH_REVEAL_COMMUNITY_CARD);
+const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = hash_to_offset(&COMP_DEF_HASH_ATOMIC_SHOWDOWN);
+
+/// Card assignment for deal_cards instruction
+#[derive(AnchorSerialize, AnchorDeserialize, Clone)]
+pub struct CardAssignment {
+    pub card_index: u8,
+    pub player_index: u8,
+}
 
 #[arcium_program]
 pub mod cerberus_poker {
@@ -43,31 +61,31 @@ pub mod cerberus_poker {
     // Each must be called once after deployment to register the MXE circuit on-chain
 
     pub fn init_shuffle_deck_comp_def(ctx: Context<InitShuffleDeckCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, None, None)?;
+        init_comp_def(ctx.accounts)?;
         Ok(())
     }
 
     pub fn init_deal_card_comp_def(ctx: Context<InitDealCardCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, None, None)?;
+        init_comp_def(ctx.accounts)?;
         Ok(())
     }
 
     pub fn init_reveal_card_comp_def(ctx: Context<InitRevealCardCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, None, None)?;
+        init_comp_def(ctx.accounts)?;
         Ok(())
     }
 
     pub fn init_reveal_community_card_comp_def(
         ctx: Context<InitRevealCommunityCardCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, None, None)?;
+        init_comp_def(ctx.accounts)?;
         Ok(())
     }
 
     pub fn init_atomic_showdown_comp_def(
         ctx: Context<InitAtomicShowdownCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, None, None)?;
+        init_comp_def(ctx.accounts)?;
         Ok(())
     }
 
@@ -141,10 +159,15 @@ pub mod cerberus_poker {
     pub fn deal_cards(
         ctx: Context<DealCards>,
         game_id: u64,
-        assignments: Vec<(u8, u8)>, // (card_index, player_index)
+        assignments: Vec<CardAssignment>, // (card_index, player_index)
         computation_offset: u64,
     ) -> Result<()> {
-        instructions::deal_cards::handler(ctx, game_id, assignments, computation_offset)
+        // Convert CardAssignment structs to tuples for the handler
+        let assignments_tuples: Vec<(u8, u8)> = assignments
+            .into_iter()
+            .map(|a| (a.card_index, a.player_index))
+            .collect();
+        instructions::deal_cards::handler(ctx, game_id, assignments_tuples, computation_offset)
     }
 
     pub fn reveal_card(
@@ -163,4 +186,163 @@ pub mod cerberus_poker {
     pub fn timeout_reveal(ctx: Context<TimeoutReveal>, game_id: u64) -> Result<()> {
         instructions::timeout_reveal::handler(ctx, game_id)
     }
+}
+
+// Callback accounts structs must be defined in lib.rs for #[arcium_program] macro to find them
+use errors::CerberusPokerError;
+use state::GameSession;
+use instructions::deal_card_to_recipient_callback::DealtCard;
+
+#[callback_accounts("shuffle_deck")]
+#[derive(Accounts)]
+pub struct ShuffleDeckCallback<'info> {
+    pub arcium_program: Program<'info, Arcium>,
+
+    #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_SHUFFLE_DECK))]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+
+    #[account(address = derive_mxe_pda!())]
+    pub mxe_account: Account<'info, MXEAccount>,
+
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account, ArciumError::InvalidClusterBLSPublicKey)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+
+    /// CHECK: computation_account
+    pub computation_account: UncheckedAccount<'info>,
+
+    #[account(mut)]
+    pub game_session: Account<'info, GameSession>,
+
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+}
+
+#[callback_accounts("deal_card_to_recipient")]
+#[derive(Accounts)]
+pub struct DealCardToRecipientCallback<'info> {
+    pub arcium_program: Program<'info, Arcium>,
+
+    #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_DEAL_CARD))]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+
+    #[account(address = derive_mxe_pda!())]
+    pub mxe_account: Account<'info, MXEAccount>,
+
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account, ArciumError::InvalidClusterBLSPublicKey)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+
+    /// CHECK: computation_account
+    pub computation_account: UncheckedAccount<'info>,
+
+    #[account(mut)]
+    pub game_session: Account<'info, GameSession>,
+
+    #[account(
+        init_if_needed,
+        payer = payer,
+        space = DealtCard::SPACE,
+        seeds = [b"dealt_card", game_session.key().as_ref()],
+        bump
+    )]
+    pub dealt_card: Account<'info, DealtCard>,
+
+    #[account(mut)]
+    pub payer: Signer<'info>,
+
+    pub system_program: Program<'info, System>,
+
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+}
+
+#[callback_accounts("reveal_card")]
+#[derive(Accounts)]
+pub struct RevealCardCallback<'info> {
+    pub arcium_program: Program<'info, Arcium>,
+
+    #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL_CARD))]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+
+    #[account(address = derive_mxe_pda!())]
+    pub mxe_account: Account<'info, MXEAccount>,
+
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account, ArciumError::InvalidClusterBLSPublicKey)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+
+    /// CHECK: computation_account
+    pub computation_account: UncheckedAccount<'info>,
+
+    #[account(mut)]
+    pub game_session: Account<'info, GameSession>,
+
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+}
+
+#[callback_accounts("reveal_community_card")]
+#[derive(Accounts)]
+pub struct RevealCommunityCardCallback<'info> {
+    pub arcium_program: Program<'info, Arcium>,
+
+    #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD))]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+
+    #[account(address = derive_mxe_pda!())]
+    pub mxe_account: Account<'info, MXEAccount>,
+
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account, ArciumError::InvalidClusterBLSPublicKey)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+
+    /// CHECK: computation_account
+    pub computation_account: UncheckedAccount<'info>,
+
+    #[account(mut)]
+    pub game_session: Account<'info, GameSession>,
+
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+}
+
+#[callback_accounts("atomic_showdown")]
+#[derive(Accounts)]
+pub struct AtomicShowdownCallback<'info> {
+    pub arcium_program: Program<'info, Arcium>,
+
+    #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_ATOMIC_SHOWDOWN))]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+
+    #[account(address = derive_mxe_pda!())]
+    pub mxe_account: Account<'info, MXEAccount>,
+
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account, ArciumError::InvalidClusterBLSPublicKey)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+
+    /// CHECK: computation_account
+    pub computation_account: UncheckedAccount<'info>,
+
+    #[account(mut)]
+    pub game_session: Account<'info, GameSession>,
+
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
 }
