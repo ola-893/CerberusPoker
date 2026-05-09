@@ -1,7 +1,0 @@
-[package]
-name = "arcium-client"
-version = "0.9.7"
-edition = "2021"
-
-[dependencies]
-anchor-lang = "0.32.1"
