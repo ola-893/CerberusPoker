@@ -123,7 +123,7 @@ impl GameSession {
 }
 
 /// Game state machine
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Default)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Default, Debug)]
 pub enum GameState {
     /// Waiting for players to join
     #[default]

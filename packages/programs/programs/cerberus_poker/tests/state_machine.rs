@@ -38,7 +38,7 @@ async fn create_game(
     game_id: u64,
     max_players: u8,
     deck_size: u8,
-) -> Result<(Pubkey, u8), BanksClientError> {
+) -> std::result::Result<(Pubkey, u8), BanksClientError> {
     let (game_pda, bump) = get_game_pda(program_id, game_id);
 
     let accounts = cerberus_poker::accounts::CreateGame {
@@ -79,7 +79,7 @@ async fn join_game(
     game_id: u64,
     game_pda: &Pubkey,
     bump: u8,
-) -> Result<(), BanksClientError> {
+) -> std::result::Result<(), BanksClientError> {
     let accounts = cerberus_poker::accounts::JoinGame {
         game_session: *game_pda,
         player: player.pubkey(),
@@ -109,7 +109,7 @@ async fn join_game(
 async fn fetch_game_session(
     banks_client: &mut BanksClient,
     game_pda: &Pubkey,
-) -> Result<GameSession, BanksClientError> {
+) -> std::result::Result<GameSession, BanksClientError> {
     let account = banks_client.get_account(*game_pda).await?.unwrap();
     let game: GameSession = GameSession::try_deserialize(&mut &account.data[8..]).unwrap();
     Ok(game)
@@ -122,7 +122,7 @@ async fn test_lobby_to_shuffle_transition() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(cerberus_poker::entry),
+        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
@@ -188,7 +188,7 @@ async fn test_player_registration_validation() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(cerberus_poker::entry),
+        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
@@ -231,7 +231,7 @@ async fn test_game_full_validation() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(cerberus_poker::entry),
+        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
@@ -283,7 +283,7 @@ async fn test_invalid_deck_size() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(cerberus_poker::entry),
+        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, _) = program_test.start().await;
@@ -310,7 +310,7 @@ async fn test_invalid_max_players() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(cerberus_poker::entry),
+        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, _) = program_test.start().await;
@@ -337,7 +337,7 @@ async fn test_card_assignment_tracking() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(cerberus_poker::entry),
+        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, _) = program_test.start().await;
@@ -381,7 +381,7 @@ async fn test_shuffle_bitmap_tracking() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(cerberus_poker::entry),
+        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
@@ -436,7 +436,7 @@ async fn test_state_transitions() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(cerberus_poker::entry),
+        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
@@ -493,7 +493,7 @@ async fn test_multiple_games_isolation() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(cerberus_poker::entry),
+        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;

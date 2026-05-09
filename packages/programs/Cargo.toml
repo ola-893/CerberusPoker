@@ -28,3 +28,8 @@ opt-level = 3
 incremental = false
 codegen-units = 1
 
+[patch.crates-io]
+# Patch zmij to work around Rust 1.89.0 compatibility issue
+# zmij uses hint::select_unpredictable which doesn't exist in 1.89.0
+# We replace it with a simple conditional
+zmij = { path = "patches/zmij" }
