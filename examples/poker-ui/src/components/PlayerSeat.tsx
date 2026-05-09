@@ -127,7 +127,7 @@ export default function PlayerSeat({
           {formatAddress(playerAddress)}
         </div>
         <div className="font-mono text-gold font-bold text-sm leading-none">
-          {(stack / 100).toFixed(2)} USDC+
+          {stack > 0 ? `${(stack / 1_000_000).toFixed(2)} USDC+` : '-- USDC+'}
         </div>
       </div>
 

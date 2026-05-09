@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useMemo, useCallback } from 'react';
+import { useMemo, useCallback, useState } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useGameState } from '../hooks/useGameState';
@@ -15,7 +15,7 @@ import CommunityCards from '../components/CommunityCards';
 import HoleCards from '../components/HoleCards';
 import ActionBar from '../components/ActionBar';
 import { UIPhase, Action, GameState, PokerPhase } from '../types';
-import { Info, Menu, Maximize2, ShieldCheck, ChevronLeft } from 'lucide-react';
+import { Info, Menu, Maximize2, ShieldCheck, ChevronLeft, Loader2 } from 'lucide-react';
 import { useAnchorPrograms } from '../lib/anchor';
 import { playerAction, startShuffle, timeoutShuffle, timeoutReveal, timeoutBet } from '../lib/transactions';
 import WalletBalances from '../components/WalletBalances';
@@ -25,6 +25,8 @@ export default function GameTable() {
   const navigate = useNavigate();
   const programs = useAnchorPrograms();
   const { publicKey } = useWallet(); // ← must be before any early returns
+  const [isStarting, setIsStarting] = useState(false);
+  const [startError, setStartError] = useState<string | null>(null);
   
   // Convert gameId to BigInt safely (handle hex strings from URL)
   const gameIdBigInt = useMemo(() => {
@@ -86,10 +88,33 @@ export default function GameTable() {
 
   const handleStartGame = useCallback(async () => {
     if (!programs || !gameIdBigInt) return;
+    setIsStarting(true);
+    setStartError(null);
     try {
       await startShuffle(programs.cerberusPoker, gameIdBigInt);
-    } catch (err) {
+    } catch (err: any) {
       console.error('Start game failed:', err);
+
+      // Extract the most useful part of SendTransactionError
+      let message = 'Transaction failed';
+
+      if (err?.transactionLogs?.length) {
+        // Find the first meaningful program log line
+        const logs: string[] = err.transactionLogs;
+        const errorLog = logs.find((l: string) =>
+          l.includes('Error') || l.includes('failed') || l.includes('AnchorError')
+        );
+        message = errorLog ?? logs[logs.length - 1] ?? message;
+      } else if (err?.transactionMessage) {
+        message = err.transactionMessage;
+      } else if (err?.message) {
+        // Strip the giant stack trace, keep first line only
+        message = err.message.split('\n')[0] ?? err.message;
+      }
+
+      setStartError(message);
+    } finally {
+      setIsStarting(false);
     }
   }, [programs, gameIdBigInt]);
 
@@ -236,6 +261,21 @@ export default function GameTable() {
         </div>
       </div>
 
+      {/* Transaction Error Banner */}
+      {startError && (
+        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 max-w-lg w-[90%] bg-red-900/90 backdrop-blur-md px-5 py-3 rounded-xl border border-red-700 flex items-start gap-3">
+          <span className="text-red-300 text-lg leading-none mt-0.5">⚠</span>
+          <div className="flex-1 min-w-0">
+            <p className="text-red-200 text-xs font-bold uppercase tracking-widest mb-1">Transaction Failed</p>
+            <p className="text-red-300 text-xs font-mono break-words">{startError}</p>
+          </div>
+          <button
+            onClick={() => setStartError(null)}
+            className="text-red-400 hover:text-red-200 text-lg leading-none flex-shrink-0"
+          >×</button>
+        </div>
+      )}
+
       {/* Timeout Banners */}
       {shuffleTimeout && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-waiting/90 backdrop-blur-md px-6 py-3 rounded-xl border border-waiting flex items-center gap-4">
@@ -288,12 +328,20 @@ export default function GameTable() {
                     Table Full · {displayGameSession.numPlayers}/{displayGameSession.maxPlayers} Players
                   </p>
                   {canStartGame ? (
-                    <button
-                      onClick={handleStartGame}
-                      className="px-8 py-3 bg-gold text-background rounded-xl font-bold uppercase tracking-widest text-sm shadow-gold-glow hover:scale-[1.02] active:scale-[0.98] transition-all"
-                    >
-                      Start Game
-                    </button>
+                    <div className="flex flex-col items-center gap-3">
+                      <button
+                        onClick={handleStartGame}
+                        disabled={isStarting}
+                        className="px-8 py-3 bg-gold text-background rounded-xl font-bold uppercase tracking-widest text-sm shadow-gold-glow hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-60 disabled:cursor-not-allowed disabled:scale-100 flex items-center gap-2"
+                      >
+                        {isStarting ? (
+                          <>
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                            Starting...
+                          </>
+                        ) : 'Start Game'}
+                      </button>
+                    </div>
                   ) : (
                     <div className="px-6 py-3 bg-surface-raised border border-zinc-700 rounded-xl text-zinc-400 text-sm font-mono">
                       Waiting for host to start...
@@ -332,7 +380,7 @@ export default function GameTable() {
                 key={absoluteIndex}
                 playerAddress={playerAddress!}
                 playerIndex={absoluteIndex}
-                stack={1000} // TODO: Read from player_stacks token account
+                stack={0} // TODO: Read from player_stacks token account
                 currentBet={0} // TODO: Read from player_bets
                 isFolded={isFoldedPlayer}
                 isAllIn={isAllInPlayer}
@@ -358,7 +406,7 @@ export default function GameTable() {
         <ActionBar 
           isMyTurn={displayIsMyTurn && !isFolded && !isAllIn}
           currentBet={displayPokerTable.currentBet}
-          myStack={1000} // TODO: Read from my token account
+          myStack={0} // TODO: Read from my token account
           bigBlind={displayPokerTable.bigBlind}
           canCheck={displayPokerTable.currentBet === BigInt(0)}
           onAction={handleAction}

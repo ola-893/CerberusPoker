@@ -37,7 +37,7 @@ export default function CommunityCards({ cards, pot }: CommunityCardsProps) {
       <div className="flex flex-col items-center">
         <div className="text-zinc-500 font-mono text-[10px] uppercase tracking-widest mb-1 opacity-60">Main Pot</div>
         <div className="text-gold font-mono font-bold text-3xl tracking-tighter flex items-center gap-2">
-          {pot.toFixed(2)} <span className="text-xl">USDC+</span>
+          {(isNaN(pot) || pot === 0) ? '0.00' : pot.toFixed(2)} <span className="text-xl">USDC+</span>
         </div>
       </div>
     </div>

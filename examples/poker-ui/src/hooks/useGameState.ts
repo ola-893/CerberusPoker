@@ -80,7 +80,11 @@ export function useGameState(gameId: string | null) {
 
   const pot = useMemo(() => {
     if (!pokerTable) return 0;
-    return Number(pokerTable.potTotal) / 1_000_000_000;
+    const raw = pokerTable.potTotal;
+    if (raw === undefined || raw === null) return 0;
+    // potTotal is in USDC micro-units (6 decimals), convert to display value
+    try { return Number(raw) / 1_000_000; }
+    catch { return 0; }
   }, [pokerTable]);
 
   // Check timeouts
