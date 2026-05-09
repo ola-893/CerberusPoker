@@ -109,8 +109,8 @@ arcium test
 | Program | Address |
 |---------|---------|
 | Arcium MXE | `A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V` |
-| CerberusPoker | `Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS` |
-| Texas Hold'em | `HmbTLCmaGvZhKnn1Zfa1JVnp7vkMV4DYVxPLWBVoN65` |
+| CerberusPoker | `4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG` |
+| Texas Hold'em | `h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9` |
 
 **Devnet RPC**: https://api.devnet.solana.com  
 **Cluster Offset**: 456

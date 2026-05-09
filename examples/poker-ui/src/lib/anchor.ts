@@ -5,19 +5,24 @@
  */
 
 import { Program, AnchorProvider, Idl } from '@coral-xyz/anchor';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
 import { useWallet, AnchorWallet } from '@solana/wallet-adapter-react';
 import { useMemo } from 'react';
 
 import cerberusPokerIdl from '../idl/cerberus_poker.json';
 import texasHoldemIdl from '../idl/texas_holdem.json';
 
+export type AnchorProgramClient = Omit<Program<Idl>, 'methods' | 'provider'> & {
+  methods: any;
+  provider: AnchorProvider;
+};
+
 // Program IDs from Anchor.toml
-export const CERBERUS_POKER_PROGRAM_ID = new PublicKey('Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS');
-export const TEXAS_HOLDEM_PROGRAM_ID = new PublicKey('HmbTLCmaGvZhKnn1Zfa1JVnp7vkMV4DYVxPLWBVoN65');
+export const CERBERUS_POKER_PROGRAM_ID = new PublicKey('4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG');
+export const TEXAS_HOLDEM_PROGRAM_ID = new PublicKey('h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9');
 
 // RPC endpoint - use environment variable or default to devnet
-export const RPC_ENDPOINT = import.meta.env.VITE_RPC_URL || 'https://api.devnet.solana.com';
+export const RPC_ENDPOINT = import.meta.env['VITE_RPC_URL'] || clusterApiUrl('devnet');
 
 /**
  * Hook to get Anchor program instances
@@ -44,15 +49,13 @@ export function useAnchorPrograms() {
     // Initialize programs
     const cerberusPoker = new Program(
       cerberusPokerIdl as Idl,
-      CERBERUS_POKER_PROGRAM_ID,
       provider
-    );
+    ) as unknown as AnchorProgramClient;
 
     const texasHoldem = new Program(
       texasHoldemIdl as Idl,
-      TEXAS_HOLDEM_PROGRAM_ID,
       provider
-    );
+    ) as unknown as AnchorProgramClient;
 
     return {
       cerberusPoker,

@@ -68,12 +68,33 @@ pub fn handler(
     // For now, we assume the MXE has already revealed the cards via atomic_showdown
     // and we just need to mark the hand as verified.
     
-    // Verify the player has cards assigned
-    // In the GameSession, card_assigned_to[i] == player_index for their hole cards
-    // We need to find at least 2 cards assigned to this player
+    // Verify the player has cards assigned. game_session is owned by the
+    // cerberus_poker program, so read the stable GameSession layout directly.
+    const CARD_ASSIGNED_TO_OFFSET: usize = 8  // discriminator
+        + 8   // game_id
+        + 1   // state
+        + 1   // max_players
+        + 1   // deck_size
+        + 1   // num_players
+        + 320 // players
+        + 8   // active_computation_offset
+        + 32  // encrypted_deck_hash
+        + 2   // shuffle_bitmap
+        + 8   // reveal_bitmap
+        + 52; // unmasked_cards
+    const CARD_ASSIGNED_TO_LEN: usize = 52;
+
+    let game_session_data = game_session.try_borrow_data()?;
+    require!(
+        game_session_data.len() >= CARD_ASSIGNED_TO_OFFSET + CARD_ASSIGNED_TO_LEN,
+        TexasHoldemError::InvalidGameState
+    );
+
+    let card_assignments = &game_session_data
+        [CARD_ASSIGNED_TO_OFFSET..CARD_ASSIGNED_TO_OFFSET + CARD_ASSIGNED_TO_LEN];
     let mut cards_found = 0u8;
-    for i in 0..52 {
-        if game_session.card_assigned_to[i] == player_index {
+    for assigned_to in card_assignments.iter() {
+        if *assigned_to == player_index {
             cards_found += 1;
         }
     }

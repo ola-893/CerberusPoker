@@ -4,11 +4,11 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
 import { GameSession, GameState } from '../types';
 
 // Mock connection for now - replace with actual Solana connection
-const connection = new Connection('https://api.devnet.solana.com');
+const connection = new Connection(clusterApiUrl('devnet'));
 
 /**
  * Subscribe to GameSession PDA account updates

@@ -4,10 +4,10 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
 import { DealtCard } from '../types';
 
-const connection = new Connection('https://api.devnet.solana.com');
+const connection = new Connection(clusterApiUrl('devnet'));
 
 /**
  * Subscribe to DealtCard PDA for the current player's hole cards

@@ -5,8 +5,8 @@
 /** Deployed program IDs */
 export const PROGRAM_IDS = {
   MXE: 'A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V',
-  CERBERUS_POKER: 'Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS',
-  TEXAS_HOLDEM: 'HmbTLCmaGvZhKnn1Zfa1JVnp7vkMV4DYVxPLWBVoN65',
+  CERBERUS_POKER: '4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG',
+  TEXAS_HOLDEM: 'h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9',
 } as const;
 
 export const CLUSTER = 'devnet';

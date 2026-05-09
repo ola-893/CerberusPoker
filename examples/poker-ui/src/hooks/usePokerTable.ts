@@ -4,10 +4,10 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import { Connection, PublicKey } from '@solana/web3.js';
+import { clusterApiUrl, Connection, PublicKey } from '@solana/web3.js';
 import { PokerTable, PokerPhase } from '../types';
 
-const connection = new Connection('https://api.devnet.solana.com');
+const connection = new Connection(clusterApiUrl('devnet'));
 
 /**
  * Subscribe to PokerTable PDA account updates

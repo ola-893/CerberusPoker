@@ -41,8 +41,7 @@ pub fn handler(
     amount: u64,
     _computation_offset: u64,
 ) -> Result<()> {
-    let table = &mut ctx.accounts.poker_table;
-    let player_index = table.current_player;
+    let player_index = ctx.accounts.poker_table.current_player;
     let clock = Clock::get()?;
 
     // Validate it's this player's turn
@@ -52,14 +51,14 @@ pub fn handler(
     // Check player hasn't already folded
     let folded_mask = 1u16 << player_index;
     require!(
-        (table.folded_bitmap & folded_mask) == 0,
+        (ctx.accounts.poker_table.folded_bitmap & folded_mask) == 0,
         TexasHoldemError::PlayerFolded
     );
     
     // Check player isn't already all-in
     let all_in_mask = 1u16 << player_index;
     require!(
-        (table.all_in_bitmap & all_in_mask) == 0,
+        (ctx.accounts.poker_table.all_in_bitmap & all_in_mask) == 0,
         TexasHoldemError::PlayerAllIn
     );
 
@@ -67,14 +66,14 @@ pub fn handler(
     match action {
         Action::Fold => {
             // Mark player as folded
-            table.folded_bitmap |= folded_mask;
+            ctx.accounts.poker_table.folded_bitmap |= folded_mask;
             msg!("Player {} folded", player_index);
         }
         
         Action::Check => {
             // Check is only legal if there's no bet to call
             require!(
-                table.current_bet == 0,
+                ctx.accounts.poker_table.current_bet == 0,
                 TexasHoldemError::CannotCheck
             );
             msg!("Player {} checked", player_index);
@@ -83,11 +82,11 @@ pub fn handler(
         Action::Call => {
             // Call is only legal if there's a bet to match
             require!(
-                table.current_bet > 0,
+                ctx.accounts.poker_table.current_bet > 0,
                 TexasHoldemError::InvalidAction
             );
             
-            let call_amount = table.current_bet;
+            let call_amount = ctx.accounts.poker_table.current_bet;
             
             // Transfer USDC+ from player to escrow PDA (standard SPL transfer)
             let cpi_accounts = Transfer {
@@ -122,7 +121,7 @@ pub fn handler(
         
         Action::Raise => {
             // Raise must be at least current_bet + big_blind (minimum raise)
-            let min_raise = table.current_bet.checked_add(table.big_blind)
+            let min_raise = ctx.accounts.poker_table.current_bet.checked_add(ctx.accounts.poker_table.big_blind)
                 .ok_or(TexasHoldemError::Overflow)?;
             
             require!(
@@ -144,7 +143,7 @@ pub fn handler(
             msg!("Player {} raised to {} — transferred to escrow", player_index, amount);
             
             // Update current bet to the new raise amount
-            table.current_bet = amount;
+            ctx.accounts.poker_table.current_bet = amount;
             
             // Queue MXE computation to store encrypted bet amount
             // TODO: Build arguments for place_bet computation
@@ -166,7 +165,7 @@ pub fn handler(
         
         Action::AllIn => {
             // Mark player as all-in
-            table.all_in_bitmap |= all_in_mask;
+            ctx.accounts.poker_table.all_in_bitmap |= all_in_mask;
             
             // In a full implementation, we would:
             // 1. Transfer all remaining tokens from player stack to pot
@@ -184,12 +183,12 @@ pub fn handler(
     // Keep advancing until we find an active player or complete a full rotation
     while attempts < 10 {
         let next_mask = 1u16 << next_player;
-        let is_folded = (table.folded_bitmap & next_mask) != 0;
-        let is_all_in = (table.all_in_bitmap & next_mask) != 0;
+        let is_folded = (ctx.accounts.poker_table.folded_bitmap & next_mask) != 0;
+        let is_all_in = (ctx.accounts.poker_table.all_in_bitmap & next_mask) != 0;
         
         // If player is active (not folded and not all-in), they're next
         if !is_folded && !is_all_in {
-            table.current_player = next_player;
+            ctx.accounts.poker_table.current_player = next_player;
             msg!("Next player: {}", next_player);
             break;
         }
@@ -205,7 +204,7 @@ pub fn handler(
     }
 
     // Update last action time for timeout enforcement
-    table.last_action_time = clock.unix_timestamp;
+    ctx.accounts.poker_table.last_action_time = clock.unix_timestamp;
 
     Ok(())
 }

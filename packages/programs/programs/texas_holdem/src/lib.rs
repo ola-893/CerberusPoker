@@ -10,7 +10,7 @@ use instructions::*;
 use errors::TexasHoldemError;
 use state::PokerTable;
 
-declare_id!("HmbTLCmaGvZhKnn1Zfa1JVnp7vkMV4DYVxPLWBVoN65");
+declare_id!("h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9");
 
 // Computation definition offsets
 const COMP_DEF_OFFSET_PLACE_BET: u32 = comp_def_offset("place_bet");

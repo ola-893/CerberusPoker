@@ -47,7 +47,7 @@ fi
 # Check if programs are deployed
 echo -e "${BLUE}Checking if programs are deployed...${NC}"
 
-if solana account Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS >/dev/null 2>&1; then
+if solana account 4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG >/dev/null 2>&1; then
     echo -e "${GREEN}✅ Programs are deployed${NC}"
 else
     echo -e "${YELLOW}⚠️  Programs not deployed${NC}"

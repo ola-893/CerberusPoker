@@ -36,7 +36,7 @@ export function useGameState(gameId: string | null) {
 
   // Decrypt hole cards
   const myHoleCards = useMemo(() => {
-    return decryptHoleCards(dealtCard);
+    return decryptHoleCards(dealtCard ?? null);
   }, [dealtCard]);
 
   // Extract community cards from unmasked_cards
@@ -44,10 +44,11 @@ export function useGameState(gameId: string | null) {
     if (!gameSession) return [0xfe, 0xfe, 0xfe, 0xfe, 0xfe];
     
     const cards: number[] = [];
+    const revealMask = gameSession.revealBitmap[0] ?? BigInt(0);
     for (let i = 0; i < 52; i++) {
       if (gameSession.cardAssignedTo[i] === COMMUNITY_CARD) {
-        const isRevealed = (gameSession.revealBitmap[0] >> BigInt(i)) & BigInt(1);
-        cards.push(isRevealed ? gameSession.unmaskedCards[i] : UNREVEALED);
+        const isRevealed = (revealMask >> BigInt(i)) & BigInt(1);
+        cards.push(isRevealed ? gameSession.unmaskedCards[i] ?? UNREVEALED : UNREVEALED);
       }
     }
     

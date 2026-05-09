@@ -18,13 +18,11 @@ use crate::errors::TexasHoldemError;
 /// * `InvalidStackAccount` - If player stack accounts don't match expected addresses
 /// * `InsufficientBalance` - If a player doesn't have enough tokens for their blind
 pub fn handler(ctx: Context<PostBlinds>, _game_id: u64, num_players: u8) -> Result<()> {
-    let table = &mut ctx.accounts.poker_table;
-    
     // Validate that blinds haven't been posted yet for this hand
     // We check if current_bet is still at big_blind and hand_number hasn't advanced
     // (A more robust check would use a dedicated "blinds_posted" flag, but we work with existing state)
     require!(
-        table.current_bet == table.big_blind && table.hand_number == 0,
+        ctx.accounts.poker_table.current_bet == ctx.accounts.poker_table.big_blind && ctx.accounts.poker_table.hand_number == 0,
         TexasHoldemError::BlindsAlreadyPosted
     );
     
@@ -35,8 +33,12 @@ pub fn handler(ctx: Context<PostBlinds>, _game_id: u64, num_players: u8) -> Resu
     // In Texas Hold'em:
     // - Small blind is the player immediately left of the dealer (dealer_index + 1)
     // - Big blind is two positions left of the dealer (dealer_index + 2)
-    let small_blind_index = (table.dealer_index + 1) % num_players;
-    let big_blind_index = (table.dealer_index + 2) % num_players;
+    let small_blind_index = (ctx.accounts.poker_table.dealer_index + 1) % num_players;
+    let big_blind_index = (ctx.accounts.poker_table.dealer_index + 2) % num_players;
+    
+    let small_blind_amount = ctx.accounts.poker_table.small_blind;
+    let big_blind_amount = ctx.accounts.poker_table.big_blind;
+    let table_key = ctx.accounts.poker_table.key();
     
     // Transfer small blind amount from small blind player to pot
     let small_blind_transfer = Transfer {
@@ -50,7 +52,7 @@ pub fn handler(ctx: Context<PostBlinds>, _game_id: u64, num_players: u8) -> Resu
             ctx.accounts.token_program.to_account_info(),
             small_blind_transfer,
         ),
-        table.small_blind,
+        small_blind_amount,
     )?;
     
     // Transfer big blind amount from big blind player to pot
@@ -65,25 +67,25 @@ pub fn handler(ctx: Context<PostBlinds>, _game_id: u64, num_players: u8) -> Resu
             ctx.accounts.token_program.to_account_info(),
             big_blind_transfer,
         ),
-        table.big_blind,
+        big_blind_amount,
     )?;
     
     // Update player stack references in table state
-    table.player_stacks[small_blind_index as usize] = ctx.accounts.small_blind_stack.key();
-    table.player_stacks[big_blind_index as usize] = ctx.accounts.big_blind_stack.key();
+    ctx.accounts.poker_table.player_stacks[small_blind_index as usize] = ctx.accounts.small_blind_stack.key();
+    ctx.accounts.poker_table.player_stacks[big_blind_index as usize] = ctx.accounts.big_blind_stack.key();
     
     // Set current player to the position after big blind (first to act pre-flop)
-    table.current_player = (big_blind_index + 1) % num_players;
+    ctx.accounts.poker_table.current_player = (big_blind_index + 1) % num_players;
     
     // Current bet is set to big blind amount (players must call this to stay in)
-    table.current_bet = table.big_blind;
+    ctx.accounts.poker_table.current_bet = big_blind_amount;
     
     msg!(
         "Blinds posted for table {} — SB: {} (player {}), BB: {} (player {})",
-        ctx.accounts.poker_table.key(),
-        table.small_blind,
+        table_key,
+        small_blind_amount,
         small_blind_index,
-        table.big_blind,
+        big_blind_amount,
         big_blind_index
     );
     

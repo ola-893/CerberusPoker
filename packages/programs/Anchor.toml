@@ -7,12 +7,12 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-cerberus_poker = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
-texas_holdem = "HmbTLCmaGvZhKnn1Zfa1JVnp7vkMV4DYVxPLWBVoN65"
+cerberus_poker = "4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG"
+texas_holdem = "h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9"
 
 [programs.devnet]
-cerberus_poker = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"
-texas_holdem = "HmbTLCmaGvZhKnn1Zfa1JVnp7vkMV4DYVxPLWBVoN65"
+cerberus_poker = "4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG"
+texas_holdem = "h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9"
 
 [registry]
 url = "https://api.apr.dev"

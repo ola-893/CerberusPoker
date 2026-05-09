@@ -5,20 +5,20 @@
  */
 
 import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
-import { Program } from '@coral-xyz/anchor';
 import { 
   deriveGameSessionPDA, 
   derivePokerTablePDA,
   CERBERUS_POKER_PROGRAM_ID,
-  TEXAS_HOLDEM_PROGRAM_ID 
+  TEXAS_HOLDEM_PROGRAM_ID,
+  type AnchorProgramClient,
 } from './anchor';
 
 /**
  * Create a new game session
  */
 export async function createGame(
-  cerberusPokerProgram: Program,
-  texasHoldemProgram: Program,
+  cerberusPokerProgram: AnchorProgramClient,
+  texasHoldemProgram: AnchorProgramClient,
   gameId: bigint,
   maxPlayers: number,
   smallBlind: bigint,
@@ -63,7 +63,7 @@ export async function createGame(
  * Join an existing game
  */
 export async function joinGame(
-  cerberusPokerProgram: Program,
+  cerberusPokerProgram: AnchorProgramClient,
   gameId: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
@@ -83,7 +83,7 @@ export async function joinGame(
  * Start the shuffle phase
  */
 export async function startShuffle(
-  cerberusPokerProgram: Program,
+  cerberusPokerProgram: AnchorProgramClient,
   gameId: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
@@ -106,7 +106,7 @@ export async function startShuffle(
  * Deal cards to players
  */
 export async function dealCards(
-  cerberusPokerProgram: Program,
+  cerberusPokerProgram: AnchorProgramClient,
   gameId: bigint,
   numPlayers: number
 ) {
@@ -145,7 +145,7 @@ export async function dealCards(
  * Player action (Fold/Check/Call/Raise/AllIn)
  */
 export async function playerAction(
-  texasHoldemProgram: Program,
+  texasHoldemProgram: AnchorProgramClient,
   gameId: bigint,
   action: 'Fold' | 'Check' | 'Call' | 'Raise' | 'AllIn',
   amount: bigint = BigInt(0)
@@ -174,7 +174,7 @@ export async function playerAction(
  * Advance to next phase (PreFlop → Flop → Turn → River → Showdown)
  */
 export async function advancePhase(
-  texasHoldemProgram: Program,
+  texasHoldemProgram: AnchorProgramClient,
   gameId: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
@@ -196,7 +196,7 @@ export async function advancePhase(
  * Trigger showdown
  */
 export async function triggerShowdown(
-  texasHoldemProgram: Program,
+  texasHoldemProgram: AnchorProgramClient,
   gameId: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
@@ -218,7 +218,7 @@ export async function triggerShowdown(
  * Timeout handlers
  */
 export async function timeoutShuffle(
-  cerberusPokerProgram: Program,
+  cerberusPokerProgram: AnchorProgramClient,
   gameId: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
@@ -235,7 +235,7 @@ export async function timeoutShuffle(
 }
 
 export async function timeoutReveal(
-  cerberusPokerProgram: Program,
+  cerberusPokerProgram: AnchorProgramClient,
   gameId: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
@@ -252,7 +252,7 @@ export async function timeoutReveal(
 }
 
 export async function timeoutBet(
-  texasHoldemProgram: Program,
+  texasHoldemProgram: AnchorProgramClient,
   gameId: bigint
 ) {
   const [pokerTablePDA] = derivePokerTablePDA(gameId);

@@ -19,7 +19,7 @@ interface PlayerSeatProps {
   isDealer: boolean;
   isSmallBlind: boolean;
   isBigBlind: boolean;
-  hasShuffled?: boolean;
+  hasShuffled?: boolean | undefined;
   positionClass: string;
 }
 
@@ -70,8 +70,9 @@ export default function PlayerSeat({
           />
           <motion.div 
             className="w-10 h-14 bg-card-back rounded border border-white/10 shadow-lg rotate-6"
-            initial={{ y: 20, opacity: 0, transition: { delay: 0.1 } }}
+            initial={{ y: 20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
+            transition={{ delay: 0.1 }}
           />
         </div>
       )}

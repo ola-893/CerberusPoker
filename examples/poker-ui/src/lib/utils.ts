@@ -28,9 +28,9 @@ export function cardToDisplay(value: number): Card {
   const ranks = ['2', '3', '4', '5', '6', '7', '8', '9', 'T', 'J', 'Q', 'K', 'A'];
   const suits = ['♣', '♦', '♥', '♠'];
   
-  const rank = ranks[value % 13];
+  const rank = ranks[value % 13] ?? '';
   const suitIndex = Math.floor(value / 13);
-  const suit = suits[suitIndex];
+  const suit = suits[suitIndex] ?? '';
   const color = suitIndex === 1 || suitIndex === 2 ? 'red' : 'black';
 
   return { value, rank, suit, color };
@@ -78,5 +78,5 @@ export function isPlayerAllIn(allInBitmap: number, playerIndex: number): boolean
  */
 export function isCardRevealed(revealBitmap: bigint[], cardIndex: number): boolean {
   if (cardIndex >= 52) return false;
-  return ((revealBitmap[0] >> BigInt(cardIndex)) & 1n) === 1n;
+  return (((revealBitmap[0] ?? 0n) >> BigInt(cardIndex)) & 1n) === 1n;
 }

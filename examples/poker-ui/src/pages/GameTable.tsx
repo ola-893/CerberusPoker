@@ -111,9 +111,9 @@ export default function GameTable() {
 
   const displayGameSession = useMockData ? mockGameSession : gameSession;
   const displayPokerTable = useMockData ? mockPokerTable : pokerTable;
-  const displayPhase = useMockData ? 'preflop' : phase;
+  const displayPhase = useMockData ? UIPhase.PreFlop : phase;
   const displayMyPlayerIndex = useMockData ? 0 : myPlayerIndex;
-  const displayMyHoleCards = useMockData ? [0, 13] : myHoleCards; // Ace of Clubs, Ace of Diamonds
+  const displayMyHoleCards: [number, number] | null = useMockData ? [0, 13] : myHoleCards; // Ace of Clubs, Ace of Diamonds
   const displayCommunityCards = useMockData ? [0xFF, 0xFF, 0xFF, 0xFF, 0xFF] : communityCards;
   const displayPot = useMockData ? 4.5 : pot;
   const displayIsMyTurn = useMockData ? true : isMyTurn;
@@ -275,7 +275,7 @@ export default function GameTable() {
       </div>
 
       {/* Action Bar */}
-      {(displayPhase === UIPhase.PreFlop || displayPhase === UIPhase.Flop || displayPhase === UIPhase.Turn || displayPhase === UIPhase.River || displayPhase === 'preflop') && (
+      {(displayPhase === UIPhase.PreFlop || displayPhase === UIPhase.Flop || displayPhase === UIPhase.Turn || displayPhase === UIPhase.River) && (
         <ActionBar 
           isMyTurn={displayIsMyTurn && !isFolded && !isAllIn}
           currentBet={displayPokerTable.currentBet}
