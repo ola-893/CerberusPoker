@@ -118,7 +118,7 @@ async fn test_deal_card_callback_stores_correct_value() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
+        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, _) = program_test.start().await;
@@ -176,7 +176,7 @@ async fn test_reveal_card_callback_rejects_duplicate_values() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
+        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, _) = program_test.start().await;
@@ -231,7 +231,7 @@ async fn test_card_value_bitmap_operations() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
+        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, _) = program_test.start().await;
@@ -297,7 +297,7 @@ async fn test_reveal_community_card_callback_stores_correct_value() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
+        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, _) = program_test.start().await;
@@ -346,7 +346,7 @@ async fn test_reveal_community_card_callback_validates_card_value_range() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
+        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, _) = program_test.start().await;
@@ -399,7 +399,7 @@ async fn test_atomic_showdown_callback_enforces_uniqueness() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
+        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, _) = program_test.start().await;
@@ -486,7 +486,7 @@ async fn test_full_deal_and_reveal_flow_documentation() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
+        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, _) = program_test.start().await;
@@ -532,7 +532,7 @@ async fn test_error_codes_defined() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
+        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, _) = program_test.start().await;
@@ -581,7 +581,7 @@ async fn test_callback_state_consistency() {
     let mut program_test = ProgramTest::new(
         "cerberus_poker",
         program_id,
-        processor!(|pk, accs, data| cerberus_poker::entry(pk, accs, data)),
+        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
     );
 
     let (mut banks_client, payer, _) = program_test.start().await;

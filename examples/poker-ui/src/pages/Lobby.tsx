@@ -33,8 +33,8 @@ function useOpenTables() {
       try {
         // Fetch GameSession accounts (cerberus_poker) and PokerTable accounts (texas_holdem) in parallel
         const [sessions, pokerTables] = await Promise.all([
-          programs.cerberusPoker.account['gameSession'].all(),
-          programs.texasHoldem.account['pokerTable'].all(),
+          (programs.cerberusPoker.account as any)['gameSession'].all(),
+          (programs.texasHoldem.account as any)['pokerTable'].all(),
         ]);
 
         // Build a map of gameId → PokerTable for blind info

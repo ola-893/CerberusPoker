@@ -76,18 +76,19 @@ describe('Property Tests', () => {
 
   describe('Property 7: Hand Evaluator Correctness (Task 14.6)', () => {
     // Hand ranks from lowest to highest
-    enum HandRank {
-      HighCard = 0,
-      Pair = 1,
-      TwoPair = 2,
-      ThreeOfAKind = 3,
-      Straight = 4,
-      Flush = 5,
-      FullHouse = 6,
-      FourOfAKind = 7,
-      StraightFlush = 8,
-      RoyalFlush = 9,
-    }
+    const HandRank = {
+      HighCard: 0,
+      Pair: 1,
+      TwoPair: 2,
+      ThreeOfAKind: 3,
+      Straight: 4,
+      Flush: 5,
+      FullHouse: 6,
+      FourOfAKind: 7,
+      StraightFlush: 8,
+      RoyalFlush: 9,
+    } as const;
+    type HandRank = typeof HandRank[keyof typeof HandRank];
 
     // Simplified hand evaluator for testing (mirrors on-chain logic)
     function evaluateHand(cards: number[]): { rank: HandRank; tiebreaker: number } {
@@ -326,14 +327,15 @@ describe('Property Tests', () => {
     });
 
     it('should allow timeout in any valid game state', () => {
-      enum GameState {
-        Lobby = 0,
-        Shuffle = 1,
-        Deal = 2,
-        Active = 3,
-        Showdown = 4,
-        Complete = 5,
-      }
+      const GameState = {
+        Lobby: 0,
+        Shuffle: 1,
+        Deal: 2,
+        Active: 3,
+        Showdown: 4,
+        Complete: 5,
+      } as const;
+      type GameState = typeof GameState[keyof typeof GameState];
 
       fc.assert(
         fc.property(
