@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useMemo } from 'react';
+import { useMemo, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useGameState } from '../hooks/useGameState';
 import { cn } from '../lib/utils';
@@ -15,10 +15,13 @@ import HoleCards from '../components/HoleCards';
 import ActionBar from '../components/ActionBar';
 import { UIPhase, Action, GameState } from '../types';
 import { Info, Menu, Maximize2, ShieldCheck, ChevronLeft } from 'lucide-react';
+import { useAnchorPrograms } from '../lib/anchor';
+import { playerAction, timeoutShuffle, timeoutReveal, timeoutBet } from '../lib/transactions';
 
 export default function GameTable() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
+  const programs = useAnchorPrograms();
   
   // Convert gameId to BigInt safely (handle hex strings from URL)
   const gameIdBigInt = useMemo(() => {
@@ -52,12 +55,38 @@ export default function GameTable() {
     betTimeout,
   } = useGameState(gameId || null);
 
-  // Handle action button clicks
-  const handleAction = (action: Action, amount?: bigint) => {
-    console.log('Action:', action, amount);
-    // TODO: Call player_action instruction
-    // TODO: If action involves bet (Call/Raise/AllIn), also call place_bet
-  };
+  // Handle action button clicks — calls player_action on-chain
+  const handleAction = useCallback(async (action: Action, amount?: bigint) => {
+    if (!programs || !gameIdBigInt) return;
+    try {
+      await playerAction(
+        programs.texasHoldem,
+        gameIdBigInt,
+        action,
+        amount ?? BigInt(0)
+      );
+    } catch (err) {
+      console.error('Action failed:', err);
+    }
+  }, [programs, gameIdBigInt]);
+
+  const handleTimeoutShuffle = useCallback(async () => {
+    if (!programs || !gameIdBigInt) return;
+    try { await timeoutShuffle(programs.cerberusPoker, gameIdBigInt); }
+    catch (err) { console.error('Timeout shuffle failed:', err); }
+  }, [programs, gameIdBigInt]);
+
+  const handleTimeoutReveal = useCallback(async () => {
+    if (!programs || !gameIdBigInt) return;
+    try { await timeoutReveal(programs.cerberusPoker, gameIdBigInt); }
+    catch (err) { console.error('Timeout reveal failed:', err); }
+  }, [programs, gameIdBigInt]);
+
+  const handleTimeoutBet = useCallback(async () => {
+    if (!programs || !gameIdBigInt) return;
+    try { await timeoutBet(programs.texasHoldem, gameIdBigInt); }
+    catch (err) { console.error('Timeout bet failed:', err); }
+  }, [programs, gameIdBigInt]);
 
   if (isLoading) {
     return (
@@ -195,7 +224,7 @@ export default function GameTable() {
       {shuffleTimeout && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-waiting/90 backdrop-blur-md px-6 py-3 rounded-xl border border-waiting flex items-center gap-4">
           <span className="text-background font-bold">⚠ Shuffle stalled — a player stopped responding.</span>
-          <button className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
+          <button onClick={handleTimeoutShuffle} className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
             Claim Timeout
           </button>
         </div>
@@ -203,7 +232,7 @@ export default function GameTable() {
       {revealTimeout && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-waiting/90 backdrop-blur-md px-6 py-3 rounded-xl border border-waiting flex items-center gap-4">
           <span className="text-background font-bold">⚠ Reveal stalled — a player stopped responding.</span>
-          <button className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
+          <button onClick={handleTimeoutReveal} className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
             Claim Timeout
           </button>
         </div>
@@ -211,7 +240,7 @@ export default function GameTable() {
       {betTimeout && isMyTurn && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-waiting/90 backdrop-blur-md px-6 py-3 rounded-xl border border-waiting flex items-center gap-4">
           <span className="text-background font-bold">⚠ You're taking too long.</span>
-          <button className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
+          <button onClick={handleTimeoutBet} className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
             Force Fold
           </button>
         </div>
