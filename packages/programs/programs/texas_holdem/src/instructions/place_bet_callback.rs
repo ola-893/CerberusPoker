@@ -2,19 +2,9 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 use crate::errors::TexasHoldemError;
 
-/// Output from place_bet MXE instruction.
-/// The bet amount is stored as Enc<Mxe, u64> — hidden from all observers.
-#[derive(AnchorSerialize, AnchorDeserialize)]
-pub struct PlaceBetOutput {
-    /// Confirmation that the encrypted bet was stored in MXE state
-    pub success: bool,
-    /// Player index who placed the bet
-    pub player_index: u8,
-}
-
 pub fn handler(
     ctx: Context<crate::PlaceBetCallback>,
-    output: ComputationOutputs<PlaceBetOutput>,
+    output: ComputationOutputs<crate::PlaceBetOutput>,
 ) -> Result<()> {
     // Match on the ComputationOutputs enum
     let result = match output {

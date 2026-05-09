@@ -5,17 +5,6 @@ use crate::errors::TexasHoldemError;
 use crate::state::PokerTable;
 use crate::hand_eval::{evaluate_hand, HandRank};
 
-/// Output from atomic_showdown MXE instruction.
-/// All hole cards are revealed atomically at showdown.
-#[derive(AnchorSerialize, AnchorDeserialize)]
-pub struct AtomicShowdownOutput {
-    /// All hole cards revealed (up to 6 players × 2 cards = 12 cards)
-    /// Format: [player0_card0, player0_card1, player1_card0, player1_card1, ...]
-    pub revealed_hands: [u8; 12],
-    /// Number of active players (not folded)
-    pub num_players: u8,
-}
-
 /// Settle showdown: transfer pot to winner based on MXE-attested showdown result.
 ///
 /// This instruction is triggered by the `atomic_showdown` callback from the MXE.
@@ -41,7 +30,7 @@ pub struct AtomicShowdownOutput {
 /// * `SettlementFailed` - If pot transfer fails
 pub fn handler(
     ctx: Context<crate::AtomicShowdownCallback>,
-    output: ComputationOutputs<AtomicShowdownOutput>,
+    output: ComputationOutputs<crate::AtomicShowdownOutput>,
 ) -> Result<()> {
     let table = &ctx.accounts.poker_table;
 
