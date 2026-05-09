@@ -75,8 +75,8 @@ function useOpenTables() {
       }
     },
     enabled: !!programs,
-    refetchInterval: 10_000,
-    staleTime: 5_000,
+    refetchInterval: 3_000,  // Poll every 3s for lobby
+    staleTime: 1_000,
   });
 }
 

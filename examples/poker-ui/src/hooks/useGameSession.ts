@@ -1,12 +1,13 @@
 /**
- * @license
- * SPDX-License-Identifier: Apache-2.0
+ * useGameSession — fetches and subscribes to the GameSession PDA on-chain
+ * Uses WebSocket account subscription for real-time updates.
  */
 
-import { useQuery } from '@tanstack/react-query';
+import { useEffect } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PublicKey } from '@solana/web3.js';
 import { GameSession, GameState } from '../types';
-import { deriveGameSessionPDA, useAnchorPrograms } from '../lib/anchor';
+import { deriveGameSessionPDA, useAnchorPrograms, getConnection } from '../lib/anchor';
 
 function parseGameId(gameId: string): bigint {
   if (/^[0-9a-fA-F]+$/.test(gameId) && /[a-fA-F]/.test(gameId)) {
@@ -34,65 +35,76 @@ function toBigInt(value: unknown): bigint {
   return BigInt(0);
 }
 
-/**
- * Subscribe to GameSession PDA account updates
- */
 export function useGameSession(gameId: string | null) {
   const programs = useAnchorPrograms();
+  const queryClient = useQueryClient();
 
-  return useQuery({
+  const gameIdBigInt = gameId ? (() => {
+    try { return parseGameId(gameId); } catch { return null; }
+  })() : null;
+
+  const pda = gameIdBigInt !== null
+    ? deriveGameSessionPDA(gameIdBigInt)[0]
+    : null;
+
+  const query = useQuery({
     queryKey: ['gameSession', gameId],
-    queryFn: async () => {
-      if (!gameId) return null;
-      if (!programs) return null;
+    queryFn: async (): Promise<GameSession | null> => {
+      if (!gameId || !programs || !pda) return null;
 
-      const parsedGameId = parseGameId(gameId);
-      const [gameSessionPda] = deriveGameSessionPDA(parsedGameId);
-      const account = await (programs.cerberusPoker.account as any).gameSession.fetch(gameSessionPda);
-      const raw = account as Record<string, unknown>;
+      try {
+        const account = await (programs.cerberusPoker.account as any).gameSession.fetch(pda);
+        const raw = account as Record<string, unknown>;
 
-      return {
-        gameId: toBigInt(raw['gameId']),
-        state: decodeAnchorEnum<GameState>(raw['state'], GameState.Lobby),
-        maxPlayers: Number(raw['maxPlayers'] ?? 0),
-        deckSize: Number(raw['deckSize'] ?? 52),
-        numPlayers: Number(raw['numPlayers'] ?? 0),
-        players: (raw['players'] as PublicKey[] | undefined) ?? [],
-        activeComputationOffset: toBigInt(raw['activeComputationOffset']),
-        encryptedDeckHash: Uint8Array.from((raw['encryptedDeckHash'] as number[] | undefined) ?? []),
-        shuffleBitmap: Number(raw['shuffleBitmap'] ?? 0),
-        revealBitmap: ((raw['revealBitmap'] as unknown[] | undefined) ?? []).map(toBigInt),
-        unmaskedCards: ((raw['unmaskedCards'] as number[] | undefined) ?? []).map(Number),
-        cardAssignedTo: ((raw['cardAssignedTo'] as number[] | undefined) ?? []).map(Number),
-        cardValueUsed: ((raw['cardValueUsed'] as unknown[] | undefined) ?? []).map(toBigInt),
-        createdAt: toBigInt(raw['createdAt']),
-        shuffleDeadline: toBigInt(raw['shuffleDeadline']),
-        revealDeadline: toBigInt(raw['revealDeadline']),
-        pendingRevealCardIndex: Number(raw['pendingRevealCardIndex'] ?? 0xfe),
-        pendingDealCardIndex: Number(raw['pendingDealCardIndex'] ?? 0xfe),
-        pendingDealPlayerIndex: Number(raw['pendingDealPlayerIndex'] ?? 0xfe),
-        bump: Number(raw['bump'] ?? 0),
-      } as GameSession;
+        return {
+          gameId: toBigInt(raw['gameId']),
+          state: decodeAnchorEnum<GameState>(raw['state'], GameState.Lobby),
+          maxPlayers: Number(raw['maxPlayers'] ?? 0),
+          deckSize: Number(raw['deckSize'] ?? 52),
+          numPlayers: Number(raw['numPlayers'] ?? 0),
+          players: (raw['players'] as PublicKey[] | undefined) ?? [],
+          activeComputationOffset: toBigInt(raw['activeComputationOffset']),
+          encryptedDeckHash: Uint8Array.from((raw['encryptedDeckHash'] as number[] | undefined) ?? []),
+          shuffleBitmap: Number(raw['shuffleBitmap'] ?? 0),
+          revealBitmap: ((raw['revealBitmap'] as unknown[] | undefined) ?? []).map(toBigInt),
+          unmaskedCards: ((raw['unmaskedCards'] as number[] | undefined) ?? []).map(Number),
+          cardAssignedTo: ((raw['cardAssignedTo'] as number[] | undefined) ?? []).map(Number),
+          cardValueUsed: ((raw['cardValueUsed'] as unknown[] | undefined) ?? []).map(toBigInt),
+          createdAt: toBigInt(raw['createdAt']),
+          shuffleDeadline: toBigInt(raw['shuffleDeadline']),
+          revealDeadline: toBigInt(raw['revealDeadline']),
+          pendingRevealCardIndex: Number(raw['pendingRevealCardIndex'] ?? 0xfe),
+          pendingDealCardIndex: Number(raw['pendingDealCardIndex'] ?? 0xfe),
+          pendingDealPlayerIndex: Number(raw['pendingDealPlayerIndex'] ?? 0xfe),
+          bump: Number(raw['bump'] ?? 0),
+        } as GameSession;
+      } catch (err: any) {
+        if (err?.message?.includes('Account does not exist')) return null;
+        throw err;
+      }
     },
-    enabled: !!gameId && !!programs,
-    refetchInterval: false, // Use websocket subscription instead
-    staleTime: Infinity,
+    enabled: !!gameId && !!programs && !!pda,
+    refetchInterval: 5_000,  // Poll every 5s as fallback
+    staleTime: 2_000,
+    retry: 1,
   });
-}
 
-/**
- * Set up websocket subscription for real-time GameSession updates
- */
-export function useGameSessionSubscription(gameId: string | null) {
-  // TODO: Implement websocket subscription
-  // useEffect(() => {
-  //   if (!gameId) return;
-  //   const subscriptionId = connection.onAccountChange(
-  //     gameSessionPda,
-  //     (accountInfo) => {
-  //       queryClient.setQueryData(['gameSession', gameId], deserializeGameSession(accountInfo.data));
-  //     }
-  //   );
-  //   return () => connection.removeAccountChangeListener(subscriptionId);
-  // }, [gameId]);
+  // WebSocket subscription — triggers immediate refetch on any account change
+  useEffect(() => {
+    if (!pda || !programs) return;
+
+    const connection = getConnection();
+    const subId = connection.onAccountChange(
+      pda,
+      () => {
+        // Invalidate so TanStack Query refetches immediately
+        queryClient.invalidateQueries({ queryKey: ['gameSession', gameId] });
+      },
+      'confirmed'
+    );
+
+    return () => { connection.removeAccountChangeListener(subId); };
+  }, [pda?.toBase58(), !!programs, gameId, queryClient]);
+
+  return query;
 }
