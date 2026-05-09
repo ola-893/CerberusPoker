@@ -12,22 +12,15 @@ pub struct PlaceBetOutput {
     pub player_index: u8,
 }
 
-impl arcium_anchor::HasSize for PlaceBetOutput {
-    const SIZE: usize = 2; // bool (1 byte) + u8 (1 byte)
-}
-
 pub fn handler(
     ctx: Context<crate::PlaceBetCallback>,
-    output: SignedComputationOutputs<PlaceBetOutput>,
+    output: ComputationOutputs<PlaceBetOutput>,
 ) -> Result<()> {
-    // Verify the MXE output signature — ensures result is authentic
-    let result = match output.verify_output(
-        &ctx.accounts.cluster_account,
-        &ctx.accounts.computation_account,
-    ) {
-        Ok(out) => out,
-        Err(e) => {
-            msg!("Place bet MXE output verification failed: {}", e);
+    // Match on the ComputationOutputs enum
+    let result = match output {
+        ComputationOutputs::Success(out) => out,
+        ComputationOutputs::Failure => {
+            msg!("Place bet MXE computation failed");
             return Err(TexasHoldemError::AbortedComputation.into());
         }
     };

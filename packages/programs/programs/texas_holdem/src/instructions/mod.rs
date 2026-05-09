@@ -7,7 +7,7 @@ pub mod verify_hole_cards;
 pub mod timeout_bet;
 pub mod place_bet;
 pub mod place_bet_callback;
-pub mod settle_showdown;
+pub mod atomic_showdown_callback;
 
 pub use create_table::*;
 pub use post_blinds::*;
@@ -18,4 +18,4 @@ pub use verify_hole_cards::*;
 pub use timeout_bet::*;
 pub use place_bet::*;
 pub use place_bet_callback::*;
-pub use settle_showdown::*;
+pub use atomic_showdown_callback::*;

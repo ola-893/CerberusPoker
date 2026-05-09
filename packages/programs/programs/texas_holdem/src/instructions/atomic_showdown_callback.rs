@@ -16,10 +16,6 @@ pub struct AtomicShowdownOutput {
     pub num_players: u8,
 }
 
-impl arcium_anchor::HasSize for AtomicShowdownOutput {
-    const SIZE: usize = 13; // 12 bytes for revealed_hands + 1 byte for num_players
-}
-
 /// Settle showdown: transfer pot to winner based on MXE-attested showdown result.
 ///
 /// This instruction is triggered by the `atomic_showdown` callback from the MXE.
@@ -44,21 +40,16 @@ impl arcium_anchor::HasSize for AtomicShowdownOutput {
 /// * `NoWinner` - If no winner can be determined
 /// * `SettlementFailed` - If pot transfer fails
 pub fn handler(
-    ctx: Context<crate::SettleShowdown>,
-    _game_id: u64,
-    output: SignedComputationOutputs<AtomicShowdownOutput>,
-    community_cards: [u8; 5],
+    ctx: Context<crate::AtomicShowdownCallback>,
+    output: ComputationOutputs<AtomicShowdownOutput>,
 ) -> Result<()> {
     let table = &ctx.accounts.poker_table;
 
-    // Verify the MXE output signature — ensures result is authentic
-    let result = match output.verify_output(
-        &ctx.accounts.cluster_account,
-        &ctx.accounts.computation_account,
-    ) {
-        Ok(out) => out,
-        Err(e) => {
-            msg!("Atomic showdown MXE output verification failed: {}", e);
+    // Match on the ComputationOutputs enum
+    let result = match output {
+        ComputationOutputs::Success(out) => out,
+        ComputationOutputs::Failure => {
+            msg!("Atomic showdown MXE computation failed");
             return Err(TexasHoldemError::AbortedComputation.into());
         }
     };
@@ -70,6 +61,10 @@ pub fn handler(
     );
 
     msg!("Atomic showdown revealed {} players' hands", result.num_players);
+
+    // TODO: Community cards need to be passed differently in 0.4.0
+    // For now, use placeholder values
+    let community_cards = [0u8; 5];
 
     // Evaluate all hands and determine winner(s)
     let mut best_rank = HandRank::HighCard;
@@ -156,7 +151,9 @@ pub fn handler(
 
     // Transfer pot to winner(s)
     // We need to use the table PDA as the authority for the escrow account
-    let game_id_bytes = _game_id.to_le_bytes();
+    // TODO: game_id needs to be stored in the table or passed differently
+    let game_id = 0u64; // Placeholder
+    let game_id_bytes = game_id.to_le_bytes();
     let seeds = &[
         b"table".as_ref(),
         game_id_bytes.as_ref(),

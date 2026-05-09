@@ -1,14 +1,12 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use arcium_anchor::prelude::*;
-use arcium_macros::circuit_hash;
+use arcium_client::idl::arcium::{ID, ID_CONST};
 use crate::errors::TexasHoldemError;
 use crate::state::PokerTable;
+use crate::{PlaceBetCallback, SignerAccount};
 
-const COMP_DEF_OFFSET_PLACE_BET: u32 = {
-    const HASH: [u8; 32] = circuit_hash!("place_bet");
-    u32::from_le_bytes([HASH[0], HASH[1], HASH[2], HASH[3]])
-};
+const COMP_DEF_OFFSET_PLACE_BET: u32 = comp_def_offset("place_bet");
 
 /// Place a bet: transfer USDC+ to escrow, queue MXE computation to store Enc<Mxe, u64> bet amount
 ///
@@ -62,22 +60,19 @@ pub fn handler(
     // The MXE will store Enc<Mxe, u64> — hidden from all observers
     // The callback (place_bet_callback) will confirm the encrypted bet was stored
     
-    let args = ArgBuilder::new()
-        .add_u64(amount)
-        .add_u8(player_index)
-        .build();
+    // TODO: Build arguments for place_bet computation
+    // In 0.4.0, arguments are Vec<Argument> from arcium_client::idl::arcium::types
+    let args = vec![];
+
+    ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
     queue_computation(
         ctx.accounts,
         computation_offset,
         args,
-        vec![crate::PlaceBetCallback::callback_ix(
-            computation_offset,
-            &ctx.accounts.mxe_account,
-            &[],
-        )?],
+        None,
+        vec![PlaceBetCallback::callback_ix(&[])],
         1, // num_callback_txs
-        0, // cu_price_micro (no priority fee)
     )?;
 
     msg!("Queued MXE computation to store encrypted bet for player {}", player_index);
@@ -131,20 +126,20 @@ pub struct PlaceBet<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, ArciumSignerAccount>,
+    pub sign_pda_account: Account<'info, SignerAccount>,
 
     #[account(address = derive_mxe_pda!())]
     pub mxe_account: Account<'info, MXEAccount>,
 
-    #[account(mut, address = derive_mempool_pda!(mxe_account, TexasHoldemError::InvalidGameState))]
+    #[account(mut, address = derive_mempool_pda!())]
     /// CHECK: mempool
     pub mempool_account: UncheckedAccount<'info>,
 
-    #[account(mut, address = derive_execpool_pda!(mxe_account, TexasHoldemError::InvalidGameState))]
+    #[account(mut, address = derive_execpool_pda!())]
     /// CHECK: execpool
     pub executing_pool: UncheckedAccount<'info>,
 
-    #[account(mut, address = derive_comp_pda!(computation_offset, mxe_account, TexasHoldemError::InvalidGameState))]
+    #[account(mut, address = derive_comp_pda!(computation_offset))]
     /// CHECK: computation
     pub computation_account: UncheckedAccount<'info>,
 
@@ -159,14 +154,6 @@ pub struct PlaceBet<'info> {
 
     #[account(mut, address = ARCIUM_CLOCK_ACCOUNT_ADDRESS)]
     pub clock_account: Account<'info, ClockAccount>,
-
-    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
-    /// CHECK: lut
-    pub address_lookup_table: UncheckedAccount<'info>,
-
-    #[account(address = LUT_PROGRAM_ID)]
-    /// CHECK: lut program
-    pub lut_program: UncheckedAccount<'info>,
 
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,

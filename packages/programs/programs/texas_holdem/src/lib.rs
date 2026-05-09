@@ -9,20 +9,12 @@ pub mod state;
 use instructions::*;
 use errors::TexasHoldemError;
 use state::PokerTable;
-use arcium_macros::circuit_hash;
 
 declare_id!("HmbTLCmaGvZhKnn1Zfa1JVnp7vkMV4DYVxPLWBVoN65");
 
 // Computation definition offsets
-const COMP_DEF_OFFSET_PLACE_BET: u32 = {
-    const HASH: [u8; 32] = circuit_hash!("place_bet");
-    u32::from_le_bytes([HASH[0], HASH[1], HASH[2], HASH[3]])
-};
-
-const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = {
-    const HASH: [u8; 32] = circuit_hash!("atomic_showdown");
-    u32::from_le_bytes([HASH[0], HASH[1], HASH[2], HASH[3]])
-};
+const COMP_DEF_OFFSET_PLACE_BET: u32 = comp_def_offset("place_bet");
+const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown");
 
 #[arcium_program]
 pub mod texas_holdem {
@@ -85,20 +77,18 @@ pub mod texas_holdem {
     #[arcium_callback(encrypted_ix = "place_bet")]
     pub fn place_bet_callback(
         ctx: Context<PlaceBetCallback>,
-        output: SignedComputationOutputs<PlaceBetOutput>,
+        output: ComputationOutputs<PlaceBetOutput>,
     ) -> Result<()> {
         instructions::place_bet_callback::handler(ctx, output)
     }
 
     // MXE callback for atomic_showdown — settles pot to winner(s)
     #[arcium_callback(encrypted_ix = "atomic_showdown")]
-    pub fn settle_showdown(
-        ctx: Context<SettleShowdown>,
-        game_id: u64,
-        output: SignedComputationOutputs<AtomicShowdownOutput>,
-        community_cards: [u8; 5],
+    pub fn atomic_showdown_callback(
+        ctx: Context<AtomicShowdownCallback>,
+        output: ComputationOutputs<AtomicShowdownOutput>,
     ) -> Result<()> {
-        instructions::settle_showdown::handler(ctx, game_id, output, community_cards)
+        instructions::atomic_showdown_callback::handler(ctx, output)
     }
 }
 
@@ -134,7 +124,7 @@ pub struct PlaceBetCallback<'info> {
 #[callback_accounts("atomic_showdown")]
 #[derive(Accounts)]
 #[instruction(game_id: u64)]
-pub struct SettleShowdown<'info> {
+pub struct AtomicShowdownCallback<'info> {
     pub arcium_program: Program<'info, Arcium>,
 
     #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_ATOMIC_SHOWDOWN))]

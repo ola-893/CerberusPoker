@@ -21,10 +21,10 @@ anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 anchor-spl = { version = "0.32.1", features = ["token", "token_2022"] }
 arcium-anchor = "0.4.0"
 arcium-macros = "0.4.0"
+arcium-client = { version = "0.4.0", default-features = false }
 reflect-sdk = "1.0.0"
 
 [dev-dependencies]
-arcium-client = "0.4.0"
 solana-program-test = "2.3.0"
 solana-sdk = "2.3.0"
 tokio = { version = "1", features = ["full"] }
