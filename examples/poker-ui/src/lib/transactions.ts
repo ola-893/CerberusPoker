@@ -1,21 +1,50 @@
 /**
  * Transaction Builders
- * 
- * Helper functions to build and send transactions for CerberusPoker instructions
+ *
+ * Anchor's Borsh encoder requires BN (bn.js) for u64 fields — NOT JavaScript bigint.
+ * All bigint values are converted via bn() before being passed to .methods().
  */
 
 import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
-import { 
-  deriveGameSessionPDA, 
+import BN from 'bn.js';
+import {
+  deriveGameSessionPDA,
   derivePokerTablePDA,
-  CERBERUS_POKER_PROGRAM_ID,
   TEXAS_HOLDEM_PROGRAM_ID,
   type AnchorProgramClient,
 } from './anchor';
 
-/**
- * Create a new game session
- */
+// Devnet USDC mint (Circle's official devnet USDC)
+const DEVNET_USDC_MINT = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
+
+/** Derive the escrow PDA for a game — holds USDC+ during the hand */
+function deriveEscrowPDA(gameId: bigint): [PublicKey, number] {
+  const gameIdBuffer = Buffer.alloc(8);
+  gameIdBuffer.writeBigUInt64LE(gameId);
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from('escrow'), gameIdBuffer],
+    TEXAS_HOLDEM_PROGRAM_ID
+  );
+}
+
+/** Derive the pot account PDA for a game */
+function derivePotAccountPDA(gameId: bigint): [PublicKey, number] {
+  const gameIdBuffer = Buffer.alloc(8);
+  gameIdBuffer.writeBigUInt64LE(gameId);
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from('pot'), gameIdBuffer],
+    TEXAS_HOLDEM_PROGRAM_ID
+  );
+}
+
+/** Convert JS bigint → BN for Anchor method calls */
+const bn = (val: bigint | number): BN => new BN(val.toString());
+
+/** Random u64 computation offset for MXE */
+const randomOffset = (): BN => new BN(Math.floor(Math.random() * 1_000_000).toString());
+
+// ─── Game Management ──────────────────────────────────────────────────────────
+
 export async function createGame(
   cerberusPokerProgram: AnchorProgramClient,
   texasHoldemProgram: AnchorProgramClient,
@@ -25,125 +54,107 @@ export async function createGame(
   bigBlind: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
-  const [pokerTablePDA] = derivePokerTablePDA(gameId);
-  
-  // Step 1: Create game session (cerberus_poker)
+  const [pokerTablePDA]  = derivePokerTablePDA(gameId);
+  const [escrowPDA]      = deriveEscrowPDA(gameId);
+  const [potAccountPDA]  = derivePotAccountPDA(gameId);
+
+  // Step 1: create_game (cerberus_poker)
   const createGameTx = await cerberusPokerProgram.methods
-    .createGame(gameId, maxPlayers, 52) // deck_size = 52
+    .createGame(bn(gameId), maxPlayers, 52)
     .accounts({
-      gameSession: gameSessionPDA,
-      creator: cerberusPokerProgram.provider.publicKey,
+      gameSession:   gameSessionPDA,
+      creator:       cerberusPokerProgram.provider.publicKey,
       systemProgram: SystemProgram.programId,
     })
     .transaction();
 
-  // Step 2: Create poker table (texas_holdem)
+  // Step 2: create_table (texas_holdem)
+  // pot_mint, pot_account, escrow_account are UncheckedAccounts —
+  // the program only stores the pubkeys, no validation at creation time.
   const createTableTx = await texasHoldemProgram.methods
-    .createTable(gameId, smallBlind, bigBlind)
+    .createTable(bn(gameId), bn(smallBlind), bn(bigBlind))
     .accounts({
-      pokerTable: pokerTablePDA,
-      gameSession: gameSessionPDA,
-      creator: texasHoldemProgram.provider.publicKey,
+      pokerTable:    pokerTablePDA,
+      gameSession:   gameSessionPDA,
+      potMint:       DEVNET_USDC_MINT,   // USDC mint
+      potAccount:    potAccountPDA,       // pot PDA (stored as reference)
+      escrowAccount: escrowPDA,           // escrow PDA (stored as reference)
+      creator:       texasHoldemProgram.provider.publicKey,
       systemProgram: SystemProgram.programId,
     })
     .transaction();
 
-  // Combine into single transaction
-  const tx = new Transaction();
-  tx.add(createGameTx);
-  tx.add(createTableTx);
-
-  // Send transaction
+  const tx = new Transaction().add(createGameTx).add(createTableTx);
   const signature = await cerberusPokerProgram.provider.sendAndConfirm(tx);
-  
+
   return { signature, gameId, gameSessionPDA, pokerTablePDA };
 }
 
-/**
- * Join an existing game
- */
 export async function joinGame(
   cerberusPokerProgram: AnchorProgramClient,
   gameId: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
-  
+
   const signature = await cerberusPokerProgram.methods
-    .joinGame(gameId)
+    .joinGame(bn(gameId))
     .accounts({
       gameSession: gameSessionPDA,
-      player: cerberusPokerProgram.provider.publicKey,
+      player:      cerberusPokerProgram.provider.publicKey,
     })
     .rpc();
 
   return { signature, gameId };
 }
 
-/**
- * Start the shuffle phase
- */
 export async function startShuffle(
   cerberusPokerProgram: AnchorProgramClient,
   gameId: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
-  
-  // Generate random computation offset
-  const computationOffset = BigInt(Math.floor(Math.random() * 1000000));
-  
+
   const signature = await cerberusPokerProgram.methods
-    .startShuffle(gameId, computationOffset)
+    .startShuffle(bn(gameId), randomOffset())
     .accounts({
       gameSession: gameSessionPDA,
-      player: cerberusPokerProgram.provider.publicKey,
+      player:      cerberusPokerProgram.provider.publicKey,
     })
     .rpc();
 
-  return { signature, gameId, computationOffset };
+  return { signature, gameId };
 }
 
-/**
- * Deal cards to players
- */
 export async function dealCards(
   cerberusPokerProgram: AnchorProgramClient,
   gameId: bigint,
   numPlayers: number
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
-  
-  // Create card assignments: 2 hole cards per player + 5 community cards
+
+  // 2 hole cards per player + 5 community cards (0xFF = community)
   const assignments: { cardIndex: number; playerIndex: number }[] = [];
-  
   let cardIndex = 0;
-  
-  // Deal 2 hole cards to each player
-  for (let player = 0; player < numPlayers; player++) {
-    assignments.push({ cardIndex: cardIndex++, playerIndex: player });
-    assignments.push({ cardIndex: cardIndex++, playerIndex: player });
+  for (let p = 0; p < numPlayers; p++) {
+    assignments.push({ cardIndex: cardIndex++, playerIndex: p });
+    assignments.push({ cardIndex: cardIndex++, playerIndex: p });
   }
-  
-  // Deal 5 community cards (playerIndex = 0xFF for community)
   for (let i = 0; i < 5; i++) {
-    assignments.push({ cardIndex: cardIndex++, playerIndex: 0xFF });
+    assignments.push({ cardIndex: cardIndex++, playerIndex: 0xff });
   }
-  
-  const computationOffset = BigInt(Math.floor(Math.random() * 1000000));
-  
+
   const signature = await cerberusPokerProgram.methods
-    .dealCards(gameId, assignments, computationOffset)
+    .dealCards(bn(gameId), assignments, randomOffset())
     .accounts({
       gameSession: gameSessionPDA,
-      player: cerberusPokerProgram.provider.publicKey,
+      player:      cerberusPokerProgram.provider.publicKey,
     })
     .rpc();
 
   return { signature, gameId };
 }
 
-/**
- * Player action (Fold/Check/Call/Raise/AllIn)
- */
+// ─── Betting ──────────────────────────────────────────────────────────────────
+
 export async function playerAction(
   texasHoldemProgram: AnchorProgramClient,
   gameId: bigint,
@@ -151,83 +162,74 @@ export async function playerAction(
   amount: bigint = BigInt(0)
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
-  const [pokerTablePDA] = derivePokerTablePDA(gameId);
-  
-  const computationOffset = BigInt(Math.floor(Math.random() * 1000000));
-  
-  // Convert action string to enum
-  const actionEnum = { [action.toLowerCase()]: {} };
-  
+  const [pokerTablePDA]  = derivePokerTablePDA(gameId);
+
+  // Anchor enum variant: { fold: {} } | { check: {} } | etc.
+  const actionEnum = { [action.charAt(0).toLowerCase() + action.slice(1)]: {} };
+
   const signature = await texasHoldemProgram.methods
-    .playerAction(gameId, actionEnum, amount, computationOffset)
+    .playerAction(bn(gameId), actionEnum, bn(amount), randomOffset())
     .accounts({
-      pokerTable: pokerTablePDA,
-      gameSession: gameSessionPDA,
-      player: texasHoldemProgram.provider.publicKey,
+      pokerTable:   pokerTablePDA,
+      gameSession:  gameSessionPDA,
+      player:       texasHoldemProgram.provider.publicKey,
     })
     .rpc();
 
   return { signature, gameId, action };
 }
 
-/**
- * Advance to next phase (PreFlop → Flop → Turn → River → Showdown)
- */
 export async function advancePhase(
   texasHoldemProgram: AnchorProgramClient,
   gameId: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
-  const [pokerTablePDA] = derivePokerTablePDA(gameId);
-  
+  const [pokerTablePDA]  = derivePokerTablePDA(gameId);
+
   const signature = await texasHoldemProgram.methods
-    .advancePhase(gameId)
+    .advancePhase(bn(gameId))
     .accounts({
       pokerTable: pokerTablePDA,
       gameSession: gameSessionPDA,
-      caller: texasHoldemProgram.provider.publicKey,
+      caller:     texasHoldemProgram.provider.publicKey,
     })
     .rpc();
 
   return { signature, gameId };
 }
 
-/**
- * Trigger showdown
- */
 export async function triggerShowdown(
   texasHoldemProgram: AnchorProgramClient,
   gameId: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
-  const [pokerTablePDA] = derivePokerTablePDA(gameId);
-  
+  const [pokerTablePDA]  = derivePokerTablePDA(gameId);
+
   const signature = await texasHoldemProgram.methods
-    .showdown(gameId)
+    .showdown(bn(gameId))
     .accounts({
-      pokerTable: pokerTablePDA,
+      pokerTable:  pokerTablePDA,
       gameSession: gameSessionPDA,
-      caller: texasHoldemProgram.provider.publicKey,
+      caller:      texasHoldemProgram.provider.publicKey,
     })
     .rpc();
 
   return { signature, gameId };
 }
 
-/**
- * Timeout handlers
- */
+// ─── Timeouts ─────────────────────────────────────────────────────────────────
+
 export async function timeoutShuffle(
   cerberusPokerProgram: AnchorProgramClient,
   gameId: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
-  
+
   const signature = await cerberusPokerProgram.methods
-    .timeoutShuffle(gameId)
+    .timeoutShuffle(bn(gameId))
     .accounts({
       gameSession: gameSessionPDA,
-      caller: cerberusPokerProgram.provider.publicKey,
+      caller:      cerberusPokerProgram.provider.publicKey,
     })
     .rpc();
 
@@ -239,12 +241,12 @@ export async function timeoutReveal(
   gameId: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
-  
+
   const signature = await cerberusPokerProgram.methods
-    .timeoutReveal(gameId)
+    .timeoutReveal(bn(gameId))
     .accounts({
       gameSession: gameSessionPDA,
-      caller: cerberusPokerProgram.provider.publicKey,
+      caller:      cerberusPokerProgram.provider.publicKey,
     })
     .rpc();
 
@@ -256,12 +258,12 @@ export async function timeoutBet(
   gameId: bigint
 ) {
   const [pokerTablePDA] = derivePokerTablePDA(gameId);
-  
+
   const signature = await texasHoldemProgram.methods
-    .timeoutBet(gameId)
+    .timeoutBet(bn(gameId))
     .accounts({
       pokerTable: pokerTablePDA,
-      caller: texasHoldemProgram.provider.publicKey,
+      caller:     texasHoldemProgram.provider.publicKey,
     })
     .rpc();
 

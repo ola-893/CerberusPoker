@@ -9,6 +9,7 @@ import { cn } from '../lib/utils';
 import { useAnchorPrograms, CERBERUS_POKER_PROGRAM_ID, TEXAS_HOLDEM_PROGRAM_ID, getConnection } from '../lib/anchor';
 import { createGame, joinGame } from '../lib/transactions';
 import { SystemProgram, PublicKey } from '@solana/web3.js';
+import WalletBalances from '../components/WalletBalances';
 
 interface TableInfo {
   gameId: string;
@@ -17,9 +18,10 @@ interface TableInfo {
   smallBlind: bigint;
   bigBlind: bigint;
   state: string;
+  players: string[]; // pubkeys of joined players
 }
 
-/** Fetch all open GameSession accounts from the cerberus_poker program */
+/** Fetch all open GameSession + PokerTable accounts and merge them */
 function useOpenTables() {
   const programs = useAnchorPrograms();
 
@@ -29,8 +31,18 @@ function useOpenTables() {
       if (!programs) return [];
 
       try {
-        // Fetch all GameSession accounts
-        const sessions = await programs.cerberusPoker.account['gameSession'].all();
+        // Fetch GameSession accounts (cerberus_poker) and PokerTable accounts (texas_holdem) in parallel
+        const [sessions, pokerTables] = await Promise.all([
+          programs.cerberusPoker.account['gameSession'].all(),
+          programs.texasHoldem.account['pokerTable'].all(),
+        ]);
+
+        // Build a map of gameId → PokerTable for blind info
+        const tableMap = new Map<string, any>();
+        for (const t of pokerTables) {
+          const raw = t.account as any;
+          tableMap.set(raw.gameSession.toString(), raw);
+        }
 
         const tables: TableInfo[] = [];
         for (const s of sessions) {
@@ -40,13 +52,19 @@ function useOpenTables() {
           // Only show Lobby (waiting for players) tables
           if (stateKey !== 'lobby') continue;
 
+          // Look up PokerTable by game_session PDA pubkey
+          const pokerTable = tableMap.get(s.publicKey.toString());
+
           tables.push({
             gameId:     raw.gameId.toString(),
             numPlayers: raw.numPlayers,
             maxPlayers: raw.maxPlayers,
-            smallBlind: BigInt(raw.smallBlind?.toString() ?? '0'),
-            bigBlind:   BigInt(raw.bigBlind?.toString() ?? '0'),
+            smallBlind: pokerTable ? BigInt(pokerTable.smallBlind.toString()) : BigInt(0),
+            bigBlind:   pokerTable ? BigInt(pokerTable.bigBlind.toString())   : BigInt(0),
             state:      stateKey,
+            players:    (raw.players as any[])
+                          .slice(0, raw.numPlayers)
+                          .map((p: any) => p.toString()),
           });
         }
 
@@ -57,7 +75,7 @@ function useOpenTables() {
       }
     },
     enabled: !!programs,
-    refetchInterval: 10_000, // Poll every 10s
+    refetchInterval: 10_000,
     staleTime: 5_000,
   });
 }
@@ -99,6 +117,9 @@ export default function Lobby() {
         sb,
         bb
       );
+
+      // Creator must also join their own game (create_game does not auto-join)
+      await joinGame(programs.cerberusPoker, createdId);
 
       navigate(`/game/${createdId.toString()}`);
     } catch (err: any) {
@@ -147,7 +168,10 @@ export default function Lobby() {
             <span className="font-mono font-bold text-lg tracking-tight">CerberusPoker</span>
           </div>
         </div>
-        <WalletMultiButton className="!bg-surface-raised !text-zinc-100 hover:!bg-zinc-800 !rounded-lg !h-10 !px-4 !text-sm" />
+        <div className="flex items-center gap-3">
+          <WalletBalances />
+          <WalletMultiButton className="!bg-surface-raised !text-zinc-100 hover:!bg-zinc-800 !rounded-lg !h-10 !px-4 !text-sm" />
+        </div>
       </header>
 
       <div className="p-8">
@@ -226,7 +250,7 @@ export default function Lobby() {
                     {isCreating ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Creating...
+                        Creating & Joining...
                       </>
                     ) : 'Create Table'}
                   </button>
@@ -272,6 +296,7 @@ export default function Lobby() {
                     const isJoining = joiningId === table.gameId;
                     const sbDisplay = (Number(table.smallBlind) / 1_000_000).toFixed(2);
                     const bbDisplay = (Number(table.bigBlind)   / 1_000_000).toFixed(2);
+                    const alreadyJoined = !!publicKey && table.players.includes(publicKey.toString());
 
                     return (
                       <motion.div
@@ -286,7 +311,7 @@ export default function Lobby() {
                               isFull ? 'bg-zinc-600' : 'bg-waiting animate-pulse'
                             )} />
                             <span className="text-xs font-mono text-zinc-500 uppercase tracking-widest">
-                              {isFull ? 'Full' : 'Waiting'}
+                              {isFull ? 'Full' : alreadyJoined ? 'Joined' : 'Waiting'}
                             </span>
                           </div>
                           <span className="text-xs font-mono text-zinc-600">
@@ -307,18 +332,25 @@ export default function Lobby() {
                         </div>
 
                         <button
-                          disabled={isFull || isJoining || !programs}
-                          onClick={() => handleJoinTable(table.gameId)}
+                          disabled={(isFull && !alreadyJoined) || isJoining || !programs}
+                          onClick={() => alreadyJoined
+                            ? navigate(`/game/${table.gameId}`)
+                            : handleJoinTable(table.gameId)
+                          }
                           className={cn(
                             'w-full mt-4 py-3 rounded-xl font-bold uppercase tracking-widest text-xs transition-all flex items-center justify-center gap-2',
-                            isFull || !programs
-                              ? 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
-                              : 'bg-gold/10 text-gold border border-gold/20 group-hover:bg-gold group-hover:text-background'
+                            alreadyJoined
+                              ? 'bg-gold text-background hover:scale-[1.02]'
+                              : isFull || !programs
+                                ? 'bg-zinc-900 text-zinc-600 cursor-not-allowed'
+                                : 'bg-gold/10 text-gold border border-gold/20 group-hover:bg-gold group-hover:text-background'
                           )}
                         >
                           {isJoining ? (
                             <><Loader2 className="w-3 h-3 animate-spin" /> Joining...</>
-                          ) : isFull ? 'Table Full' : 'Join Game'}
+                          ) : alreadyJoined ? 'Enter Game →'
+                            : isFull ? 'Table Full'
+                            : 'Join Game'}
                         </button>
                       </motion.div>
                     );

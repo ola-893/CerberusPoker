@@ -7,6 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useMemo, useCallback } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
+import { PublicKey } from '@solana/web3.js';
 import { useGameState } from '../hooks/useGameState';
 import { cn } from '../lib/utils';
 import PlayerSeat from '../components/PlayerSeat';
@@ -17,11 +18,13 @@ import { UIPhase, Action, GameState } from '../types';
 import { Info, Menu, Maximize2, ShieldCheck, ChevronLeft } from 'lucide-react';
 import { useAnchorPrograms } from '../lib/anchor';
 import { playerAction, timeoutShuffle, timeoutReveal, timeoutBet } from '../lib/transactions';
+import WalletBalances from '../components/WalletBalances';
 
 export default function GameTable() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
   const programs = useAnchorPrograms();
+  const { publicKey } = useWallet(); // ← must be before any early returns
   
   // Convert gameId to BigInt safely (handle hex strings from URL)
   const gameIdBigInt = useMemo(() => {
@@ -104,19 +107,17 @@ export default function GameTable() {
   // If no game data after loading, use mock data for UI development
   const useMockData = !gameSession || !pokerTable;
   
-  const { publicKey } = useWallet();
-  
   const mockGameSession = {
     gameId: gameIdBigInt,
     numPlayers: 4,
     maxPlayers: 6,
-    state: 0, // Lobby
-    players: publicKey ? [
-      publicKey,
-      publicKey,
-      publicKey,
-      publicKey,
-    ] : [],
+    state: 0,
+    players: [
+      publicKey ?? PublicKey.default,
+      PublicKey.default,
+      PublicKey.default,
+      PublicKey.default,
+    ],
     shuffleBitmap: 0,
     shuffleDeadline: BigInt(0),
     revealBitmap: [BigInt(0)],
@@ -142,10 +143,15 @@ export default function GameTable() {
   const displayPokerTable = useMockData ? mockPokerTable : pokerTable;
   const displayPhase = useMockData ? UIPhase.PreFlop : phase;
   const displayMyPlayerIndex = useMockData ? 0 : myPlayerIndex;
-  const displayMyHoleCards: [number, number] | null = useMockData ? [0, 13] : myHoleCards; // Ace of Clubs, Ace of Diamonds
+  const displayMyHoleCards: [number, number] | null = useMockData ? [0, 13] : myHoleCards;
   const displayCommunityCards = useMockData ? [0xFF, 0xFF, 0xFF, 0xFF, 0xFF] : communityCards;
   const displayPot = useMockData ? 4.5 : pot;
   const displayIsMyTurn = useMockData ? true : isMyTurn;
+
+  // Table is full and waiting to start
+  const isTableFull = displayGameSession.numPlayers >= displayGameSession.maxPlayers;
+  const isInLobby = displayPhase === UIPhase.Lobby || (!useMockData && gameSession?.state === GameState.Lobby);
+  const canStartGame = isTableFull && isInLobby && displayMyPlayerIndex === 0; // creator (index 0) starts
 
   // Position mapping for the oval table (6 max players)
   // Hero is always at bottom center
@@ -191,6 +197,7 @@ export default function GameTable() {
           </div>
           
           <div className="flex gap-2">
+             <WalletBalances />
              <button className="w-10 h-10 rounded-xl bg-surface-raised border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-100">
                <Info className="w-5 h-5" />
              </button>
@@ -262,6 +269,42 @@ export default function GameTable() {
 
           {/* Community Cards & Pot */}
           <CommunityCards cards={displayCommunityCards} pot={displayPot} />
+
+          {/* Start Game Banner — shown when table is full and in lobby */}
+          {isInLobby && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10">
+              {isTableFull ? (
+                <>
+                  <div className="text-center mb-2">
+                    <p className="text-zinc-400 text-sm font-mono uppercase tracking-widest">
+                      Table Full · {displayGameSession.numPlayers}/{displayGameSession.maxPlayers} Players
+                    </p>
+                  </div>
+                  {canStartGame ? (
+                    <button
+                      onClick={() => console.log('TODO: start_shuffle — needs Arcium MXE accounts from backend')}
+                      className="px-8 py-3 bg-gold text-background rounded-xl font-bold uppercase tracking-widest text-sm shadow-gold-glow hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    >
+                      Start Game
+                    </button>
+                  ) : (
+                    <div className="px-6 py-3 bg-surface-raised border border-zinc-700 rounded-xl text-zinc-400 text-sm font-mono">
+                      Waiting for host to start...
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center">
+                  <p className="text-zinc-400 text-sm font-mono uppercase tracking-widest mb-1">
+                    Waiting for players
+                  </p>
+                  <p className="text-zinc-600 text-xs font-mono">
+                    {displayGameSession.numPlayers} / {displayGameSession.maxPlayers} joined
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Player Seats */}
           {Array.from({ length: displayGameSession.numPlayers }).map((_, absoluteIndex) => {

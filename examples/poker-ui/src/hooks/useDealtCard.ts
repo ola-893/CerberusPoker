@@ -9,16 +9,13 @@ import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { PublicKey } from '@solana/web3.js';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { useAnchorPrograms, CERBERUS_POKER_PROGRAM_ID, getConnection } from '../lib/anchor';
+import { useAnchorPrograms, CERBERUS_POKER_PROGRAM_ID, getConnection, deriveGameSessionPDA } from '../lib/anchor';
 import { DealtCard } from '../types';
 
-/** Derive the DealtCard PDA for a specific player */
-function deriveDealtCardPDA(gameId: bigint, playerIndex: number): [PublicKey, number] {
-  const gameIdBuffer = Buffer.alloc(8);
-  gameIdBuffer.writeBigUInt64LE(gameId);
-
+/** Derive the DealtCard PDA — seeded by [b"dealt_card", game_session_pubkey] */
+function deriveDealtCardPDA(gameSessionPubkey: PublicKey): [PublicKey, number] {
   return PublicKey.findProgramAddressSync(
-    [Buffer.from('dealt_card'), gameIdBuffer, Buffer.from([playerIndex])],
+    [Buffer.from('dealt_card'), gameSessionPubkey.toBuffer()],
     CERBERUS_POKER_PROGRAM_ID
   );
 }
@@ -49,8 +46,13 @@ export function useDealtCard(gameId: string | null, playerIndex: number | null) 
     }
   })() : null;
 
-  const pda = (gameIdBigInt !== null && playerIndex !== null)
-    ? deriveDealtCardPDA(gameIdBigInt, playerIndex)[0]
+  // Derive game session PDA first, then use it as seed for dealt_card
+  const gameSessionPDA = gameIdBigInt !== null
+    ? deriveGameSessionPDA(gameIdBigInt)[0]
+    : null;
+
+  const pda = gameSessionPDA !== null
+    ? deriveDealtCardPDA(gameSessionPDA)[0]
     : null;
 
   const query = useQuery({

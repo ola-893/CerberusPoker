@@ -9,7 +9,7 @@ import { PublicKey } from '@solana/web3.js';
 import { cn } from '../lib/utils';
 
 interface PlayerSeatProps {
-  playerAddress: PublicKey;
+  playerAddress: PublicKey | undefined;
   playerIndex: number;
   stack: number;
   currentBet: number;
@@ -37,7 +37,8 @@ export default function PlayerSeat({
   hasShuffled,
   positionClass 
 }: PlayerSeatProps) {
-  const formatAddress = (addr: PublicKey) => {
+  const formatAddress = (addr: PublicKey | undefined) => {
+    if (!addr) return '????...????';
     const str = addr.toBase58();
     return `${str.slice(0, 4)}...${str.slice(-4)}`;
   };
@@ -87,7 +88,7 @@ export default function PlayerSeat({
           )}
         >
           <img 
-            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${playerAddress.toBase58()}`} 
+            src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${playerAddress?.toBase58() ?? playerIndex}`} 
             alt="Avatar" 
             className="w-full h-full rounded-full bg-zinc-800" 
           />

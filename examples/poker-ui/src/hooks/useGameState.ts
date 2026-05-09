@@ -25,15 +25,14 @@ export function useGameState(gameId: string | null) {
     return idx === -1 ? null : idx;
   }, [gameSession, publicKey]);
 
-  // Fetch my two hole cards (stored in separate DealtCard PDAs)
-  // Card 1: playerIndex, Card 2: playerIndex + maxPlayers
-  const card1PlayerIndex = myPlayerIndex;
-  const card2PlayerIndex = (myPlayerIndex !== null && gameSession)
+  // Fetch my two hole cards — always call with stable values.
+  // Use -1 as sentinel for "not yet known" — the hook disables itself when null.
+  const card2Index = myPlayerIndex !== null && gameSession
     ? myPlayerIndex + gameSession.maxPlayers
     : null;
 
-  const { data: dealtCard1 } = useDealtCard(gameId, card1PlayerIndex);
-  const { data: dealtCard2 } = useDealtCard(gameId, card2PlayerIndex);
+  const { data: dealtCard1 } = useDealtCard(gameId, myPlayerIndex);
+  const { data: dealtCard2 } = useDealtCard(gameId, card2Index);
 
   // Derive UI phase from game state + poker phase
   const phase = useMemo(() => {
