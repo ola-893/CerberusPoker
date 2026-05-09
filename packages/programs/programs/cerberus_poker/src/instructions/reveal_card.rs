@@ -17,6 +17,7 @@ const COMP_DEF_OFFSET_REVEAL_CARD: u32 = comp_def_offset("reveal_card");
 /// complete successfully.
 ///
 /// The card value will be returned via the reveal_card_callback.
+#[inline(never)]
 pub fn handler(
     ctx: Context<RevealCard>,
     game_id: u64,

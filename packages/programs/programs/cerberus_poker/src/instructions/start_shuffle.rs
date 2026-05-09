@@ -9,6 +9,7 @@ use crate::SignerAccount;
 
 const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck");
 
+#[inline(never)]
 pub fn handler(
     ctx: Context<StartShuffle>,
     game_id: u64,

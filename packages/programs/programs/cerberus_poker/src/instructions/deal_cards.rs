@@ -9,6 +9,7 @@ use crate::SignerAccount;
 
 const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card_to_recipient");
 
+#[inline(never)]
 pub fn handler(
     ctx: Context<DealCards>,
     game_id: u64,
