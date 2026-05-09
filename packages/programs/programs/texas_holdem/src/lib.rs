@@ -1,12 +1,3 @@
-/// CerberusPoker — Texas Hold'em Reference Implementation
-///
-/// Builds on top of cerberus_poker via CPI. Adds:
-/// - Betting rounds (pre-flop, flop, turn, river)
-/// - USDC+ escrow via Reflect Protocol
-/// - MXE-encrypted bet amounts (Enc<Mxe, u64>)
-/// - On-chain hand evaluation
-/// - Pot settlement triggered by atomic_showdown callback
-
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
@@ -16,8 +7,22 @@ pub mod instructions;
 pub mod state;
 
 use instructions::*;
+use errors::TexasHoldemError;
+use state::PokerTable;
+use arcium_macros::circuit_hash;
 
 declare_id!("HmbTLCmaGvZhKnn1Zfa1JVnp7vkMV4DYVxPLWBVoN65");
+
+// Computation definition offsets
+const COMP_DEF_OFFSET_PLACE_BET: u32 = {
+    const HASH: [u8; 32] = circuit_hash!("place_bet");
+    u32::from_le_bytes([HASH[0], HASH[1], HASH[2], HASH[3]])
+};
+
+const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = {
+    const HASH: [u8; 32] = circuit_hash!("atomic_showdown");
+    u32::from_le_bytes([HASH[0], HASH[1], HASH[2], HASH[3]])
+};
 
 #[arcium_program]
 pub mod texas_holdem {
@@ -95,6 +100,79 @@ pub mod texas_holdem {
     ) -> Result<()> {
         instructions::settle_showdown::handler(ctx, game_id, output, community_cards)
     }
+}
+
+// Callback accounts structs must be defined in lib.rs for #[arcium_program] macro to find them
+#[callback_accounts("place_bet")]
+#[derive(Accounts)]
+pub struct PlaceBetCallback<'info> {
+    pub arcium_program: Program<'info, Arcium>,
+
+    #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLACE_BET))]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+
+    #[account(address = derive_mxe_pda!())]
+    pub mxe_account: Account<'info, MXEAccount>,
+
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account, TexasHoldemError::InvalidGameState)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+
+    /// CHECK: computation_account
+    pub computation_account: UncheckedAccount<'info>,
+
+    #[account(mut)]
+    pub poker_table: Account<'info, PokerTable>,
+
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
+}
+
+#[callback_accounts("atomic_showdown")]
+#[derive(Accounts)]
+#[instruction(game_id: u64)]
+pub struct SettleShowdown<'info> {
+    pub arcium_program: Program<'info, Arcium>,
+
+    #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_ATOMIC_SHOWDOWN))]
+    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
+
+    #[account(address = derive_mxe_pda!())]
+    pub mxe_account: Account<'info, MXEAccount>,
+
+    #[account(
+        mut,
+        address = derive_cluster_pda!(mxe_account, TexasHoldemError::InvalidGameState)
+    )]
+    pub cluster_account: Account<'info, Cluster>,
+
+    /// CHECK: computation_account
+    pub computation_account: UncheckedAccount<'info>,
+
+    /// The PokerTable PDA for this game
+    #[account(
+        mut,
+        seeds = [b"table", game_id.to_le_bytes().as_ref()],
+        bump = poker_table.bump,
+    )]
+    pub poker_table: Account<'info, PokerTable>,
+
+    /// Escrow PDA token account (source of pot funds)
+    #[account(
+        mut,
+        constraint = escrow_account.key() == poker_table.escrow_account @ TexasHoldemError::InvalidGameState
+    )]
+    pub escrow_account: Account<'info, anchor_spl::token::TokenAccount>,
+
+    /// SPL Token program for USDC+ transfer
+    pub token_program: Program<'info, anchor_spl::token::Token>,
+
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq)]

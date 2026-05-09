@@ -22,9 +22,6 @@ pub fn handler(ctx: Context<TimeoutShuffle>, _game_id: u64) -> Result<()> {
 #[derive(Accounts)]
 #[instruction(game_id: u64)]
 pub struct TimeoutShuffle<'info> {
-    /// CHECK: instructions_sysvar, checked by arcium program.
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions_sysvar: UncheckedAccount<'info>,
     #[account(
         mut,
         seeds = [b"game", game_id.to_le_bytes().as_ref()],

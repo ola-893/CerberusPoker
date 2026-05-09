@@ -1,21 +1,8 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_macros::circuit_hash;
 
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, CardRevealed};
-
-const COMP_DEF_OFFSET_REVEAL_CARD: u32 = circuit_hash!("reveal_card");
-
-/// Output type for reveal_card MXE computation
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Debug)]
-pub struct RevealCardOutput {
-    pub card_value: u8,
-}
-
-impl arcium_anchor::HasSize for RevealCardOutput {
-    const SIZE: usize = 1;
-}
 
 /// Callback handler for reveal_card MXE computation.
 ///
@@ -32,21 +19,17 @@ impl arcium_anchor::HasSize for RevealCardOutput {
 /// - Prevents duplicate card values via card_value_used bitmap
 /// - Marks card as revealed to prevent double-reveals
 pub fn handler(
-    ctx: Context<RevealCardCallback>,
-    output: SignedComputationOutputs<RevealCardOutput>,
+    ctx: Context<crate::RevealCardCallback>,
+    output: ComputationOutputs<crate::RevealCardOutput>,
 ) -> Result<()> {
-    let result = match output.verify_output(
-        &ctx.accounts.cluster_account,
-        &ctx.accounts.computation_account,
-    ) {
-        Ok(val) => val,
-        Err(e) => {
-            msg!("Reveal card MXE output verification failed: {}", e);
+    // Match on the MXE output
+    let card_value = match output {
+        ComputationOutputs::Success(result) => result.field_0,
+        ComputationOutputs::Failure => {
+            msg!("Reveal card MXE computation failed");
             return Err(CerberusPokerError::AbortedComputation.into());
         }
     };
-
-    let card_value = result.card_value;
 
     let game = &mut ctx.accounts.game_session;
 
@@ -87,29 +70,4 @@ pub fn handler(
     Ok(())
 }
 
-#[derive(Accounts)]
-#[derive(Accounts)]
-pub struct RevealCardCallback<'info> {
-    /// CHECK: instructions_sysvar, checked by arcium program.
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions_sysvar: UncheckedAccount<'info>,
-    pub arcium_program: Program<'info, Arcium>,
-
-    #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_REVEAL_CARD))]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
-
-    #[account(address = derive_mxe_pda!())]
-    pub mxe_account: Account<'info, MXEAccount>,
-
-    #[account(
-        mut,
-        address = derive_cluster_pda!(mxe_account, CerberusPokerError::InvalidGameState)
-    )]
-    pub cluster_account: Account<'info, Cluster>,
-
-    /// CHECK: computation_account
-    pub computation_account: UncheckedAccount<'info>,
-
-    #[account(mut)]
-    pub game_session: Account<'info, GameSession>,
-}
+// The RevealCardCallback accounts struct is defined in lib.rs

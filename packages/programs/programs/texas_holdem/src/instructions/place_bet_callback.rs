@@ -1,14 +1,10 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_macros::comp_def_offset;
 use crate::errors::TexasHoldemError;
-use crate::state::PokerTable;
-
-const COMP_DEF_OFFSET_PLACE_BET: u32 = comp_def_offset("place_bet");
 
 /// Output from place_bet MXE instruction.
 /// The bet amount is stored as Enc<Mxe, u64> — hidden from all observers.
-#[derive(AnchorDeserialize)]
+#[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct PlaceBetOutput {
     /// Confirmation that the encrypted bet was stored in MXE state
     pub success: bool,
@@ -16,8 +12,12 @@ pub struct PlaceBetOutput {
     pub player_index: u8,
 }
 
+impl arcium_anchor::HasSize for PlaceBetOutput {
+    const SIZE: usize = 2; // bool (1 byte) + u8 (1 byte)
+}
+
 pub fn handler(
-    ctx: Context<PlaceBetCallback>,
+    ctx: Context<crate::PlaceBetCallback>,
     output: SignedComputationOutputs<PlaceBetOutput>,
 ) -> Result<()> {
     // Verify the MXE output signature — ensures result is authentic
@@ -56,26 +56,4 @@ pub fn handler(
     Ok(())
 }
 
-#[callback_accounts("place_bet")]
-#[derive(Accounts)]
-pub struct PlaceBetCallback<'info> {
-    pub arcium_program: Program<'info, Arcium>,
-
-    #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_PLACE_BET))]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
-
-    #[account(address = derive_mxe_pda!())]
-    pub mxe_account: Account<'info, MXEAccount>,
-
-    #[account(
-        mut,
-        address = derive_cluster_pda!(mxe_account, TexasHoldemError::InvalidGameState)
-    )]
-    pub cluster_account: Account<'info, Cluster>,
-
-    /// CHECK: computation_account
-    pub computation_account: UncheckedAccount<'info>,
-
-    #[account(mut)]
-    pub poker_table: Account<'info, PokerTable>,
-}
+// The PlaceBetCallbackAccounts struct is defined in lib.rs

@@ -1,23 +1,5 @@
-pub mod random;
-/// CerberusPoker — Game-Agnostic Mental Poker Protocol Program
-///
-/// This program handles the full lifecycle of a private card game session:
-/// - Player registration and key management
-/// - Confidential deck shuffle via Arcium MXE (Cerberus protocol)
-/// - Card dealing and reveal via MXE threshold decryption
-/// - Timeout enforcement for liveness
-///
-/// Any card game (Texas Hold'em, Blackjack, Bridge) can use this program
-/// as the privacy layer by calling it via CPI and implementing their own
-/// game logic on top.
-///
-/// Uses #[arcium_program] instead of #[program] — required for Arcium MXE
-/// integration. This macro adds the necessary Arcium accounts and CPI
-/// infrastructure for queue_computation and callback handling.
-
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_macros::circuit_hash;
 
 pub mod errors;
 pub mod instructions;
@@ -29,22 +11,11 @@ declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 // Computation definition offsets — derived from instruction names via sha256
 // These identify each MXE circuit on-chain
-const COMP_DEF_HASH_SHUFFLE_DECK: [u8; 32] = circuit_hash!("shuffle_deck");
-const COMP_DEF_HASH_DEAL_CARD: [u8; 32] = circuit_hash!("deal_card_to_recipient");
-const COMP_DEF_HASH_REVEAL_CARD: [u8; 32] = circuit_hash!("reveal_card");
-const COMP_DEF_HASH_REVEAL_COMMUNITY_CARD: [u8; 32] = circuit_hash!("reveal_community_card");
-const COMP_DEF_HASH_ATOMIC_SHOWDOWN: [u8; 32] = circuit_hash!("atomic_showdown");
-
-// Convert first 4 bytes of hash to u32 for PDA derivation
-const fn hash_to_offset(hash: &[u8; 32]) -> u32 {
-    u32::from_le_bytes([hash[0], hash[1], hash[2], hash[3]])
-}
-
-const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = hash_to_offset(&COMP_DEF_HASH_SHUFFLE_DECK);
-const COMP_DEF_OFFSET_DEAL_CARD: u32 = hash_to_offset(&COMP_DEF_HASH_DEAL_CARD);
-const COMP_DEF_OFFSET_REVEAL_CARD: u32 = hash_to_offset(&COMP_DEF_HASH_REVEAL_CARD);
-const COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD: u32 = hash_to_offset(&COMP_DEF_HASH_REVEAL_COMMUNITY_CARD);
-const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = hash_to_offset(&COMP_DEF_HASH_ATOMIC_SHOWDOWN);
+const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck");
+const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card_to_recipient");
+const COMP_DEF_OFFSET_REVEAL_CARD: u32 = comp_def_offset("reveal_card");
+const COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD: u32 = comp_def_offset("reveal_community_card");
+const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown");
 
 /// Card assignment for deal_cards instruction
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -61,31 +32,31 @@ pub mod cerberus_poker {
     // Each must be called once after deployment to register the MXE circuit on-chain
 
     pub fn init_shuffle_deck_comp_def(ctx: Context<InitShuffleDeckCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
     pub fn init_deal_card_comp_def(ctx: Context<InitDealCardCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
     pub fn init_reveal_card_comp_def(ctx: Context<InitRevealCardCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
     pub fn init_reveal_community_card_comp_def(
         ctx: Context<InitRevealCommunityCardCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
     pub fn init_atomic_showdown_comp_def(
         ctx: Context<InitAtomicShowdownCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts)?;
+        init_comp_def(ctx.accounts, 0, None, None)?;
         Ok(())
     }
 
@@ -117,7 +88,7 @@ pub mod cerberus_poker {
     #[arcium_callback(encrypted_ix = "shuffle_deck")]
     pub fn shuffle_deck_callback(
         ctx: Context<ShuffleDeckCallback>,
-        output: SignedComputationOutputs<ShuffleDeckOutput>,
+        output: ComputationOutputs<ShuffleDeckOutput>,
     ) -> Result<()> {
         instructions::shuffle_deck_callback::handler(ctx, output)
     }
@@ -125,7 +96,7 @@ pub mod cerberus_poker {
     #[arcium_callback(encrypted_ix = "deal_card_to_recipient")]
     pub fn deal_card_to_recipient_callback(
         ctx: Context<DealCardToRecipientCallback>,
-        output: SignedComputationOutputs<DealCardToRecipientOutput>,
+        output: ComputationOutputs<DealCardToRecipientOutput>,
     ) -> Result<()> {
         instructions::deal_card_to_recipient_callback::handler(ctx, output)
     }
@@ -133,7 +104,7 @@ pub mod cerberus_poker {
     #[arcium_callback(encrypted_ix = "reveal_card")]
     pub fn reveal_card_callback(
         ctx: Context<RevealCardCallback>,
-        output: SignedComputationOutputs<RevealCardOutput>,
+        output: ComputationOutputs<RevealCardOutput>,
     ) -> Result<()> {
         instructions::reveal_card_callback::handler(ctx, output)
     }
@@ -141,7 +112,7 @@ pub mod cerberus_poker {
     #[arcium_callback(encrypted_ix = "reveal_community_card")]
     pub fn reveal_community_card_callback(
         ctx: Context<RevealCommunityCardCallback>,
-        output: SignedComputationOutputs<RevealCommunityCardOutput>,
+        output: ComputationOutputs<RevealCommunityCardOutput>,
     ) -> Result<()> {
         instructions::reveal_community_card_callback::handler(ctx, output)
     }
@@ -149,7 +120,7 @@ pub mod cerberus_poker {
     #[arcium_callback(encrypted_ix = "atomic_showdown")]
     pub fn atomic_showdown_callback(
         ctx: Context<AtomicShowdownCallback>,
-        output: SignedComputationOutputs<AtomicShowdownOutput>,
+        output: ComputationOutputs<AtomicShowdownOutput>,
     ) -> Result<()> {
         instructions::atomic_showdown_callback::handler(ctx, output)
     }
@@ -206,7 +177,7 @@ pub struct ShuffleDeckCallback<'info> {
 
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account, ArciumError::InvalidClusterBLSPublicKey)
+        address = derive_cluster_pda!(mxe_account, CerberusPokerError::InvalidGameState)
     )]
     pub cluster_account: Account<'info, Cluster>,
 
@@ -234,7 +205,7 @@ pub struct DealCardToRecipientCallback<'info> {
 
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account, ArciumError::InvalidClusterBLSPublicKey)
+        address = derive_cluster_pda!(mxe_account, CerberusPokerError::InvalidGameState)
     )]
     pub cluster_account: Account<'info, Cluster>,
 
@@ -276,7 +247,7 @@ pub struct RevealCardCallback<'info> {
 
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account, ArciumError::InvalidClusterBLSPublicKey)
+        address = derive_cluster_pda!(mxe_account, CerberusPokerError::InvalidGameState)
     )]
     pub cluster_account: Account<'info, Cluster>,
 
@@ -304,7 +275,7 @@ pub struct RevealCommunityCardCallback<'info> {
 
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account, ArciumError::InvalidClusterBLSPublicKey)
+        address = derive_cluster_pda!(mxe_account, CerberusPokerError::InvalidGameState)
     )]
     pub cluster_account: Account<'info, Cluster>,
 
@@ -332,7 +303,7 @@ pub struct AtomicShowdownCallback<'info> {
 
     #[account(
         mut,
-        address = derive_cluster_pda!(mxe_account, ArciumError::InvalidClusterBLSPublicKey)
+        address = derive_cluster_pda!(mxe_account, CerberusPokerError::InvalidGameState)
     )]
     pub cluster_account: Account<'info, Cluster>,
 

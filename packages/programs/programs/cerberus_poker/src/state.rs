@@ -5,7 +5,6 @@ use anchor_lang::prelude::*;
 /// Tracks the full lifecycle of a private card game:
 /// Lobby → Shuffle → Deal → Active → Showdown → Complete
 #[account]
-#[derive(Default)]
 pub struct GameSession {
     /// Unique game identifier
     pub game_id: u64,

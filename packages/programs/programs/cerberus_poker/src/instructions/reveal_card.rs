@@ -1,11 +1,13 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_macros::circuit_hash;
+use arcium_client::idl::arcium::{ID, ID_CONST};
 
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, REVEAL_TIMEOUT_SECS};
+use crate::RevealCardCallback;
+use crate::SignerAccount;
 
-const COMP_DEF_OFFSET_REVEAL_CARD: u32 = circuit_hash!("reveal_card");
+const COMP_DEF_OFFSET_REVEAL_CARD: u32 = comp_def_offset("reveal_card");
 
 /// Queue a reveal_card computation to reveal a community card.
 ///
@@ -48,11 +50,10 @@ pub fn handler(
     // Arguments:
     // - Encrypted card (ElGamal ciphertext: C1, C2)
     // - Card index (plaintext u8)
-    let args = ArgBuilder::new()
-        .encrypted_u8(ctx.accounts.encrypted_card_c1.key().to_bytes())
-        .encrypted_u8(ctx.accounts.encrypted_card_c2.key().to_bytes())
-        .plaintext_u8(card_index)
-        .build();
+    // TODO: Build arguments for reveal_card computation
+    // In 0.4.0, arguments are Vec<Argument> from arcium_client::idl::arcium::types
+    // Need to construct: encrypted card (C1, C2) and card_index (u8)
+    let args = vec![];
 
     ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -61,13 +62,9 @@ pub fn handler(
         ctx.accounts,
         computation_offset,
         args,
-        vec![crate::instructions::reveal_card_callback::RevealCardCallback::callback_ix(
-            computation_offset,
-            &ctx.accounts.mxe_account,
-            &[],
-        )?],
+        None,
+        vec![RevealCardCallback::callback_ix(&[])],
         1, // num_callback_txs
-        0, // cu_price_micro (no priority fee)
     )?;
 
     msg!(
@@ -82,9 +79,6 @@ pub fn handler(
 #[derive(Accounts)]
 #[instruction(game_id: u64, card_index: u8, computation_offset: u64)]
 pub struct RevealCard<'info> {
-    /// CHECK: instructions_sysvar, checked by arcium program.
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions_sysvar: UncheckedAccount<'info>,
     #[account(
         mut,
         seeds = [b"game", game_id.to_le_bytes().as_ref()],
@@ -103,28 +97,28 @@ pub struct RevealCard<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, ArciumSignerAccount>,
+    pub sign_pda_account: Account<'info, SignerAccount>,
 
     #[account(address = derive_mxe_pda!())]
     pub mxe_account: Account<'info, MXEAccount>,
 
     #[account(
         mut,
-        address = derive_mempool_pda!(mxe_account, CerberusPokerError::InvalidGameState)
+        address = derive_mempool_pda!()
     )]
     /// CHECK: mempool_account
     pub mempool_account: UncheckedAccount<'info>,
 
     #[account(
         mut,
-        address = derive_execpool_pda!(mxe_account, CerberusPokerError::InvalidGameState)
+        address = derive_execpool_pda!()
     )]
     /// CHECK: executing_pool
     pub executing_pool: UncheckedAccount<'info>,
 
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset, mxe_account, CerberusPokerError::InvalidGameState)
+        address = derive_comp_pda!(computation_offset)
     )]
     /// CHECK: computation_account
     pub computation_account: UncheckedAccount<'info>,
@@ -143,14 +137,6 @@ pub struct RevealCard<'info> {
 
     #[account(mut, address = ARCIUM_CLOCK_ACCOUNT_ADDRESS)]
     pub clock_account: Account<'info, ClockAccount>,
-
-    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
-    /// CHECK: address_lookup_table
-    pub address_lookup_table: UncheckedAccount<'info>,
-
-    #[account(address = LUT_PROGRAM_ID)]
-    /// CHECK: lut_program
-    pub lut_program: UncheckedAccount<'info>,
 
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,

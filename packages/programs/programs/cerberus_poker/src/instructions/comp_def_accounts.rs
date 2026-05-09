@@ -13,13 +13,6 @@ pub struct InitShuffleDeckCompDef<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
 
     #[account(mut)]
-    /// CHECK: address_lookup_table
-    pub address_lookup_table: UncheckedAccount<'info>,
-
-    /// CHECK: lut_program
-    pub lut_program: UncheckedAccount<'info>,
-
-    #[account(mut)]
     pub payer: Signer<'info>,
 
     pub system_program: Program<'info, System>,
@@ -36,13 +29,6 @@ pub struct InitDealCardCompDef<'info> {
 
     #[account(mut)]
     pub mxe_account: Account<'info, MXEAccount>,
-
-    #[account(mut)]
-    /// CHECK: address_lookup_table
-    pub address_lookup_table: UncheckedAccount<'info>,
-
-    /// CHECK: lut_program
-    pub lut_program: UncheckedAccount<'info>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -63,13 +49,6 @@ pub struct InitRevealCardCompDef<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
 
     #[account(mut)]
-    /// CHECK: address_lookup_table
-    pub address_lookup_table: UncheckedAccount<'info>,
-
-    /// CHECK: lut_program
-    pub lut_program: UncheckedAccount<'info>,
-
-    #[account(mut)]
     pub payer: Signer<'info>,
 
     pub system_program: Program<'info, System>,
@@ -88,13 +67,6 @@ pub struct InitRevealCommunityCardCompDef<'info> {
     pub mxe_account: Account<'info, MXEAccount>,
 
     #[account(mut)]
-    /// CHECK: address_lookup_table
-    pub address_lookup_table: UncheckedAccount<'info>,
-
-    /// CHECK: lut_program
-    pub lut_program: UncheckedAccount<'info>,
-
-    #[account(mut)]
     pub payer: Signer<'info>,
 
     pub system_program: Program<'info, System>,
@@ -111,13 +83,6 @@ pub struct InitAtomicShowdownCompDef<'info> {
 
     #[account(mut)]
     pub mxe_account: Account<'info, MXEAccount>,
-
-    #[account(mut)]
-    /// CHECK: address_lookup_table
-    pub address_lookup_table: UncheckedAccount<'info>,
-
-    /// CHECK: lut_program
-    pub lut_program: UncheckedAccount<'info>,
 
     #[account(mut)]
     pub payer: Signer<'info>,

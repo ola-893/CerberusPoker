@@ -1,11 +1,13 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_macros::circuit_hash;
+use arcium_client::idl::arcium::{ID, ID_CONST};
 
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, GameState, CardDealt, UNASSIGNED, REVEAL_TIMEOUT_SECS};
+use crate::DealCardToRecipientCallback;
+use crate::SignerAccount;
 
-const COMP_DEF_OFFSET_DEAL_CARD: u32 = circuit_hash!("deal_card_to_recipient");
+const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card_to_recipient");
 
 pub fn handler(
     ctx: Context<DealCards>,
@@ -55,11 +57,10 @@ pub fn handler(
         .ok_or(CerberusPokerError::CardNotAssigned)?
         .0;
 
-    let args = ArgBuilder::new()
-        .encrypted_u8(ctx.accounts.encrypted_card_c1.key().to_bytes())
-        .encrypted_u8(ctx.accounts.encrypted_card_c2.key().to_bytes())
-        .plaintext_u8(first_card_index)
-        .build();
+    // TODO: Build arguments for deal_card_to_recipient computation
+    // In 0.4.0, arguments are Vec<Argument> from arcium_client::idl::arcium::types
+    // Need to construct: encrypted card (C1, C2) and card_index (u8)
+    let args = vec![];
 
     ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -67,13 +68,9 @@ pub fn handler(
         ctx.accounts,
         computation_offset,
         args,
-        vec![crate::instructions::deal_card_to_recipient_callback::DealCardToRecipientCallback::callback_ix(
-            computation_offset,
-            &ctx.accounts.mxe_account,
-            &[],
-        )?],
+        None,
+        vec![DealCardToRecipientCallback::callback_ix(&[])],
         1,
-        0,
     )?;
 
     msg!("Queued deal_card_to_recipient computation for card {} (offset: {})", first_card_index, computation_offset);
@@ -84,9 +81,6 @@ pub fn handler(
 #[derive(Accounts)]
 #[instruction(game_id: u64, assignments: Vec<(u8, u8)>, computation_offset: u64)]
 pub struct DealCards<'info> {
-    /// CHECK: instructions_sysvar, checked by arcium program.
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions_sysvar: UncheckedAccount<'info>,
     #[account(
         mut,
         seeds = [b"game", game_id.to_le_bytes().as_ref()],
@@ -105,28 +99,28 @@ pub struct DealCards<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, ArciumSignerAccount>,
+    pub sign_pda_account: Account<'info, SignerAccount>,
 
     #[account(address = derive_mxe_pda!())]
     pub mxe_account: Account<'info, MXEAccount>,
 
     #[account(
         mut,
-        address = derive_mempool_pda!(mxe_account, CerberusPokerError::InvalidGameState)
+        address = derive_mempool_pda!()
     )]
     /// CHECK: mempool_account
     pub mempool_account: UncheckedAccount<'info>,
 
     #[account(
         mut,
-        address = derive_execpool_pda!(mxe_account, CerberusPokerError::InvalidGameState)
+        address = derive_execpool_pda!()
     )]
     /// CHECK: executing_pool
     pub executing_pool: UncheckedAccount<'info>,
 
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset, mxe_account, CerberusPokerError::InvalidGameState)
+        address = derive_comp_pda!(computation_offset)
     )]
     /// CHECK: computation_account
     pub computation_account: UncheckedAccount<'info>,
@@ -145,14 +139,6 @@ pub struct DealCards<'info> {
 
     #[account(mut, address = ARCIUM_CLOCK_ACCOUNT_ADDRESS)]
     pub clock_account: Account<'info, ClockAccount>,
-
-    #[account(mut, address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot))]
-    /// CHECK: address_lookup_table
-    pub address_lookup_table: UncheckedAccount<'info>,
-
-    #[account(address = LUT_PROGRAM_ID)]
-    /// CHECK: lut_program
-    pub lut_program: UncheckedAccount<'info>,
 
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,

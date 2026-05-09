@@ -1,11 +1,14 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use arcium_anchor::prelude::*;
-use arcium_macros::comp_def_offset;
+use arcium_macros::circuit_hash;
 use crate::errors::TexasHoldemError;
 use crate::state::PokerTable;
 
-const COMP_DEF_OFFSET_PLACE_BET: u32 = comp_def_offset("place_bet");
+const COMP_DEF_OFFSET_PLACE_BET: u32 = {
+    const HASH: [u8; 32] = circuit_hash!("place_bet");
+    u32::from_le_bytes([HASH[0], HASH[1], HASH[2], HASH[3]])
+};
 
 /// Place a bet: transfer USDC+ to escrow, queue MXE computation to store Enc<Mxe, u64> bet amount
 ///
@@ -65,22 +68,16 @@ pub fn handler(
         .build();
 
     queue_computation(
-        &ctx.accounts.arcium_program,
-        &ctx.accounts.sign_pda_account,
-        &ctx.accounts.mxe_account,
-        &ctx.accounts.mempool_account,
-        &ctx.accounts.executing_pool,
-        &ctx.accounts.computation_account,
-        &ctx.accounts.comp_def_account,
-        &ctx.accounts.cluster_account,
-        &ctx.accounts.pool_account,
-        &ctx.accounts.clock_account,
-        &ctx.accounts.address_lookup_table,
-        &ctx.accounts.lut_program,
-        &ctx.accounts.system_program,
-        &ctx.accounts.payer,
+        ctx.accounts,
         computation_offset,
         args,
+        vec![crate::PlaceBetCallback::callback_ix(
+            computation_offset,
+            &ctx.accounts.mxe_account,
+            &[],
+        )?],
+        1, // num_callback_txs
+        0, // cu_price_micro (no priority fee)
     )?;
 
     msg!("Queued MXE computation to store encrypted bet for player {}", player_index);

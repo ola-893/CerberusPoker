@@ -46,9 +46,6 @@ pub fn handler(
 #[derive(Accounts)]
 #[instruction(game_id: u64)]
 pub struct CreateGame<'info> {
-    /// CHECK: instructions_sysvar, checked by arcium program.
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
-    pub instructions_sysvar: UncheckedAccount<'info>,
     #[account(
         init,
         payer = creator,

@@ -1,22 +1,23 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use arcium_anchor::prelude::*;
-use arcium_macros::comp_def_offset;
 use crate::errors::TexasHoldemError;
 use crate::state::PokerTable;
 use crate::hand_eval::{evaluate_hand, HandRank};
 
-const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown");
-
 /// Output from atomic_showdown MXE instruction.
 /// All hole cards are revealed atomically at showdown.
-#[derive(AnchorDeserialize)]
+#[derive(AnchorSerialize, AnchorDeserialize)]
 pub struct AtomicShowdownOutput {
     /// All hole cards revealed (up to 6 players × 2 cards = 12 cards)
     /// Format: [player0_card0, player0_card1, player1_card0, player1_card1, ...]
     pub revealed_hands: [u8; 12],
     /// Number of active players (not folded)
     pub num_players: u8,
+}
+
+impl arcium_anchor::HasSize for AtomicShowdownOutput {
+    const SIZE: usize = 13; // 12 bytes for revealed_hands + 1 byte for num_players
 }
 
 /// Settle showdown: transfer pot to winner based on MXE-attested showdown result.
@@ -43,7 +44,7 @@ pub struct AtomicShowdownOutput {
 /// * `NoWinner` - If no winner can be determined
 /// * `SettlementFailed` - If pot transfer fails
 pub fn handler(
-    ctx: Context<SettleShowdown>,
+    ctx: Context<crate::SettleShowdown>,
     _game_id: u64,
     output: SignedComputationOutputs<AtomicShowdownOutput>,
     community_cards: [u8; 5],
@@ -202,46 +203,4 @@ pub fn handler(
     Ok(())
 }
 
-#[callback_accounts("atomic_showdown")]
-#[derive(Accounts)]
-#[instruction(game_id: u64)]
-pub struct SettleShowdown<'info> {
-    pub arcium_program: Program<'info, Arcium>,
-
-    #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_ATOMIC_SHOWDOWN))]
-    pub comp_def_account: Account<'info, ComputationDefinitionAccount>,
-
-    #[account(address = derive_mxe_pda!())]
-    pub mxe_account: Account<'info, MXEAccount>,
-
-    #[account(
-        mut,
-        address = derive_cluster_pda!(mxe_account, TexasHoldemError::InvalidGameState)
-    )]
-    pub cluster_account: Account<'info, Cluster>,
-
-    /// CHECK: computation_account
-    pub computation_account: UncheckedAccount<'info>,
-
-    /// The PokerTable PDA for this game
-    #[account(
-        mut,
-        seeds = [b"table", game_id.to_le_bytes().as_ref()],
-        bump = poker_table.bump,
-    )]
-    pub poker_table: Account<'info, PokerTable>,
-
-    /// Escrow PDA token account (source of pot funds)
-    /// This is a standard SPL token account that holds USDC+ during the game
-    #[account(
-        mut,
-        constraint = escrow_account.key() == poker_table.escrow_account @ TexasHoldemError::InvalidGameState
-    )]
-    pub escrow_account: Account<'info, TokenAccount>,
-
-    /// SPL Token program for USDC+ transfer
-    pub token_program: Program<'info, Token>,
-
-    // Note: Winner token accounts are passed via remaining_accounts
-    // This allows for flexible number of winners (1-6) without fixed account structure
-}
+// The SettleShowdownAccounts struct is defined in lib.rs
