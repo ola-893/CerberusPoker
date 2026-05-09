@@ -17,7 +17,7 @@ import ActionBar from '../components/ActionBar';
 import { UIPhase, Action, GameState, PokerPhase } from '../types';
 import { Info, Menu, Maximize2, ShieldCheck, ChevronLeft } from 'lucide-react';
 import { useAnchorPrograms } from '../lib/anchor';
-import { playerAction, timeoutShuffle, timeoutReveal, timeoutBet } from '../lib/transactions';
+import { playerAction, startShuffle, timeoutShuffle, timeoutReveal, timeoutBet } from '../lib/transactions';
 import WalletBalances from '../components/WalletBalances';
 
 export default function GameTable() {
@@ -84,6 +84,15 @@ export default function GameTable() {
     catch (err) { console.error('Timeout bet failed:', err); }
   }, [programs, gameIdBigInt]);
 
+  const handleStartGame = useCallback(async () => {
+    if (!programs || !gameIdBigInt) return;
+    try {
+      await startShuffle(programs.cerberusPoker, gameIdBigInt);
+    } catch (err) {
+      console.error('Start game failed:', err);
+    }
+  }, [programs, gameIdBigInt]);
+
   if (isLoading) {
     return (
       <div className="w-full h-screen bg-background flex items-center justify-center">
@@ -143,10 +152,15 @@ export default function GameTable() {
   const displayPokerTable = useMockData ? mockPokerTable : pokerTable;
   const displayPhase = useMockData ? UIPhase.PreFlop : phase;
   const displayMyPlayerIndex = useMockData ? 0 : myPlayerIndex;
-  const displayMyHoleCards: [number, number] | null = useMockData ? [0, 13] : myHoleCards; // Ace of Clubs, Ace of Diamonds
+  const displayMyHoleCards: [number, number] | null = useMockData ? [0, 13] : myHoleCards;
   const displayCommunityCards = useMockData ? [0xFF, 0xFF, 0xFF, 0xFF, 0xFF] : communityCards;
   const displayPot = useMockData ? 4.5 : pot;
   const displayIsMyTurn = useMockData ? true : isMyTurn;
+
+  // Lobby state helpers
+  const isTableFull = displayGameSession.numPlayers >= displayGameSession.maxPlayers;
+  const isInLobby = !useMockData && gameSession?.state === GameState.Lobby;
+  const canStartGame = isTableFull && isInLobby && displayMyPlayerIndex === 0;
 
   // Position mapping for the oval table (6 max players)
   // Hero is always at bottom center
@@ -192,6 +206,7 @@ export default function GameTable() {
           </div>
           
           <div className="flex gap-2">
+             <WalletBalances />
              <button className="w-10 h-10 rounded-xl bg-surface-raised border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-100">
                <Info className="w-5 h-5" />
              </button>
@@ -225,7 +240,7 @@ export default function GameTable() {
       {shuffleTimeout && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-waiting/90 backdrop-blur-md px-6 py-3 rounded-xl border border-waiting flex items-center gap-4">
           <span className="text-background font-bold">⚠ Shuffle stalled — a player stopped responding.</span>
-          <button className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
+          <button onClick={handleTimeoutShuffle} className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
             Claim Timeout
           </button>
         </div>
@@ -233,7 +248,7 @@ export default function GameTable() {
       {revealTimeout && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-waiting/90 backdrop-blur-md px-6 py-3 rounded-xl border border-waiting flex items-center gap-4">
           <span className="text-background font-bold">⚠ Reveal stalled — a player stopped responding.</span>
-          <button className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
+          <button onClick={handleTimeoutReveal} className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
             Claim Timeout
           </button>
         </div>
@@ -241,7 +256,7 @@ export default function GameTable() {
       {betTimeout && isMyTurn && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-waiting/90 backdrop-blur-md px-6 py-3 rounded-xl border border-waiting flex items-center gap-4">
           <span className="text-background font-bold">⚠ You're taking too long.</span>
-          <button className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
+          <button onClick={handleTimeoutBet} className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
             Force Fold
           </button>
         </div>
@@ -263,6 +278,40 @@ export default function GameTable() {
 
           {/* Community Cards & Pot */}
           <CommunityCards cards={displayCommunityCards} pot={displayPot} />
+
+          {/* Lobby Overlay — shown while waiting for players or host to start */}
+          {isInLobby && (
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10">
+              {isTableFull ? (
+                <>
+                  <p className="text-zinc-400 text-sm font-mono uppercase tracking-widest">
+                    Table Full · {displayGameSession.numPlayers}/{displayGameSession.maxPlayers} Players
+                  </p>
+                  {canStartGame ? (
+                    <button
+                      onClick={handleStartGame}
+                      className="px-8 py-3 bg-gold text-background rounded-xl font-bold uppercase tracking-widest text-sm shadow-gold-glow hover:scale-[1.02] active:scale-[0.98] transition-all"
+                    >
+                      Start Game
+                    </button>
+                  ) : (
+                    <div className="px-6 py-3 bg-surface-raised border border-zinc-700 rounded-xl text-zinc-400 text-sm font-mono">
+                      Waiting for host to start...
+                    </div>
+                  )}
+                </>
+              ) : (
+                <div className="text-center">
+                  <p className="text-zinc-400 text-sm font-mono uppercase tracking-widest mb-1">
+                    Waiting for players
+                  </p>
+                  <p className="text-zinc-600 text-xs font-mono">
+                    {displayGameSession.numPlayers} / {displayGameSession.maxPlayers} joined
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Player Seats */}
           {Array.from({ length: displayGameSession.numPlayers }).map((_, absoluteIndex) => {
