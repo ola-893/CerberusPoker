@@ -5,26 +5,20 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useMemo, useCallback } from 'react';
+import { useMemo } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
-import { PublicKey } from '@solana/web3.js';
 import { useGameState } from '../hooks/useGameState';
 import { cn } from '../lib/utils';
 import PlayerSeat from '../components/PlayerSeat';
 import CommunityCards from '../components/CommunityCards';
 import HoleCards from '../components/HoleCards';
 import ActionBar from '../components/ActionBar';
-import { UIPhase, Action, GameState } from '../types';
+import { UIPhase, Action, GameState, PokerPhase } from '../types';
 import { Info, Menu, Maximize2, ShieldCheck, ChevronLeft } from 'lucide-react';
-import { useAnchorPrograms } from '../lib/anchor';
-import { playerAction, timeoutShuffle, timeoutReveal, timeoutBet } from '../lib/transactions';
-import WalletBalances from '../components/WalletBalances';
 
 export default function GameTable() {
   const { gameId } = useParams<{ gameId: string }>();
   const navigate = useNavigate();
-  const programs = useAnchorPrograms();
-  const { publicKey } = useWallet(); // ← must be before any early returns
   
   // Convert gameId to BigInt safely (handle hex strings from URL)
   const gameIdBigInt = useMemo(() => {
@@ -58,38 +52,12 @@ export default function GameTable() {
     betTimeout,
   } = useGameState(gameId || null);
 
-  // Handle action button clicks — calls player_action on-chain
-  const handleAction = useCallback(async (action: Action, amount?: bigint) => {
-    if (!programs || !gameIdBigInt) return;
-    try {
-      await playerAction(
-        programs.texasHoldem,
-        gameIdBigInt,
-        action,
-        amount ?? BigInt(0)
-      );
-    } catch (err) {
-      console.error('Action failed:', err);
-    }
-  }, [programs, gameIdBigInt]);
-
-  const handleTimeoutShuffle = useCallback(async () => {
-    if (!programs || !gameIdBigInt) return;
-    try { await timeoutShuffle(programs.cerberusPoker, gameIdBigInt); }
-    catch (err) { console.error('Timeout shuffle failed:', err); }
-  }, [programs, gameIdBigInt]);
-
-  const handleTimeoutReveal = useCallback(async () => {
-    if (!programs || !gameIdBigInt) return;
-    try { await timeoutReveal(programs.cerberusPoker, gameIdBigInt); }
-    catch (err) { console.error('Timeout reveal failed:', err); }
-  }, [programs, gameIdBigInt]);
-
-  const handleTimeoutBet = useCallback(async () => {
-    if (!programs || !gameIdBigInt) return;
-    try { await timeoutBet(programs.texasHoldem, gameIdBigInt); }
-    catch (err) { console.error('Timeout bet failed:', err); }
-  }, [programs, gameIdBigInt]);
+  // Handle action button clicks
+  const handleAction = (action: Action, amount?: bigint) => {
+    console.log('Action:', action, amount);
+    // TODO: Call player_action instruction
+    // TODO: If action involves bet (Call/Raise/AllIn), also call place_bet
+  };
 
   if (isLoading) {
     return (
@@ -107,23 +75,23 @@ export default function GameTable() {
   // If no game data after loading, use mock data for UI development
   const useMockData = !gameSession || !pokerTable;
   
+  const { publicKey } = useWallet();
+  
   const mockGameSession = {
     gameId: gameIdBigInt,
     numPlayers: 4,
     maxPlayers: 6,
-    state: 0,
-    players: [
-      publicKey ?? PublicKey.default,
-      PublicKey.default,
-      PublicKey.default,
-      PublicKey.default,
-    ],
+    state: GameState.Active,
+    players: Array(4).fill(publicKey ?? null).filter(Boolean),
     shuffleBitmap: 0,
     shuffleDeadline: BigInt(0),
-    revealBitmap: [BigInt(0)],
+    revealBitmap: Array(52).fill(BigInt(0)),
     revealDeadline: BigInt(0),
     cardAssignedTo: new Array(52).fill(0xFE),
     unmaskedCards: new Array(52).fill(0xFF),
+    pendingRevealCardIndex: 0xfe,
+    pendingDealCardIndex: 0xfe,
+    pendingDealPlayerIndex: 0xfe,
   };
 
   const mockPokerTable = {
@@ -133,25 +101,29 @@ export default function GameTable() {
     currentBet: BigInt(2),
     currentPlayer: 0,
     dealerIndex: 0,
-    phase: 0, // PreFlop
+    phase: PokerPhase.PreFlop,
     handNumber: 1,
     foldedBitmap: 0,
     allInBitmap: 0,
+    handVerifiedBitmap: 0,
+    lastActionTime: BigInt(0),
+    numPlayers: 4,
+    actedBitmap: 0,
+    winnersBitmap: 0,
+    winnerCount: 0,
+    lastRaise: BigInt(2),
+    potTotal: BigInt(4_500_000_000),
+    playerRoundBets: Array(10).fill(BigInt(0)),
   };
 
   const displayGameSession = useMockData ? mockGameSession : gameSession;
   const displayPokerTable = useMockData ? mockPokerTable : pokerTable;
   const displayPhase = useMockData ? UIPhase.PreFlop : phase;
   const displayMyPlayerIndex = useMockData ? 0 : myPlayerIndex;
-  const displayMyHoleCards: [number, number] | null = useMockData ? [0, 13] : myHoleCards;
+  const displayMyHoleCards: [number, number] | null = useMockData ? [0, 13] : myHoleCards; // Ace of Clubs, Ace of Diamonds
   const displayCommunityCards = useMockData ? [0xFF, 0xFF, 0xFF, 0xFF, 0xFF] : communityCards;
   const displayPot = useMockData ? 4.5 : pot;
   const displayIsMyTurn = useMockData ? true : isMyTurn;
-
-  // Table is full and waiting to start
-  const isTableFull = displayGameSession.numPlayers >= displayGameSession.maxPlayers;
-  const isInLobby = displayPhase === UIPhase.Lobby || (!useMockData && gameSession?.state === GameState.Lobby);
-  const canStartGame = isTableFull && isInLobby && displayMyPlayerIndex === 0; // creator (index 0) starts
 
   // Position mapping for the oval table (6 max players)
   // Hero is always at bottom center
@@ -197,7 +169,6 @@ export default function GameTable() {
           </div>
           
           <div className="flex gap-2">
-             <WalletBalances />
              <button className="w-10 h-10 rounded-xl bg-surface-raised border border-zinc-800 flex items-center justify-center text-zinc-400 hover:text-zinc-100">
                <Info className="w-5 h-5" />
              </button>
@@ -231,7 +202,7 @@ export default function GameTable() {
       {shuffleTimeout && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-waiting/90 backdrop-blur-md px-6 py-3 rounded-xl border border-waiting flex items-center gap-4">
           <span className="text-background font-bold">⚠ Shuffle stalled — a player stopped responding.</span>
-          <button onClick={handleTimeoutShuffle} className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
+          <button className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
             Claim Timeout
           </button>
         </div>
@@ -239,7 +210,7 @@ export default function GameTable() {
       {revealTimeout && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-waiting/90 backdrop-blur-md px-6 py-3 rounded-xl border border-waiting flex items-center gap-4">
           <span className="text-background font-bold">⚠ Reveal stalled — a player stopped responding.</span>
-          <button onClick={handleTimeoutReveal} className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
+          <button className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
             Claim Timeout
           </button>
         </div>
@@ -247,7 +218,7 @@ export default function GameTable() {
       {betTimeout && isMyTurn && (
         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-50 bg-waiting/90 backdrop-blur-md px-6 py-3 rounded-xl border border-waiting flex items-center gap-4">
           <span className="text-background font-bold">⚠ You're taking too long.</span>
-          <button onClick={handleTimeoutBet} className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
+          <button className="px-4 py-1 bg-background text-waiting rounded-lg font-bold text-sm hover:bg-zinc-900">
             Force Fold
           </button>
         </div>
@@ -269,42 +240,6 @@ export default function GameTable() {
 
           {/* Community Cards & Pot */}
           <CommunityCards cards={displayCommunityCards} pot={displayPot} />
-
-          {/* Start Game Banner — shown when table is full and in lobby */}
-          {isInLobby && (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 z-10">
-              {isTableFull ? (
-                <>
-                  <div className="text-center mb-2">
-                    <p className="text-zinc-400 text-sm font-mono uppercase tracking-widest">
-                      Table Full · {displayGameSession.numPlayers}/{displayGameSession.maxPlayers} Players
-                    </p>
-                  </div>
-                  {canStartGame ? (
-                    <button
-                      onClick={() => console.log('TODO: start_shuffle — needs Arcium MXE accounts from backend')}
-                      className="px-8 py-3 bg-gold text-background rounded-xl font-bold uppercase tracking-widest text-sm shadow-gold-glow hover:scale-[1.02] active:scale-[0.98] transition-all"
-                    >
-                      Start Game
-                    </button>
-                  ) : (
-                    <div className="px-6 py-3 bg-surface-raised border border-zinc-700 rounded-xl text-zinc-400 text-sm font-mono">
-                      Waiting for host to start...
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className="text-center">
-                  <p className="text-zinc-400 text-sm font-mono uppercase tracking-widest mb-1">
-                    Waiting for players
-                  </p>
-                  <p className="text-zinc-600 text-xs font-mono">
-                    {displayGameSession.numPlayers} / {displayGameSession.maxPlayers} joined
-                  </p>
-                </div>
-              )}
-            </div>
-          )}
 
           {/* Player Seats */}
           {Array.from({ length: displayGameSession.numPlayers }).map((_, absoluteIndex) => {

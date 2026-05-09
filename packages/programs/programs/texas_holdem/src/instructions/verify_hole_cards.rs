@@ -41,7 +41,7 @@ pub fn handler(
     
     // Verify player index is valid
     require!(
-        player_index < 10,
+        player_index < table.num_players,
         TexasHoldemError::InvalidGameState
     );
     
@@ -59,18 +59,9 @@ pub fn handler(
         TexasHoldemError::PlayerFolded
     );
     
-    // In a full implementation, we would:
-    // 1. Read the player's hole card indices from game_session.card_assigned_to
-    // 2. Read the revealed card values from game_session.unmasked_cards
-    // 3. Verify the MXE attestation (proof that these values are correct)
-    // 4. Verify the card values match the encrypted deck commitment
-    //
-    // For now, we assume the MXE has already revealed the cards via atomic_showdown
-    // and we just need to mark the hand as verified.
-    
     // Verify the player has cards assigned. game_session is owned by the
     // cerberus_poker program, so read the stable GameSession layout directly.
-    const CARD_ASSIGNED_TO_OFFSET: usize = 8  // discriminator
+    const UNMASKED_CARDS_OFFSET: usize = 8  // discriminator
         + 8   // game_id
         + 1   // state
         + 1   // max_players
@@ -80,8 +71,8 @@ pub fn handler(
         + 8   // active_computation_offset
         + 32  // encrypted_deck_hash
         + 2   // shuffle_bitmap
-        + 8   // reveal_bitmap
-        + 52; // unmasked_cards
+        + 416; // reveal_bitmap: 52 * u64
+    const CARD_ASSIGNED_TO_OFFSET: usize = UNMASKED_CARDS_OFFSET + 52;
     const CARD_ASSIGNED_TO_LEN: usize = 52;
 
     let game_session_data = game_session.try_borrow_data()?;
@@ -90,11 +81,16 @@ pub fn handler(
         TexasHoldemError::InvalidGameState
     );
 
+    let unmasked_cards = &game_session_data[UNMASKED_CARDS_OFFSET..UNMASKED_CARDS_OFFSET + 52];
     let card_assignments = &game_session_data
         [CARD_ASSIGNED_TO_OFFSET..CARD_ASSIGNED_TO_OFFSET + CARD_ASSIGNED_TO_LEN];
     let mut cards_found = 0u8;
-    for assigned_to in card_assignments.iter() {
+    for (card_index, assigned_to) in card_assignments.iter().enumerate() {
         if *assigned_to == player_index {
+            require!(
+                unmasked_cards[card_index] < 52,
+                TexasHoldemError::NoCardsToVerify
+            );
             cards_found += 1;
         }
     }

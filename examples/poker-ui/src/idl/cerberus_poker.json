@@ -162,30 +162,7 @@
         },
         {
           "name": "dealt_card",
-          "writable": true,
-          "pda": {
-            "seeds": [
-              {
-                "kind": "const",
-                "value": [
-                  100,
-                  101,
-                  97,
-                  108,
-                  116,
-                  95,
-                  99,
-                  97,
-                  114,
-                  100
-                ]
-              },
-              {
-                "kind": "account",
-                "path": "game_session"
-              }
-            ]
-          }
+          "writable": true
         },
         {
           "name": "payer",
@@ -1352,66 +1329,71 @@
     },
     {
       "code": 6008,
+      "name": "RevealAlreadySubmitted",
+      "msg": "Reveal contribution already submitted for this player and card"
+    },
+    {
+      "code": 6009,
       "name": "DuplicateCardValue",
       "msg": "Duplicate card value detected"
     },
     {
-      "code": 6009,
+      "code": 6010,
       "name": "CardValueOutOfRange",
       "msg": "Card value out of range (must be 0-51)"
     },
     {
-      "code": 6010,
+      "code": 6011,
       "name": "CardIndexOutOfRange",
       "msg": "Card index out of range"
     },
     {
-      "code": 6011,
+      "code": 6012,
       "name": "CardNotAssigned",
       "msg": "Card not yet assigned"
     },
     {
-      "code": 6012,
+      "code": 6013,
       "name": "DeckIntegrityFailed",
       "msg": "Deck integrity check failed"
     },
     {
-      "code": 6013,
+      "code": 6014,
       "name": "TimeoutNotReached",
       "msg": "Timeout deadline has not been reached yet"
     },
     {
-      "code": 6014,
+      "code": 6015,
       "name": "NoDeadlineSet",
       "msg": "No deadline set for current phase"
     },
     {
-      "code": 6015,
+      "code": 6016,
       "name": "AbortedComputation",
       "msg": "MXE computation was aborted"
     },
     {
-      "code": 6016,
+      "code": 6017,
       "name": "InvalidMxeOutput",
       "msg": "MXE output verification failed"
     },
     {
-      "code": 6017,
+      "code": 6018,
       "name": "ComputationOffsetMismatch",
       "msg": "Computation offset mismatch"
     },
     {
-      "code": 6018,
+      "code": 6019,
       "name": "UnauthorizedCreator",
       "msg": "Only the game creator can perform this action"
     },
     {
-      "code": 6019,
+      "code": 6020,
       "name": "UnauthorizedPlayer",
       "msg": "Signer is not a participant in this game"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "Overflow",
       "msg": "Arithmetic overflow"
     }
@@ -1829,6 +1811,14 @@
             "type": "u64"
           },
           {
+            "name": "card_index",
+            "type": "u8"
+          },
+          {
+            "name": "player_index",
+            "type": "u8"
+          },
+          {
             "name": "card_value",
             "docs": [
               "The card value (0-51) after threshold decryption"
@@ -1987,13 +1977,14 @@
           {
             "name": "reveal_bitmap",
             "docs": [
-              "Per-card reveal tracking: bit i = 1 means card i has been revealed",
-              "Stored as two u64s to cover 52 cards (only lower 52 bits used)"
+              "Per-card reveal contribution tracking.",
+              "reveal_bitmap[card_index] bit player_index = 1 means that player submitted",
+              "their reveal contribution for that card."
             ],
             "type": {
               "array": [
                 "u64",
-                1
+                52
               ]
             }
           },
@@ -2056,6 +2047,27 @@
               "Unix timestamp deadline for reveal phase (0 = no deadline set)"
             ],
             "type": "i64"
+          },
+          {
+            "name": "pending_reveal_card_index",
+            "docs": [
+              "Card index associated with the active reveal computation"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "pending_deal_card_index",
+            "docs": [
+              "Card index associated with the active deal computation"
+            ],
+            "type": "u8"
+          },
+          {
+            "name": "pending_deal_player_index",
+            "docs": [
+              "Player index associated with the active deal computation"
+            ],
+            "type": "u8"
           },
           {
             "name": "bump",

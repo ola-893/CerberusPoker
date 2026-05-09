@@ -9,7 +9,7 @@ import {
   SendOptions,
   Commitment,
   TransactionMessage,
-  AddressLookupTableAccount,
+    AddressLookupTableAccount,
 } from '@solana/web3.js';
 import { AnchorProvider } from '@coral-xyz/anchor';
 import type { AnchorWallet, ConfirmOptions } from './types';
@@ -78,6 +78,16 @@ export class TransactionBuilder {
       backoffMultiplier: retryConfig?.backoffMultiplier ?? 2,
       maxDelayMs: retryConfig?.maxDelayMs ?? 10000,
     };
+  }
+
+  private makeSendOptions(options?: SendOptions): SendOptions {
+    const sendOptions: SendOptions = {
+      skipPreflight: options?.skipPreflight ?? false,
+    };
+    if (options?.maxRetries !== undefined) {
+      sendOptions.maxRetries = options.maxRetries;
+    }
+    return sendOptions;
   }
   
   /**
@@ -236,10 +246,10 @@ export class TransactionBuilder {
       try {
         const rawTransaction = transaction.serialize();
         
-        const signature = await this.provider.connection.sendRawTransaction(rawTransaction, {
-          skipPreflight: options?.skipPreflight ?? false,
-          maxRetries: options?.maxRetries,
-        });
+        const signature = await this.provider.connection.sendRawTransaction(
+          rawTransaction,
+          this.makeSendOptions(options)
+        );
         
         return signature;
       } catch (error: any) {
@@ -330,7 +340,7 @@ export class TransactionBuilder {
       if (result.value.err) {
         // Fetch transaction details for logs
         const tx = await this.provider.connection.getTransaction(signature, {
-          commitment,
+          commitment: commitment as any,
           maxSupportedTransactionVersion: 0,
         });
         
@@ -387,10 +397,7 @@ export class TransactionBuilder {
     // Send with retry
     const signature = await this.send(
       signedTx,
-      {
-        skipPreflight: options?.skipPreflight,
-        maxRetries: options?.maxRetries,
-      },
+      this.makeSendOptions(options),
       retryConfig
     );
     
@@ -440,10 +447,7 @@ export class TransactionBuilder {
     // Send with retry
     const signature = await this.send(
       signedTx,
-      {
-        skipPreflight: confirmOptions?.skipPreflight,
-        maxRetries: confirmOptions?.maxRetries,
-      },
+      this.makeSendOptions(confirmOptions),
       retryConfig
     );
     
@@ -468,10 +472,7 @@ export class TransactionBuilder {
   ): Promise<TransactionSignature> {
     const signature = await this.send(
       transaction,
-      {
-        skipPreflight: options?.skipPreflight,
-        maxRetries: options?.maxRetries,
-      },
+      this.makeSendOptions(options),
       retryConfig
     );
     
@@ -508,7 +509,7 @@ export class TransactionBuilder {
     commitment: Commitment = 'confirmed'
   ): Promise<any> {
     return await this.provider.connection.getTransaction(signature, {
-      commitment,
+      commitment: commitment as any,
       maxSupportedTransactionVersion: 0,
     });
   }
@@ -581,15 +582,9 @@ export class TransactionBuilder {
     commitment: Commitment = 'confirmed'
   ): Promise<any> {
     try {
-      if (transaction instanceof Transaction) {
-        return await this.provider.connection.simulateTransaction(transaction, {
-          commitment,
-        });
-      } else {
-        return await this.provider.connection.simulateTransaction(transaction, {
-          commitment,
-        });
-      }
+      return await (this.provider.connection as any).simulateTransaction(transaction, {
+        commitment,
+      });
     } catch (error) {
       throw new TransactionError(
         `Transaction simulation failed: ${error instanceof Error ? error.message : 'unknown error'}`,
@@ -608,7 +603,7 @@ export class TransactionBuilder {
    */
   async getRecentPrioritizationFees(addresses?: string[]): Promise<any> {
     return await this.provider.connection.getRecentPrioritizationFees({
-      lockedWritableAccounts: addresses,
+      lockedWritableAccounts: addresses as any,
     });
   }
   

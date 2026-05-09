@@ -27,9 +27,10 @@ pub struct GameSession {
     /// Bitmask: which players have completed their shuffle contribution
     /// bit i = 1 means player i has shuffled
     pub shuffle_bitmap: u16,
-    /// Per-card reveal tracking: bit i = 1 means card i has been revealed
-    /// Stored as two u64s to cover 52 cards (only lower 52 bits used)
-    pub reveal_bitmap: [u64; 1],
+    /// Per-card reveal contribution tracking.
+    /// reveal_bitmap[card_index] bit player_index = 1 means that player submitted
+    /// their reveal contribution for that card.
+    pub reveal_bitmap: [u64; 52],
     /// Revealed card values: unmasked_cards[i] = card value at deck position i
     /// 0xFF = not yet revealed
     pub unmasked_cards: [u8; 52],
@@ -45,6 +46,12 @@ pub struct GameSession {
     pub shuffle_deadline: i64,
     /// Unix timestamp deadline for reveal phase (0 = no deadline set)
     pub reveal_deadline: i64,
+    /// Card index associated with the active reveal computation
+    pub pending_reveal_card_index: u8,
+    /// Card index associated with the active deal computation
+    pub pending_deal_card_index: u8,
+    /// Player index associated with the active deal computation
+    pub pending_deal_player_index: u8,
     /// PDA bump seed
     pub bump: u8,
 }
@@ -61,13 +68,16 @@ impl GameSession {
         + 8   // active_computation_offset
         + 32  // encrypted_deck_hash
         + 2   // shuffle_bitmap
-        + 8   // reveal_bitmap
+        + 416 // reveal_bitmap: 52 * 8
         + 52  // unmasked_cards
         + 52  // card_assigned_to
         + 8   // card_value_used
         + 8   // created_at
         + 8   // shuffle_deadline
         + 8   // reveal_deadline
+        + 1   // pending_reveal_card_index
+        + 1   // pending_deal_card_index
+        + 1   // pending_deal_player_index
         + 1;  // bump
 
     /// Check if a card value has already been used in this game
@@ -90,14 +100,38 @@ impl GameSession {
         if card_index >= 52 {
             return false;
         }
-        (self.reveal_bitmap[0] >> card_index) & 1 == 1
+        self.unmasked_cards[card_index as usize] != UNREVEALED
     }
 
     /// Mark a card as revealed
-    pub fn mark_card_revealed(&mut self, card_index: u8) {
-        if card_index < 52 {
-            self.reveal_bitmap[0] |= 1u64 << card_index;
+    pub fn mark_card_revealed(&mut self, _card_index: u8) {
+        // Revealed status is derived from unmasked_cards so there is no
+        // separate card-level bitmap to mutate.
+    }
+
+    /// Check whether a player has submitted their reveal contribution for a card
+    pub fn has_player_submitted_reveal(&self, card_index: u8, player_index: u8) -> bool {
+        if card_index >= 52 || player_index >= 64 {
+            return false;
         }
+        (self.reveal_bitmap[card_index as usize] & (1u64 << player_index)) != 0
+    }
+
+    /// Mark a player's reveal contribution for a card
+    pub fn mark_player_reveal_submitted(&mut self, card_index: u8, player_index: u8) {
+        if card_index < 52 && player_index < 64 {
+            self.reveal_bitmap[card_index as usize] |= 1u64 << player_index;
+        }
+    }
+
+    /// Check whether every registered player has submitted a reveal contribution
+    pub fn all_players_submitted_reveal(&self, card_index: u8) -> bool {
+        if card_index >= 52 || self.num_players == 0 {
+            return false;
+        }
+
+        let mask = (1u64 << self.num_players) - 1;
+        self.reveal_bitmap[card_index as usize] & mask == mask
     }
 
     /// Check if a player has shuffled

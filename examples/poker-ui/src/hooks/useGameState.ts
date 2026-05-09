@@ -1,106 +1,103 @@
 /**
- * useGameState — master hook combining all on-chain game state
- * Returns everything needed to render the GameTable
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
  */
 
 import { useMemo } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { useGameSession } from './useGameSession';
 import { usePokerTable } from './usePokerTable';
-import { useDealtCard, decryptHoleCards } from './useDealtCard';
+import { useDealtCards, decryptHoleCards } from './useDealtCard';
 import { useUIStore } from '../store/gameStore';
 import { deriveUIPhase } from '../lib/deriveUIPhase';
 import { UIPhase, UNREVEALED, COMMUNITY_CARD } from '../types';
 
+/**
+ * Master hook that combines all game state sources
+ * Returns everything needed to render the GameTable
+ */
 export function useGameState(gameId: string | null) {
   const { publicKey } = useWallet();
   const { data: gameSession, isLoading: loadingSession } = useGameSession(gameId);
   const { data: pokerTable, isLoading: loadingTable } = usePokerTable(gameId);
   const { sawShowdownComplete, turnStartedAt } = useUIStore();
 
-  // Derive my player index from the on-chain players array
+  // Derive my player index
   const myPlayerIndex = useMemo(() => {
     if (!gameSession || !publicKey) return null;
-    const idx = gameSession.players.findIndex(p => p.equals(publicKey));
-    return idx === -1 ? null : idx;
+    return gameSession.players.findIndex(p => p.equals(publicKey));
   }, [gameSession, publicKey]);
 
-  // Fetch my two hole cards — always call with stable values.
-  // Use -1 as sentinel for "not yet known" — the hook disables itself when null.
-  const card2Index = myPlayerIndex !== null && gameSession
-    ? myPlayerIndex + gameSession.maxPlayers
-    : null;
+  const { data: dealtCards } = useDealtCards(gameId, gameSession, myPlayerIndex);
 
-  const { data: dealtCard1 } = useDealtCard(gameId, myPlayerIndex);
-  const { data: dealtCard2 } = useDealtCard(gameId, card2Index);
-
-  // Derive UI phase from game state + poker phase
+  // Derive UI phase
   const phase = useMemo(() => {
     return deriveUIPhase(gameSession?.state, pokerTable?.phase, sawShowdownComplete);
   }, [gameSession?.state, pokerTable?.phase, sawShowdownComplete]);
 
-  // Hole cards — available after MXE deal callback completes
+  // Decrypt hole cards
   const myHoleCards = useMemo(() => {
-    return decryptHoleCards(dealtCard1 ?? null, dealtCard2 ?? null);
-  }, [dealtCard1, dealtCard2]);
+    return decryptHoleCards(dealtCards ?? null);
+  }, [dealtCards]);
 
-  // Community cards — extracted from unmasked_cards array
+  // Extract community cards from unmasked_cards
   const communityCards = useMemo(() => {
     if (!gameSession) return [0xfe, 0xfe, 0xfe, 0xfe, 0xfe];
-
+    
     const cards: number[] = [];
-    const revealMask = gameSession.revealBitmap[0] ?? BigInt(0);
-
     for (let i = 0; i < 52; i++) {
       if (gameSession.cardAssignedTo[i] === COMMUNITY_CARD) {
-        const isRevealed = (revealMask >> BigInt(i)) & BigInt(1);
-        cards.push(isRevealed ? (gameSession.unmaskedCards[i] ?? UNREVEALED) : UNREVEALED);
+        const cardValue = gameSession.unmaskedCards[i] ?? UNREVEALED;
+        cards.push(cardValue < 52 ? cardValue : UNREVEALED);
       }
     }
-
-    while (cards.length < 5) cards.push(0xfe);
+    
+    // Pad to 5 cards
+    while (cards.length < 5) {
+      cards.push(0xfe);
+    }
+    
     return cards.slice(0, 5);
   }, [gameSession]);
 
-  // Is it my turn to act?
+  // Check if it's my turn
   const isMyTurn = useMemo(() => {
     if (!pokerTable || myPlayerIndex === null) return false;
     return pokerTable.currentPlayer === myPlayerIndex && phase !== UIPhase.Lobby;
   }, [pokerTable, myPlayerIndex, phase]);
 
-  // Have I folded?
+  // Check if I've folded
   const isFolded = useMemo(() => {
     if (!pokerTable || myPlayerIndex === null) return false;
     return ((pokerTable.foldedBitmap >> myPlayerIndex) & 1) === 1;
   }, [pokerTable, myPlayerIndex]);
 
-  // Am I all-in?
+  // Check if I'm all-in
   const isAllIn = useMemo(() => {
     if (!pokerTable || myPlayerIndex === null) return false;
     return ((pokerTable.allInBitmap >> myPlayerIndex) & 1) === 1;
   }, [pokerTable, myPlayerIndex]);
 
-  // Pot size — sum of all player bets (read from escrow account balance)
-  // TODO: fetch actual SPL token balance from pokerTable.escrowAccount
   const pot = useMemo(() => {
-    return 0; // Will be populated once we fetch the escrow token account
-  }, []);
+    if (!pokerTable) return 0;
+    return Number(pokerTable.potTotal) / 1_000_000_000;
+  }, [pokerTable]);
 
-  // Timeout checks
+  // Check timeouts
   const now = Date.now() / 1000;
-  const shuffleTimeout = !!(gameSession && Number(gameSession.shuffleDeadline) > 0 && now > Number(gameSession.shuffleDeadline));
-  const revealTimeout  = !!(gameSession && Number(gameSession.revealDeadline) > 0  && now > Number(gameSession.revealDeadline));
-  const betTimeout     = !!(turnStartedAt && (Date.now() - turnStartedAt) > 120_000);
+  const shuffleTimeout = gameSession && gameSession.shuffleDeadline > 0 && now > Number(gameSession.shuffleDeadline);
+  const revealTimeout = gameSession && gameSession.revealDeadline > 0 && now > Number(gameSession.revealDeadline);
+  const betTimeout = turnStartedAt && (Date.now() - turnStartedAt) > 120000; // 120 seconds
 
   return {
-    // Loading
+    // Loading states
     isLoading: loadingSession || loadingTable,
-
-    // Raw account data
+    
+    // Account data
     gameSession,
     pokerTable,
-
-    // Derived
+    
+    // Derived state
     phase,
     myPlayerIndex,
     myHoleCards,
@@ -109,8 +106,8 @@ export function useGameState(gameId: string | null) {
     isMyTurn,
     isFolded,
     isAllIn,
-
-    // Timeouts
+    
+    // Timeout flags
     shuffleTimeout,
     revealTimeout,
     betTimeout,

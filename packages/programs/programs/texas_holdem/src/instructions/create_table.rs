@@ -70,6 +70,14 @@ pub fn handler(
     // Initialize last action time to current time
     let clock = Clock::get()?;
     table.last_action_time = clock.unix_timestamp;
+
+    table.num_players = 0;
+    table.acted_bitmap = 0;
+    table.winners_bitmap = 0;
+    table.winner_count = 0;
+    table.last_raise = big_blind;
+    table.pot_total = 0;
+    table.player_round_bets = [0u64; 10];
     
     // Store PDA bump seed for future verification
     table.bump = ctx.bumps.poker_table;

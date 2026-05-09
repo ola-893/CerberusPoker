@@ -3,7 +3,7 @@ use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::{ID, ID_CONST};
 
 use crate::errors::CerberusPokerError;
-use crate::state::{GameSession, REVEAL_TIMEOUT_SECS};
+use crate::state::{GameSession, GameState, COMMUNITY_CARD, REVEAL_TIMEOUT_SECS};
 use crate::RevealCardCallback;
 use crate::SignerAccount;
 
@@ -25,24 +25,55 @@ pub fn handler(
 ) -> Result<()> {
     let game = &mut ctx.accounts.game_session;
 
+    require!(
+        game.state == GameState::Deal || game.state == GameState::Active || game.state == GameState::Showdown,
+        CerberusPokerError::InvalidGameState
+    );
+
     // Validate card index
     require!(
         card_index < game.deck_size,
         CerberusPokerError::CardIndexOutOfRange
     );
 
-    // Ensure card hasn't been revealed yet
     require!(
         !game.is_card_revealed(card_index),
         CerberusPokerError::CardAlreadyRevealed
     );
+    require!(
+        game.card_assigned_to[card_index as usize] == COMMUNITY_CARD,
+        CerberusPokerError::CardNotAssigned
+    );
 
-    // Store the active computation offset for tracking
-    game.active_computation_offset = computation_offset;
+    let player_index = game
+        .players
+        .iter()
+        .take(game.num_players as usize)
+        .position(|player| *player == ctx.accounts.payer.key())
+        .ok_or(CerberusPokerError::UnauthorizedPlayer)? as u8;
 
-    // Set reveal deadline for timeout enforcement
+    require!(
+        !game.has_player_submitted_reveal(card_index, player_index),
+        CerberusPokerError::RevealAlreadySubmitted
+    );
+    game.mark_player_reveal_submitted(card_index, player_index);
+
     let clock = Clock::get()?;
     game.reveal_deadline = clock.unix_timestamp + REVEAL_TIMEOUT_SECS;
+
+    if !game.all_players_submitted_reveal(card_index) {
+        msg!(
+            "Player {} submitted reveal contribution for card {}; waiting for remaining players",
+            player_index,
+            card_index
+        );
+        return Ok(());
+    }
+
+    // Store the active computation offset for tracking once every player has
+    // contributed their reveal token and the MXE reveal can be queued.
+    game.active_computation_offset = computation_offset;
+    game.pending_reveal_card_index = card_index;
 
     // Build arguments for reveal_card MXE instruction:
     // reveal_card(card: Enc<Mxe, EncryptedCard>, card_index: u8) -> u8
@@ -68,7 +99,7 @@ pub fn handler(
     )?;
 
     msg!(
-        "Queued reveal_card computation for card {} (offset: {})",
+        "All reveal contributions received; queued reveal_card computation for card {} (offset: {})",
         card_index,
         computation_offset
     );

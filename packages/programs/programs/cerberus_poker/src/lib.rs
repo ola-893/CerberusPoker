@@ -219,7 +219,12 @@ pub struct DealCardToRecipientCallback<'info> {
         init_if_needed,
         payer = payer,
         space = DealtCard::SPACE,
-        seeds = [b"dealt_card", game_session.key().as_ref()],
+        seeds = [
+            b"dealt_card",
+            game_session.key().as_ref(),
+            &[game_session.pending_deal_player_index],
+            &[game_session.pending_deal_card_index],
+        ],
         bump
     )]
     pub dealt_card: Account<'info, DealtCard>,

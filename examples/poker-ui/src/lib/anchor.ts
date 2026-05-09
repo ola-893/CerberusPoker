@@ -76,7 +76,7 @@ export function deriveGameSessionPDA(gameId: bigint): [PublicKey, number] {
   gameIdBuffer.writeBigUInt64LE(gameId);
   
   return PublicKey.findProgramAddressSync(
-    [Buffer.from('game'), gameIdBuffer],   // seed: b"game"
+    [Buffer.from('game'), gameIdBuffer],
     CERBERUS_POKER_PROGRAM_ID
   );
 }
@@ -86,17 +86,21 @@ export function derivePokerTablePDA(gameId: bigint): [PublicKey, number] {
   gameIdBuffer.writeBigUInt64LE(gameId);
   
   return PublicKey.findProgramAddressSync(
-    [Buffer.from('table'), gameIdBuffer],  // seed: b"table"
+    [Buffer.from('table'), gameIdBuffer],
     TEXAS_HOLDEM_PROGRAM_ID
   );
 }
 
-export function deriveDealtCardPDA(gameId: bigint): [PublicKey, number] {
-  const gameIdBuffer = Buffer.alloc(8);
-  gameIdBuffer.writeBigUInt64LE(gameId);
+export function deriveDealtCardPDA(
+  gameSession: PublicKey,
+  playerIndex: number,
+  cardIndex: number
+): [PublicKey, number] {
+  const playerIndexBuffer = Buffer.from([playerIndex]);
+  const cardIndexBuffer = Buffer.from([cardIndex]);
   
   return PublicKey.findProgramAddressSync(
-    [Buffer.from('dealt_card'), gameIdBuffer, Buffer.from([0])],
+    [Buffer.from('dealt_card'), gameSession.toBuffer(), playerIndexBuffer, cardIndexBuffer],
     CERBERUS_POKER_PROGRAM_ID
   );
 }

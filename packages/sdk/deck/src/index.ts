@@ -340,7 +340,7 @@ export class DeckModule {
     // For now, we extract the card value from the first byte of ciphertext
     // XOR'd with the first byte of a derived key
     const sharedSecret = this.deriveSharedSecret(privateKey, dealtCard.nonce);
-    const cardValue = dealtCard.ciphertext[0] ^ sharedSecret[0];
+    const cardValue = (dealtCard.ciphertext[0] ?? 0) ^ (sharedSecret[0] ?? 0);
 
     if (cardValue < 0 || cardValue >= DECK_SIZE) {
       throw new Error(`Decrypted invalid card value: ${cardValue}`);
@@ -555,7 +555,9 @@ export class DeckModule {
     const arr = Array.from({ length: size }, (_, i) => i);
     for (let i = size - 1; i > 0; i--) {
       const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
+      const current = arr[i] ?? i;
+      arr[i] = arr[j] ?? j;
+      arr[j] = current;
     }
     return arr;
   }
@@ -588,7 +590,7 @@ export class DeckModule {
     // Production should use actual x25519 scalar multiplication
     const secret = new Uint8Array(32);
     for (let i = 0; i < 32; i++) {
-      secret[i] = privateKey[i] ^ publicKey[i % publicKey.length];
+      secret[i] = (privateKey[i] ?? 0) ^ (publicKey[i % publicKey.length] ?? 0);
     }
     return secret;
   }

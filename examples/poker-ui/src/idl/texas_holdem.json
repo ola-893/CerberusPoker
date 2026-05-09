@@ -749,9 +749,16 @@
         {
           "name": "game_session",
           "docs": [
-            "The GameSession PDA from cerberus_poker program",
-            "Contains card assignments and revealed card values"
+            "The GameSession PDA from cerberus_poker program."
           ]
+        },
+        {
+          "name": "escrow_account",
+          "writable": true
+        },
+        {
+          "name": "token_program",
+          "address": "TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA"
         },
         {
           "name": "caller",
@@ -1808,6 +1815,9 @@
           },
           {
             "name": "Showdown"
+          },
+          {
+            "name": "Complete"
           }
         ]
       }
@@ -1898,6 +1908,39 @@
           {
             "name": "last_action_time",
             "type": "i64"
+          },
+          {
+            "name": "num_players",
+            "type": "u8"
+          },
+          {
+            "name": "acted_bitmap",
+            "type": "u16"
+          },
+          {
+            "name": "winners_bitmap",
+            "type": "u16"
+          },
+          {
+            "name": "winner_count",
+            "type": "u8"
+          },
+          {
+            "name": "last_raise",
+            "type": "u64"
+          },
+          {
+            "name": "pot_total",
+            "type": "u64"
+          },
+          {
+            "name": "player_round_bets",
+            "type": {
+              "array": [
+                "u64",
+                10
+              ]
+            }
           },
           {
             "name": "bump",

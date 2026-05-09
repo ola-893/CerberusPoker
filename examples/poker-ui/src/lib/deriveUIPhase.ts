@@ -37,6 +37,8 @@ export function deriveUIPhase(
           return UIPhase.River;
         case PokerPhase.Showdown:
           return UIPhase.Showdown;
+        case PokerPhase.Complete:
+          return UIPhase.Complete;
         default:
           return UIPhase.PreFlop;
       }

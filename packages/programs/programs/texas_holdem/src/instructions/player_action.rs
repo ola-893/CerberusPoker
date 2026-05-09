@@ -39,172 +39,153 @@ pub fn handler(
     _game_id: u64,
     action: Action,
     amount: u64,
-    _computation_offset: u64,
+    computation_offset: u64,
 ) -> Result<()> {
     let player_index = ctx.accounts.poker_table.current_player;
     let clock = Clock::get()?;
+    let mut queue_bet_computation = false;
 
-    // Validate it's this player's turn
-    // The payer must be the current player (we don't have player registry yet,
-    // so we rely on the current_player index being correct)
-    
-    // Check player hasn't already folded
-    let folded_mask = 1u16 << player_index;
-    require!(
-        (ctx.accounts.poker_table.folded_bitmap & folded_mask) == 0,
-        TexasHoldemError::PlayerFolded
-    );
-    
-    // Check player isn't already all-in
-    let all_in_mask = 1u16 << player_index;
-    require!(
-        (ctx.accounts.poker_table.all_in_bitmap & all_in_mask) == 0,
-        TexasHoldemError::PlayerAllIn
-    );
+    {
+        let table = &mut ctx.accounts.poker_table;
 
-    // Process the action
-    match action {
-        Action::Fold => {
-            // Mark player as folded
-            ctx.accounts.poker_table.folded_bitmap |= folded_mask;
-            msg!("Player {} folded", player_index);
-        }
-        
-        Action::Check => {
-            // Check is only legal if there's no bet to call
+        require!(table.num_players >= 2, TexasHoldemError::NotEnoughPlayers);
+        require!(player_index < table.num_players, TexasHoldemError::NotYourTurn);
+        require!(
+            ctx.accounts.player_token_account.owner == ctx.accounts.payer.key(),
+            TexasHoldemError::InvalidStackAccount
+        );
+        require!(
+            ctx.accounts.player_token_account.mint == ctx.accounts.escrow_account.mint,
+            TexasHoldemError::InvalidPotAccount
+        );
+
+        let expected_stack = table.player_stacks[player_index as usize];
+        if expected_stack == Pubkey::default() {
+            table.player_stacks[player_index as usize] = ctx.accounts.player_token_account.key();
+        } else {
             require!(
-                ctx.accounts.poker_table.current_bet == 0,
-                TexasHoldemError::CannotCheck
+                expected_stack == ctx.accounts.player_token_account.key(),
+                TexasHoldemError::InvalidStackAccount
             );
-            msg!("Player {} checked", player_index);
         }
-        
-        Action::Call => {
-            // Call is only legal if there's a bet to match
-            require!(
-                ctx.accounts.poker_table.current_bet > 0,
-                TexasHoldemError::InvalidAction
-            );
-            
-            let call_amount = ctx.accounts.poker_table.current_bet;
-            
-            // Transfer USDC+ from player to escrow PDA (standard SPL transfer)
+
+        let folded_mask = 1u16 << player_index;
+        require!((table.folded_bitmap & folded_mask) == 0, TexasHoldemError::PlayerFolded);
+
+        let all_in_mask = 1u16 << player_index;
+        require!((table.all_in_bitmap & all_in_mask) == 0, TexasHoldemError::PlayerAllIn);
+
+        let mut transfer_amount = 0u64;
+        let current_player_bet = table.player_round_bets[player_index as usize];
+
+        match action {
+            Action::Fold => {
+                table.folded_bitmap |= folded_mask;
+                table.mark_acted(player_index);
+                msg!("Player {} folded", player_index);
+            }
+
+            Action::Check => {
+                require!(
+                    current_player_bet == table.current_bet,
+                    TexasHoldemError::CannotCheck
+                );
+                table.mark_acted(player_index);
+                msg!("Player {} checked", player_index);
+            }
+
+            Action::Call => {
+                require!(table.current_bet > current_player_bet, TexasHoldemError::InvalidAction);
+                transfer_amount = table.current_bet
+                    .checked_sub(current_player_bet)
+                    .ok_or(TexasHoldemError::Underflow)?;
+                table.player_round_bets[player_index as usize] = table.current_bet;
+                table.mark_acted(player_index);
+                msg!("Player {} called {}", player_index, transfer_amount);
+            }
+
+            Action::Raise => {
+                require!(amount > table.current_bet, TexasHoldemError::RaiseTooSmall);
+                let raise_delta = amount
+                    .checked_sub(table.current_bet)
+                    .ok_or(TexasHoldemError::Underflow)?;
+                require!(raise_delta >= table.last_raise, TexasHoldemError::RaiseTooSmall);
+                transfer_amount = amount
+                    .checked_sub(current_player_bet)
+                    .ok_or(TexasHoldemError::Underflow)?;
+                table.current_bet = amount;
+                table.last_raise = raise_delta;
+                table.player_round_bets[player_index as usize] = amount;
+                table.acted_bitmap = 0;
+                table.mark_acted(player_index);
+                msg!("Player {} raised to {}", player_index, amount);
+            }
+
+            Action::AllIn => {
+                require!(amount > current_player_bet, TexasHoldemError::InvalidAction);
+                transfer_amount = amount
+                    .checked_sub(current_player_bet)
+                    .ok_or(TexasHoldemError::Underflow)?;
+
+                if amount > table.current_bet {
+                    let raise_delta = amount
+                        .checked_sub(table.current_bet)
+                        .ok_or(TexasHoldemError::Underflow)?;
+                    table.current_bet = amount;
+                    if raise_delta >= table.last_raise {
+                        table.last_raise = raise_delta;
+                        table.acted_bitmap = 0;
+                    }
+                }
+
+                table.player_round_bets[player_index as usize] = amount;
+                table.all_in_bitmap |= all_in_mask;
+                table.mark_acted(player_index);
+                msg!("Player {} went all-in for {}", player_index, amount);
+            }
+        }
+
+        if transfer_amount > 0 {
             let cpi_accounts = Transfer {
                 from: ctx.accounts.player_token_account.to_account_info(),
                 to: ctx.accounts.escrow_account.to_account_info(),
                 authority: ctx.accounts.payer.to_account_info(),
             };
-            let cpi_program = ctx.accounts.token_program.to_account_info();
-            let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-            
-            token::transfer(cpi_ctx, call_amount)?;
-            
-            msg!("Player {} called {} — transferred to escrow", player_index, call_amount);
-            
-            // Queue MXE computation to store encrypted bet amount
-            // TODO: Build arguments for place_bet computation
-            let args = vec![];
+            let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+            token::transfer(cpi_ctx, transfer_amount)?;
 
-            ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
-
-            queue_computation(
-                ctx.accounts,
-                _computation_offset,
-                args,
-                None,
-                vec![PlaceBetCallback::callback_ix(&[])],
-                1, // num_callback_txs
-            )?;
-            
-            msg!("Queued MXE computation to store encrypted call bet for player {}", player_index);
-        }
-        
-        Action::Raise => {
-            // Raise must be at least current_bet + big_blind (minimum raise)
-            let min_raise = ctx.accounts.poker_table.current_bet.checked_add(ctx.accounts.poker_table.big_blind)
+            table.pot_total = table.pot_total
+                .checked_add(transfer_amount)
                 .ok_or(TexasHoldemError::Overflow)?;
-            
-            require!(
-                amount >= min_raise,
-                TexasHoldemError::RaiseTooSmall
-            );
-            
-            // Transfer USDC+ from player to escrow PDA (standard SPL transfer)
-            let cpi_accounts = Transfer {
-                from: ctx.accounts.player_token_account.to_account_info(),
-                to: ctx.accounts.escrow_account.to_account_info(),
-                authority: ctx.accounts.payer.to_account_info(),
-            };
-            let cpi_program = ctx.accounts.token_program.to_account_info();
-            let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-            
-            token::transfer(cpi_ctx, amount)?;
-            
-            msg!("Player {} raised to {} — transferred to escrow", player_index, amount);
-            
-            // Update current bet to the new raise amount
-            ctx.accounts.poker_table.current_bet = amount;
-            
-            // Queue MXE computation to store encrypted bet amount
-            // TODO: Build arguments for place_bet computation
-            let args = vec![];
-
-            ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
-
-            queue_computation(
-                ctx.accounts,
-                _computation_offset,
-                args,
-                None,
-                vec![PlaceBetCallback::callback_ix(&[])],
-                1, // num_callback_txs
-            )?;
-            
-            msg!("Queued MXE computation to store encrypted raise bet for player {}", player_index);
+            queue_bet_computation = true;
         }
-        
-        Action::AllIn => {
-            // Mark player as all-in
-            ctx.accounts.poker_table.all_in_bitmap |= all_in_mask;
-            
-            // In a full implementation, we would:
-            // 1. Transfer all remaining tokens from player stack to pot
-            // 2. Queue MXE computation to store encrypted bet amount
-            // 3. Potentially update current_bet if all-in amount is higher
-            msg!("Player {} went all-in", player_index);
-        }
-    }
 
-    // Advance to next player
-    // Find the next player who hasn't folded and isn't all-in
-    let mut next_player = (player_index + 1) % 10; // Assuming max 10 players
-    let mut attempts = 0;
-    
-    // Keep advancing until we find an active player or complete a full rotation
-    while attempts < 10 {
-        let next_mask = 1u16 << next_player;
-        let is_folded = (ctx.accounts.poker_table.folded_bitmap & next_mask) != 0;
-        let is_all_in = (ctx.accounts.poker_table.all_in_bitmap & next_mask) != 0;
-        
-        // If player is active (not folded and not all-in), they're next
-        if !is_folded && !is_all_in {
-            ctx.accounts.poker_table.current_player = next_player;
+        if table.betting_round_complete() {
+            msg!("Betting round complete");
+        } else if let Some(next_player) = table.next_action_player(player_index) {
+            table.current_player = next_player;
             msg!("Next player: {}", next_player);
-            break;
         }
-        
-        next_player = (next_player + 1) % 10;
-        attempts += 1;
-    }
-    
-    // If we couldn't find an active player, the betting round is complete
-    // (either everyone folded except one, or everyone is all-in)
-    if attempts == 10 {
-        msg!("Betting round complete — all players folded or all-in");
+
+        table.last_action_time = clock.unix_timestamp;
     }
 
-    // Update last action time for timeout enforcement
-    ctx.accounts.poker_table.last_action_time = clock.unix_timestamp;
+    if queue_bet_computation {
+        let args = vec![];
+
+        ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
+        queue_computation(
+            ctx.accounts,
+            computation_offset,
+            args,
+            None,
+            vec![PlaceBetCallback::callback_ix(&[])],
+            1,
+        )?;
+
+        msg!("Queued MXE computation to store encrypted bet for player {}", player_index);
+    }
 
     Ok(())
 }
@@ -218,18 +199,18 @@ pub struct PlayerAction<'info> {
         seeds = [b"table", game_id.to_le_bytes().as_ref()],
         bump = poker_table.bump,
     )]
-    pub poker_table: Account<'info, PokerTable>,
+    pub poker_table: Box<Account<'info, PokerTable>>,
 
     /// Player's USDC+ token account (source of funds for Call/Raise)
     #[account(mut)]
-    pub player_token_account: Account<'info, TokenAccount>,
+    pub player_token_account: Box<Account<'info, TokenAccount>>,
 
     /// Escrow PDA token account (destination — holds all player deposits)
     #[account(
         mut,
         constraint = escrow_account.key() == poker_table.escrow_account @ TexasHoldemError::InvalidGameState
     )]
-    pub escrow_account: Account<'info, TokenAccount>,
+    pub escrow_account: Box<Account<'info, TokenAccount>>,
 
     /// SPL Token program for USDC+ transfers
     pub token_program: Program<'info, Token>,
@@ -245,10 +226,10 @@ pub struct PlayerAction<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, SignerAccount>,
+    pub sign_pda_account: Box<Account<'info, SignerAccount>>,
 
     #[account(address = derive_mxe_pda!())]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
 
     #[account(mut, address = derive_mempool_pda!())]
     /// CHECK: mempool

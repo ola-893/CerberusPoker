@@ -35,25 +35,49 @@ pub fn handler(
     player_index: u8,
     computation_offset: u64,
 ) -> Result<()> {
-    let table = &ctx.accounts.poker_table;
+    {
+        let table = &mut ctx.accounts.poker_table;
 
-    // Validate player index is within bounds
-    require!(
-        player_index < 10,
-        TexasHoldemError::InvalidGameState
-    );
+        require!(player_index < 10, TexasHoldemError::InvalidGameState);
+        if table.num_players > 0 {
+            require!(player_index < table.num_players, TexasHoldemError::InvalidGameState);
+        }
+        require!(
+            ctx.accounts.player_token_account.owner == ctx.accounts.player.key(),
+            TexasHoldemError::InvalidStackAccount
+        );
+        require!(
+            ctx.accounts.player_token_account.mint == ctx.accounts.escrow_account.mint,
+            TexasHoldemError::InvalidPotAccount
+        );
 
-    // Transfer USDC+ from player to escrow PDA (standard SPL transfer)
+        let expected_stack = table.player_stacks[player_index as usize];
+        if expected_stack == Pubkey::default() {
+            table.player_stacks[player_index as usize] = ctx.accounts.player_token_account.key();
+        } else {
+            require!(
+                expected_stack == ctx.accounts.player_token_account.key(),
+                TexasHoldemError::InvalidStackAccount
+            );
+        }
+
+        table.player_round_bets[player_index as usize] = table.player_round_bets[player_index as usize]
+            .checked_add(amount)
+            .ok_or(TexasHoldemError::Overflow)?;
+        table.pot_total = table.pot_total
+            .checked_add(amount)
+            .ok_or(TexasHoldemError::Overflow)?;
+    }
+
     let cpi_accounts = Transfer {
         from: ctx.accounts.player_token_account.to_account_info(),
         to: ctx.accounts.escrow_account.to_account_info(),
         authority: ctx.accounts.player.to_account_info(),
     };
-    let cpi_program = ctx.accounts.token_program.to_account_info();
-    let cpi_ctx = CpiContext::new(cpi_program, cpi_accounts);
-    
+    let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+
     token::transfer(cpi_ctx, amount)?;
-    
+
     msg!("Transferred {} USDC+ from player {} to escrow", amount, player_index);
 
     // Queue MXE computation to store encrypted bet amount
@@ -83,17 +107,17 @@ pub fn handler(
 #[derive(Accounts)]
 #[instruction(game_id: u64, amount: u64, player_index: u8, computation_offset: u64)]
 pub struct PlaceBet<'info> {
-    /// The PokerTable PDA for this game
+    /// The PokerTable PDA for this game (boxed to reduce stack frame size)
     #[account(
         mut,
         seeds = [b"table", game_id.to_le_bytes().as_ref()],
         bump = poker_table.bump,
     )]
-    pub poker_table: Account<'info, PokerTable>,
+    pub poker_table: Box<Account<'info, PokerTable>>,
 
-    /// Player's USDC+ token account (source of funds)
+    /// Player's USDC+ token account (source of funds) - boxed to reduce stack
     #[account(mut)]
-    pub player_token_account: Account<'info, TokenAccount>,
+    pub player_token_account: Box<Account<'info, TokenAccount>>,
 
     /// Escrow PDA token account (destination — holds all player deposits)
     /// This is a standard SPL token account that holds USDC+ during the game
@@ -101,7 +125,7 @@ pub struct PlaceBet<'info> {
         mut,
         constraint = escrow_account.key() == poker_table.escrow_account @ TexasHoldemError::InvalidGameState
     )]
-    pub escrow_account: Account<'info, TokenAccount>,
+    pub escrow_account: Box<Account<'info, TokenAccount>>,
 
     /// Player placing the bet (must sign the transaction)
     #[account(mut)]
@@ -126,10 +150,10 @@ pub struct PlaceBet<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, SignerAccount>,
+    pub sign_pda_account: Box<Account<'info, SignerAccount>>,
 
     #[account(address = derive_mxe_pda!())]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
 
     #[account(mut, address = derive_mempool_pda!())]
     /// CHECK: mempool

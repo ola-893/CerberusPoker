@@ -23,6 +23,7 @@ anchor-lang = { version = "0.32.1", features = ["init-if-needed"] }
 arcium-anchor = "0.4.0"
 arcium-macros = "0.4.0"
 arcium-client = { version = "0.4.0", default-features = false }
+solana-sha256-hasher = { workspace = true }
 
 [dev-dependencies]
 solana-program-test = "2.3.0"

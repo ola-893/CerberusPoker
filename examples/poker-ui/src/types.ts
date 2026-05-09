@@ -17,6 +17,7 @@ export enum PokerPhase {
   Turn = 'Turn',
   River = 'River',
   Showdown = 'Showdown',
+  Complete = 'Complete',
 }
 
 export enum UIPhase {
@@ -52,6 +53,9 @@ export interface GameSession {
   createdAt: bigint;
   shuffleDeadline: bigint;
   revealDeadline: bigint;
+  pendingRevealCardIndex: number;
+  pendingDealCardIndex: number;
+  pendingDealPlayerIndex: number;
   bump: number;
 }
 
@@ -72,14 +76,22 @@ export interface PokerTable {
   smallBlind: bigint;
   bigBlind: bigint;
   handNumber: number;
+  lastActionTime: bigint;
+  numPlayers: number;
+  actedBitmap: number;
+  winnersBitmap: number;
+  winnerCount: number;
+  lastRaise: bigint;
+  potTotal: bigint;
+  playerRoundBets: bigint[];
   bump: number;
 }
 
 export interface DealtCard {
   gameId: bigint;
   cardIndex: number;
-  ciphertext: Uint8Array;
-  nonce: Uint8Array;
+  playerIndex: number;
+  cardValue: number;
   bump: number;
 }
 

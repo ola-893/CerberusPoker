@@ -3,7 +3,7 @@ use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::{ID, ID_CONST};
 
 use crate::errors::CerberusPokerError;
-use crate::state::{GameSession, GameState, CardDealt, UNASSIGNED, REVEAL_TIMEOUT_SECS};
+use crate::state::{GameSession, GameState, CardDealt, COMMUNITY_CARD, UNASSIGNED, REVEAL_TIMEOUT_SECS};
 use crate::DealCardToRecipientCallback;
 use crate::SignerAccount;
 
@@ -22,6 +22,10 @@ pub fn handler(
     // Record card assignments
     for (card_index, player_index) in &assignments {
         require!(*card_index < game.deck_size, CerberusPokerError::CardIndexOutOfRange);
+        require!(
+            *player_index < game.num_players || *player_index == COMMUNITY_CARD,
+            CerberusPokerError::PlayerNotFound
+        );
         require!(
             game.card_assigned_to[*card_index as usize] == UNASSIGNED,
             CerberusPokerError::CardAlreadyRevealed
@@ -53,9 +57,26 @@ pub fn handler(
     //
     // The encrypted deck is passed via the encrypted_card_c1 and encrypted_card_c2 accounts
     // which contain the ElGamal ciphertext (C1, C2) for the card at the specified index.
-    let first_card_index = assignments.first()
-        .ok_or(CerberusPokerError::CardNotAssigned)?
-        .0;
+    let first_dealt_card = assignments
+        .iter()
+        .find(|(_, player_index)| *player_index != COMMUNITY_CARD);
+
+    let Some((first_card_index, first_player_index)) = first_dealt_card else {
+        msg!("Recorded community card assignments; no private deal computation queued");
+        return Ok(());
+    };
+    game.pending_deal_card_index = *first_card_index;
+    game.pending_deal_player_index = *first_player_index;
+
+    let required_hole_cards = (game.num_players as usize).saturating_mul(2);
+    let assigned_hole_cards = game
+        .card_assigned_to
+        .iter()
+        .filter(|assigned_to| **assigned_to < game.num_players)
+        .count();
+    if assigned_hole_cards >= required_hole_cards {
+        game.state = GameState::Active;
+    }
 
     // TODO: Build arguments for deal_card_to_recipient computation
     // In 0.4.0, arguments are Vec<Argument> from arcium_client::idl::arcium::types
@@ -77,7 +98,7 @@ pub fn handler(
     Ok(())
 }
 
-#[queue_computation_accounts("deal_card", payer)]
+#[queue_computation_accounts("deal_card_to_recipient", payer)]
 #[derive(Accounts)]
 #[instruction(game_id: u64, assignments: Vec<(u8, u8)>, computation_offset: u64)]
 pub struct DealCards<'info> {

@@ -27,6 +27,18 @@ use crate::errors::TexasHoldemError;
 /// * `CannotAdvancePhase` - If betting round is not complete (future validation)
 pub fn handler(ctx: Context<AdvancePhase>, _game_id: u64) -> Result<()> {
     let table = &mut ctx.accounts.poker_table;
+
+    require!(table.num_players >= 2, TexasHoldemError::NotEnoughPlayers);
+    require!(
+        table.betting_round_complete(),
+        TexasHoldemError::CannotAdvancePhase
+    );
+
+    if table.active_players() <= 1 {
+        table.phase = PokerPhase::Showdown;
+        msg!("Only one active player remains; advancing directly to showdown");
+        return Ok(());
+    }
     
     // Determine the next phase and log which community cards should be revealed
     let (next_phase, cards_to_reveal_msg) = match table.phase {
@@ -47,10 +59,24 @@ pub fn handler(ctx: Context<AdvancePhase>, _game_id: u64) -> Result<()> {
             msg!("Already in showdown phase");
             return Ok(());
         }
+        PokerPhase::Complete => {
+            msg!("Hand already complete");
+            return Ok(());
+        }
     };
 
     // Update the phase
     table.phase = next_phase.clone();
+    let mut first_to_act = (table.dealer_index + 1) % table.num_players;
+    let mut attempts = 0u8;
+    while attempts < table.num_players {
+        if !table.is_folded(first_to_act) && !table.is_all_in(first_to_act) {
+            break;
+        }
+        first_to_act = (first_to_act + 1) % table.num_players;
+        attempts = attempts.saturating_add(1);
+    }
+    table.reset_betting_round(first_to_act);
     
     msg!("Phase advanced to {:?}", next_phase);
     msg!("Community cards: {}", cards_to_reveal_msg);

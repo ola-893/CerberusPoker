@@ -38,6 +38,10 @@ pub enum CerberusPokerError {
     #[msg("Card already revealed")]
     CardAlreadyRevealed,
 
+    /// Player already submitted their reveal contribution for this card
+    #[msg("Reveal contribution already submitted for this player and card")]
+    RevealAlreadySubmitted,
+
     // ─── Card / Deck Errors ───────────────────────────────────────────────────
 
     /// A card value appeared more than once in the game — deck integrity violation
