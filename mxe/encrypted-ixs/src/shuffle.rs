@@ -25,14 +25,23 @@ mod circuits {
     /// ArcisRNG::shuffle applies a cryptographically uniform Fisher-Yates shuffle
     /// entirely within the MPC context — no node ever sees the permutation.
     ///
+    /// The shuffled deck is returned encrypted. The hash commitment is computed
+    /// on the Solana side from the encrypted deck representation to prevent
+    /// deck swapping attacks without revealing the card order.
+    ///
     /// Input:  Enc<Mxe, [u8; 52]> — encrypted deck, only MXE can read
-    /// Output: Enc<Mxe, [u8; 52]> — shuffled deck, still only MXE can read
+    /// Output: Enc<Mxe, [u8; 52]> — shuffled deck, still encrypted
     #[instruction]
     pub fn shuffle_deck(deck: Enc<Mxe, [u8; 52]>) -> Enc<Mxe, [u8; 52]> {
         let mut cards = deck.to_arcis();
+        
         // ArcisRNG::shuffle: cryptographically uniform, O(n·log³(n))
         // All randomness generated within MPC — no node sees the permutation
         ArcisRNG::shuffle(&mut cards);
+        
+        // Return the encrypted shuffled deck
+        // The Solana callback will compute a hash of the encrypted representation
+        // for on-chain commitment without revealing the card order
         deck.owner.from_arcis(cards)
     }
 

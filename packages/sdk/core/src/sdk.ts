@@ -3,8 +3,7 @@
  */
 
 import { Connection, PublicKey } from '@solana/web3.js';
-import { AnchorProvider, Program } from '@coral-xyz/anchor';
-import { getArciumEnv, ArciumEnv } from '@arcium-hq/client';
+import { AnchorProvider, Program, type Idl } from '@coral-xyz/anchor';
 import type {
   SDKConfig,
   AnchorWallet,
@@ -16,6 +15,8 @@ import type {
 import { EventManager } from './events';
 import { TransactionBuilder } from './transaction-builder';
 import { WalletManager, WalletType, detectAvailableWallets } from './wallet-adapter';
+
+type ArciumEnv = unknown;
 
 /**
  * Main SDK class that composes deck and wager modules
@@ -70,7 +71,13 @@ export class CerberusPokerSDK {
   /** Anchor provider */
   public readonly provider: AnchorProvider;
   
-  /** CerberusPoker program */
+  /** CerberusPoker protocol program */
+  public readonly cerberusProgram: Program;
+
+  /** Texas Hold'em reference program */
+  public readonly texasHoldemProgram: Program;
+
+  /** Backward-compatible alias for cerberusProgram */
   public readonly program: Program;
   
   /** Arcium environment */
@@ -80,10 +87,13 @@ export class CerberusPokerSDK {
   public readonly clusterOffset: number;
   
   /** C-SPL token mint (optional) */
-  public readonly cSplMint?: PublicKey;
+  public readonly cSplMint: PublicKey | undefined;
   
   /** Event manager for subscriptions */
-  private readonly eventManager: EventManager;
+  private readonly gameEventManager: EventManager;
+
+  /** Event manager for Texas Hold'em table accounts */
+  private readonly tableEventManager: EventManager;
   
   /** Transaction builder */
   public readonly txBuilder: TransactionBuilder;
@@ -95,16 +105,25 @@ export class CerberusPokerSDK {
   /**
    * Private constructor — use CerberusPokerSDK.create() instead
    */
-  private constructor(config: SDKConfig, provider: AnchorProvider, program: Program, arciumEnv: ArciumEnv) {
+  private constructor(
+    config: SDKConfig,
+    provider: AnchorProvider,
+    cerberusProgram: Program,
+    texasHoldemProgram: Program,
+    arciumEnv: ArciumEnv
+  ) {
     this.connection = config.connection;
     this.wallet = config.wallet;
     this.provider = provider;
-    this.program = program;
+    this.cerberusProgram = cerberusProgram;
+    this.texasHoldemProgram = texasHoldemProgram;
+    this.program = cerberusProgram;
     this.arciumEnv = arciumEnv;
     this.clusterOffset = config.clusterOffset;
     this.cSplMint = config.cSplMint;
     
-    this.eventManager = new EventManager(this.connection, this.program);
+    this.gameEventManager = new EventManager(this.connection, this.cerberusProgram);
+    this.tableEventManager = new EventManager(this.connection, this.texasHoldemProgram);
     this.txBuilder = new TransactionBuilder(this.provider, this.wallet);
     
     // Initialize modules (tasks 17 and 18)
@@ -132,22 +151,66 @@ export class CerberusPokerSDK {
       { commitment: 'confirmed' }
     );
     
-    // Load program IDL
-    // In a real implementation, we would fetch the IDL from the program
-    // For now, we'll use a placeholder
-    const program = new Program(
-      {} as any, // IDL placeholder
-      config.programId,
+    const cerberusProgramId = config.cerberusProgramId ?? config.programId;
+    if (!cerberusProgramId) {
+      throw new Error('cerberusProgramId is required');
+    }
+    if (!config.texasHoldemProgramId) {
+      throw new Error('texasHoldemProgramId is required');
+    }
+
+    const cerberusIdl = await this.loadIdl(
+      config.cerberusIdl,
+      cerberusProgramId,
+      provider,
+      'cerberus_poker'
+    );
+    const texasHoldemIdl = await this.loadIdl(
+      config.texasHoldemIdl,
+      config.texasHoldemProgramId,
+      provider,
+      'texas_holdem'
+    );
+
+    const cerberusProgram = new Program(
+      this.withProgramAddress(cerberusIdl, cerberusProgramId),
       provider
     );
-    
-    // Initialize Arcium environment
-    const arciumEnv = await getArciumEnv(
-      config.connection,
-      config.clusterOffset
+    const texasHoldemProgram = new Program(
+      this.withProgramAddress(texasHoldemIdl, config.texasHoldemProgramId),
+      provider
     );
-    
-    return new CerberusPokerSDK(config, provider, program, arciumEnv);
+
+    return new CerberusPokerSDK(
+      config,
+      provider,
+      cerberusProgram,
+      texasHoldemProgram,
+      config.arciumEnv ?? null
+    );
+  }
+
+  private static async loadIdl(
+    idl: Idl | undefined,
+    programId: PublicKey,
+    provider: AnchorProvider,
+    name: string
+  ): Promise<Idl> {
+    if (idl) return idl;
+
+    const fetched = await Program.fetchIdl(programId, provider);
+    if (!fetched) {
+      throw new Error(`Unable to load ${name} IDL for program ${programId.toBase58()}`);
+    }
+
+    return fetched;
+  }
+
+  private static withProgramAddress(idl: Idl, programId: PublicKey): Idl {
+    return {
+      ...idl,
+      address: programId.toBase58(),
+    } as Idl;
   }
   
   /**
@@ -225,7 +288,7 @@ export class CerberusPokerSDK {
    * ```
    */
   onGameStateChange(gameId: bigint, callback: (state: GameState) => void): Unsubscribe {
-    return this.eventManager.onGameStateChange(gameId, callback);
+    return this.gameEventManager.onGameStateChange(gameId, callback);
   }
   
   /**
@@ -243,7 +306,7 @@ export class CerberusPokerSDK {
    * ```
    */
   onCardRevealed(gameId: bigint, callback: (card: RevealedCard) => void): Unsubscribe {
-    return this.eventManager.onCardRevealed(gameId, callback);
+    return this.gameEventManager.onCardRevealed(gameId, callback);
   }
   
   /**
@@ -261,7 +324,7 @@ export class CerberusPokerSDK {
    * ```
    */
   onBettingAction(gameId: bigint, callback: (event: BettingEvent) => void): Unsubscribe {
-    return this.eventManager.onBettingAction(gameId, callback);
+    return this.tableEventManager.onBettingAction(gameId, callback);
   }
   
   /**
@@ -292,7 +355,7 @@ export class CerberusPokerSDK {
     
     return PublicKey.findProgramAddressSync(
       [Buffer.from('table'), gameIdBuffer],
-      this.program.programId
+      this.texasHoldemProgram.programId
     );
   }
   
@@ -304,7 +367,7 @@ export class CerberusPokerSDK {
    */
   async getGameSession(gameId: bigint): Promise<any> {
     const [pda] = this.getGameSessionPda(gameId);
-    return await this.program.account.gameSession.fetch(pda);
+    return await (this.cerberusProgram.account as any).gameSession.fetch(pda);
   }
   
   /**
@@ -315,7 +378,7 @@ export class CerberusPokerSDK {
    */
   async getPokerTable(gameId: bigint): Promise<any> {
     const [pda] = this.getPokerTablePda(gameId);
-    return await this.program.account.pokerTable.fetch(pda);
+    return await (this.texasHoldemProgram.account as any).pokerTable.fetch(pda);
   }
   
   /**
@@ -324,6 +387,7 @@ export class CerberusPokerSDK {
    * Call this when you're done with the SDK to clean up resources.
    */
   close(): void {
-    this.eventManager.closeAll();
+    this.gameEventManager.closeAll();
+    this.tableEventManager.closeAll();
   }
 }

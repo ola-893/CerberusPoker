@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use crate::state::{PokerTable, BETTING_TIMEOUT_SECS};
+use crate::state::{PokerPhase, PokerTable, BETTING_TIMEOUT_SECS};
 use crate::errors::TexasHoldemError;
 
 /// Forces the current player to fold if they haven't acted within BETTING_TIMEOUT_SECS
@@ -46,33 +46,18 @@ pub fn handler(ctx: Context<TimeoutBet>, _game_id: u64) -> Result<()> {
     // Force fold the current player
     let folded_mask = 1u16 << player_index;
     table.folded_bitmap |= folded_mask;
+    table.mark_acted(player_index);
     
     msg!("Player {} forced to fold due to timeout", player_index);
     
-    // Advance to next active player
-    let mut next_player = (player_index + 1) % 10; // Assuming max 10 players
-    let mut attempts = 0;
-    
-    // Keep advancing until we find an active player or complete a full rotation
-    while attempts < 10 {
-        let next_mask = 1u16 << next_player;
-        let is_folded = (table.folded_bitmap & next_mask) != 0;
-        let is_all_in = (table.all_in_bitmap & next_mask) != 0;
-        
-        // If player is active (not folded and not all-in), they're next
-        if !is_folded && !is_all_in {
-            table.current_player = next_player;
-            msg!("Next player: {}", next_player);
-            break;
-        }
-        
-        next_player = (next_player + 1) % 10;
-        attempts += 1;
-    }
-    
-    // If we couldn't find an active player, the betting round is complete
-    if attempts == 10 {
-        msg!("Betting round complete after timeout — all players folded or all-in");
+    if table.active_players() <= 1 {
+        table.phase = PokerPhase::Showdown;
+        msg!("Only one active player remains after timeout; advancing to showdown");
+    } else if table.betting_round_complete() {
+        msg!("Betting round complete after timeout");
+    } else if let Some(next_player) = table.next_action_player(player_index) {
+        table.current_player = next_player;
+        msg!("Next player: {}", next_player);
     }
     
     // Update last action time to current time

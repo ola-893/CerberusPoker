@@ -3,6 +3,7 @@
  */
 
 import { Connection, PublicKey, Transaction, VersionedTransaction } from '@solana/web3.js';
+import type { Idl } from '@coral-xyz/anchor';
 
 /**
  * Wallet adapter interface compatible with Phantom and Backpack
@@ -23,11 +24,26 @@ export interface SDKConfig {
   /** Wallet adapter (Phantom, Backpack, etc.) */
   wallet: AnchorWallet;
   
-  /** CerberusPoker program ID */
-  programId: PublicKey;
+  /** CerberusPoker protocol program ID */
+  cerberusProgramId?: PublicKey;
+
+  /** Texas Hold'em reference program ID */
+  texasHoldemProgramId?: PublicKey;
+
+  /** Backward-compatible alias for cerberusProgramId */
+  programId?: PublicKey;
+
+  /** Optional CerberusPoker IDL. If omitted, the SDK fetches it from-chain. */
+  cerberusIdl?: Idl;
+
+  /** Optional Texas Hold'em IDL. If omitted, the SDK fetches it from-chain. */
+  texasHoldemIdl?: Idl;
   
-  /** Arcium cluster offset (devnet: 456, mainnet: 2026) */
+  /** Arcium cluster offset (devnet: 456 for the 0.4.x-compatible deployment) */
   clusterOffset: number;
+
+  /** Optional preloaded Arcium environment/client object. */
+  arciumEnv?: unknown;
   
   /** Optional: C-SPL token mint for wagering */
   cSplMint?: PublicKey;
@@ -54,6 +70,7 @@ export enum PokerPhase {
   Turn = 'Turn',
   River = 'River',
   Showdown = 'Showdown',
+  Complete = 'Complete',
 }
 
 /**
@@ -141,6 +158,9 @@ export interface GameSession {
   
   /** Shuffle bitmap (which players have shuffled) */
   shuffleBitmap: number;
+
+  /** Active Arcium computation offset */
+  activeComputationOffset: bigint;
   
   /** Reveal bitmap per card */
   revealBitmap: bigint[];
@@ -150,6 +170,9 @@ export interface GameSession {
   
   /** Card assignments (player index or 0xFF for community) */
   cardAssignedTo: number[];
+
+  /** Used-card bitmap */
+  cardValueUsed: bigint[];
   
   /** Creation timestamp */
   createdAt: bigint;
@@ -159,6 +182,15 @@ export interface GameSession {
   
   /** Reveal deadline */
   revealDeadline: bigint;
+
+  /** Pending reveal card index, or 0xFE when idle */
+  pendingRevealCardIndex: number;
+
+  /** Pending private deal card index, or 0xFE when idle */
+  pendingDealCardIndex: number;
+
+  /** Pending private deal player index, or 0xFE when idle */
+  pendingDealPlayerIndex: number;
 }
 
 /**
@@ -215,6 +247,27 @@ export interface PokerTable {
   
   /** Last action timestamp */
   lastActionTime: bigint;
+
+  /** Number of players seated in the current hand */
+  numPlayers: number;
+
+  /** Players who have acted in this betting round */
+  actedBitmap: number;
+
+  /** Last committed showdown winners */
+  winnersBitmap: number;
+
+  /** Number of winners in winnersBitmap */
+  winnerCount: number;
+
+  /** Minimum raise basis for standard Hold'em betting */
+  lastRaise: bigint;
+
+  /** Phase 1 plaintext escrow total */
+  potTotal: bigint;
+
+  /** Current betting-round contribution per player */
+  playerRoundBets: bigint[];
 }
 
 /**

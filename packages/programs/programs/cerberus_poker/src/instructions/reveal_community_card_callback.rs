@@ -30,20 +30,18 @@ pub fn handler(
         CerberusPokerError::DuplicateCardValue
     );
 
-    // Determine which card index - for now use the first unrevealed community card
-    // In production, this should come from the MXE output or computation context
-    let mut card_index = 0u8;
-    for i in 0..game.deck_size {
-        if !game.is_card_revealed(i) {
-            card_index = i;
-            break;
-        }
-    }
+    let card_index = game.pending_reveal_card_index;
+    require!(card_index < game.deck_size, CerberusPokerError::CardIndexOutOfRange);
+    require!(
+        !game.is_card_revealed(card_index),
+        CerberusPokerError::CardAlreadyRevealed
+    );
 
     // Store the revealed card value
     game.unmasked_cards[card_index as usize] = card_value;
     game.mark_card_revealed(card_index);
     game.mark_card_value_used(card_value);
+    game.pending_reveal_card_index = 0xFE;
 
     let game_id = game.game_id;
     emit!(CardRevealed {

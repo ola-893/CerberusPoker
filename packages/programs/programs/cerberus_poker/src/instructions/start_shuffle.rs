@@ -69,7 +69,7 @@ pub struct StartShuffle<'info> {
         seeds = [b"game", game_id.to_le_bytes().as_ref()],
         bump = game_session.bump,
     )]
-    pub game_session: Account<'info, GameSession>,
+    pub game_session: Box<Account<'info, GameSession>>,
 
     #[account(mut)]
     pub payer: Signer<'info>,
@@ -82,10 +82,10 @@ pub struct StartShuffle<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Account<'info, SignerAccount>,
+    pub sign_pda_account: Box<Account<'info, SignerAccount>>,
 
     #[account(address = derive_mxe_pda!())]
-    pub mxe_account: Account<'info, MXEAccount>,
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
 
     #[account(
         mut,

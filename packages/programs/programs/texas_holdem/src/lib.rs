@@ -55,7 +55,10 @@ pub mod texas_holdem {
         instructions::verify_hole_cards::handler(ctx, game_id, player_index)
     }
 
-    pub fn showdown(ctx: Context<Showdown>, game_id: u64) -> Result<()> {
+    pub fn showdown<'info>(
+        ctx: Context<'_, '_, '_, 'info, Showdown<'info>>,
+        game_id: u64,
+    ) -> Result<()> {
         instructions::showdown::handler(ctx, game_id)
     }
 
@@ -142,20 +145,20 @@ pub struct AtomicShowdownCallback<'info> {
     /// CHECK: computation_account
     pub computation_account: UncheckedAccount<'info>,
 
-    /// The PokerTable PDA for this game
+    /// The PokerTable PDA for this game (boxed to reduce stack frame size)
     #[account(
         mut,
         seeds = [b"table", game_id.to_le_bytes().as_ref()],
         bump = poker_table.bump,
     )]
-    pub poker_table: Account<'info, PokerTable>,
+    pub poker_table: Box<Account<'info, PokerTable>>,
 
-    /// Escrow PDA token account (source of pot funds)
+    /// Escrow PDA token account (source of pot funds) - boxed to reduce stack
     #[account(
         mut,
         constraint = escrow_account.key() == poker_table.escrow_account @ TexasHoldemError::InvalidGameState
     )]
-    pub escrow_account: Account<'info, anchor_spl::token::TokenAccount>,
+    pub escrow_account: Box<Account<'info, anchor_spl::token::TokenAccount>>,
 
     /// SPL Token program for USDC+ transfer
     pub token_program: Program<'info, anchor_spl::token::Token>,

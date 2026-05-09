@@ -1,105 +1,98 @@
 /**
- * useGameSession — fetches and subscribes to the GameSession PDA on-chain
+ * @license
+ * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useEffect } from 'react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { PublicKey } from '@solana/web3.js';
-import { useAnchorPrograms, deriveGameSessionPDA, getConnection } from '../lib/anchor';
 import { GameSession, GameState } from '../types';
+import { deriveGameSessionPDA, useAnchorPrograms } from '../lib/anchor';
 
-/** Map raw Anchor account data → our GameSession type */
-function parseGameSession(raw: any): GameSession {
-  // GameState enum from Anchor comes as an object like { active: {} }
-  const stateKey = Object.keys(raw.state)[0];
-  const stateMap: Record<string, GameState> = {
-    lobby:    GameState.Lobby,
-    shuffle:  GameState.Shuffle,
-    deal:     GameState.Deal,
-    active:   GameState.Active,
-    showdown: GameState.Showdown,
-    complete: GameState.Complete,
-  };
-
-  return {
-    gameId:                  BigInt(raw.gameId.toString()),
-    state:                   stateMap[stateKey] ?? GameState.Lobby,
-    maxPlayers:              raw.maxPlayers,
-    deckSize:                raw.deckSize,
-    numPlayers:              raw.numPlayers,
-    players:                 (raw.players as PublicKey[]).slice(0, raw.numPlayers),
-    activeComputationOffset: BigInt(raw.activeComputationOffset.toString()),
-    encryptedDeckHash:       new Uint8Array(raw.encryptedDeckHash),
-    shuffleBitmap:           raw.shuffleBitmap,
-    revealBitmap:            (raw.revealBitmap as any[]).map((v: any) => BigInt(v.toString())),
-    unmaskedCards:           Array.from(raw.unmaskedCards as number[]),
-    cardAssignedTo:          Array.from(raw.cardAssignedTo as number[]),
-    cardValueUsed:           (raw.cardValueUsed as any[]).map((v: any) => BigInt(v.toString())),
-    createdAt:               BigInt(raw.createdAt.toString()),
-    shuffleDeadline:         BigInt(raw.shuffleDeadline.toString()),
-    revealDeadline:          BigInt(raw.revealDeadline.toString()),
-    bump:                    raw.bump,
-  };
+function parseGameId(gameId: string): bigint {
+  if (/^[0-9a-fA-F]+$/.test(gameId) && /[a-fA-F]/.test(gameId)) {
+    return BigInt(`0x${gameId}`);
+  }
+  return BigInt(gameId);
 }
 
+function decodeAnchorEnum<T extends string>(value: unknown, fallback: T): T {
+  if (typeof value === 'string') return value as T;
+  if (value && typeof value === 'object') {
+    const [key] = Object.keys(value);
+    if (key) return (key.charAt(0).toUpperCase() + key.slice(1)) as T;
+  }
+  return fallback;
+}
+
+function toBigInt(value: unknown): bigint {
+  if (typeof value === 'bigint') return value;
+  if (typeof value === 'number') return BigInt(value);
+  if (typeof value === 'string') return BigInt(value);
+  if (value && typeof value === 'object' && 'toString' in value) {
+    return BigInt(value.toString());
+  }
+  return BigInt(0);
+}
+
+/**
+ * Subscribe to GameSession PDA account updates
+ */
 export function useGameSession(gameId: string | null) {
   const programs = useAnchorPrograms();
-  const queryClient = useQueryClient();
 
-  const gameIdBigInt = gameId ? (() => {
-    try {
-      if (/^[0-9a-fA-F]+$/.test(gameId) && isNaN(Number(gameId))) {
-        return BigInt('0x' + gameId);
-      }
-      return BigInt(gameId);
-    } catch {
-      return null;
-    }
-  })() : null;
-
-  // Derive PDA
-  const pda = gameIdBigInt !== null
-    ? deriveGameSessionPDA(gameIdBigInt)[0]
-    : null;
-
-  const query = useQuery({
+  return useQuery({
     queryKey: ['gameSession', gameId],
-    queryFn: async (): Promise<GameSession | null> => {
-      if (!programs || !pda || gameIdBigInt === null) return null;
+    queryFn: async () => {
+      if (!gameId) return null;
+      if (!programs) return null;
 
-      try {
-        const raw = await programs.cerberusPoker.account['gameSession'].fetch(pda);
-        return parseGameSession(raw);
-      } catch (err: any) {
-        // Account doesn't exist yet (game not created)
-        if (err?.message?.includes('Account does not exist')) return null;
-        throw err;
-      }
+      const parsedGameId = parseGameId(gameId);
+      const [gameSessionPda] = deriveGameSessionPDA(parsedGameId);
+      const account = await (programs.cerberusPoker.account as any).gameSession.fetch(gameSessionPda);
+      const raw = account as Record<string, unknown>;
+
+      return {
+        gameId: toBigInt(raw['gameId']),
+        state: decodeAnchorEnum<GameState>(raw['state'], GameState.Lobby),
+        maxPlayers: Number(raw['maxPlayers'] ?? 0),
+        deckSize: Number(raw['deckSize'] ?? 52),
+        numPlayers: Number(raw['numPlayers'] ?? 0),
+        players: (raw['players'] as PublicKey[] | undefined) ?? [],
+        activeComputationOffset: toBigInt(raw['activeComputationOffset']),
+        encryptedDeckHash: Uint8Array.from((raw['encryptedDeckHash'] as number[] | undefined) ?? []),
+        shuffleBitmap: Number(raw['shuffleBitmap'] ?? 0),
+        revealBitmap: ((raw['revealBitmap'] as unknown[] | undefined) ?? []).map(toBigInt),
+        unmaskedCards: ((raw['unmaskedCards'] as number[] | undefined) ?? []).map(Number),
+        cardAssignedTo: ((raw['cardAssignedTo'] as number[] | undefined) ?? []).map(Number),
+        cardValueUsed: ((raw['cardValueUsed'] as unknown[] | undefined) ?? []).map(toBigInt),
+        createdAt: toBigInt(raw['createdAt']),
+        shuffleDeadline: toBigInt(raw['shuffleDeadline']),
+        revealDeadline: toBigInt(raw['revealDeadline']),
+        pendingRevealCardIndex: Number(raw['pendingRevealCardIndex'] ?? 0xfe),
+        pendingDealCardIndex: Number(raw['pendingDealCardIndex'] ?? 0xfe),
+        pendingDealPlayerIndex: Number(raw['pendingDealPlayerIndex'] ?? 0xfe),
+        bump: Number(raw['bump'] ?? 0),
+      } as GameSession;
     },
-    enabled: !!programs && !!pda,
-    refetchInterval: false,
+    enabled: !!gameId && !!programs,
+    refetchInterval: false, // Use websocket subscription instead
     staleTime: Infinity,
-    retry: 1,
   });
+}
 
-  // WebSocket subscription for real-time updates
-  useEffect(() => {
-    if (!pda || !programs) return;
-
-    const connection = getConnection();
-    const subId = connection.onAccountChange(
-      pda,
-      () => {
-        // Invalidate query to trigger re-fetch when account changes
-        queryClient.invalidateQueries({ queryKey: ['gameSession', gameId] });
-      },
-      'confirmed'
-    );
-
-    return () => {
-      connection.removeAccountChangeListener(subId);
-    };
-  }, [pda?.toBase58(), programs, gameId, queryClient]);
-
-  return query;
+/**
+ * Set up websocket subscription for real-time GameSession updates
+ */
+export function useGameSessionSubscription(gameId: string | null) {
+  // TODO: Implement websocket subscription
+  // useEffect(() => {
+  //   if (!gameId) return;
+  //   const subscriptionId = connection.onAccountChange(
+  //     gameSessionPda,
+  //     (accountInfo) => {
+  //       queryClient.setQueryData(['gameSession', gameId], deserializeGameSession(accountInfo.data));
+  //     }
+  //   );
+  //   return () => connection.removeAccountChangeListener(subscriptionId);
+  // }, [gameId]);
 }

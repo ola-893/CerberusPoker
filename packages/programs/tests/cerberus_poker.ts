@@ -21,23 +21,19 @@ describe("cerberus_poker — state machine tests", () => {
 
   before(async () => {
     // Start bankrun with the cerberus_poker program
-    const context = await startAnchor("packages/programs", [], []);
+    const context = await startAnchor(".", [], []);
     provider = new BankrunProvider(context);
     anchor.setProvider(provider);
 
     // Load the program
     program = anchor.workspace.CerberusPoker as Program;
 
-    creator = Keypair.generate();
+    // Use provider's pre-funded wallet as creator
+    creator = provider.wallet.payer;
     player1 = Keypair.generate();
     player2 = Keypair.generate();
 
-    // Fund accounts
-    await provider.context.banksClient.processTransaction(
-      await provider.context.banksClient.getTransaction(
-        (await provider.connection.requestAirdrop(creator.publicKey, 10e9)).toString()
-      )
-    );
+    // Fund accounts - not needed in bankrun, accounts are pre-funded
   });
 
   // ─── Helper: derive game PDA ───────────────────────────────────────────────
@@ -251,20 +247,16 @@ describe("cerberus_poker — timeout instructions", () => {
   let player2: Keypair;
 
   before(async () => {
-    const context = await startAnchor("packages/programs", [], []);
+    const context = await startAnchor(".", [], []);
     provider = new BankrunProvider(context);
     anchor.setProvider(provider);
     program = anchor.workspace.CerberusPoker as Program;
 
-    creator = Keypair.generate();
+    creator = provider.wallet.payer;
     player1 = Keypair.generate();
     player2 = Keypair.generate();
 
-    await provider.context.banksClient.processTransaction(
-      await provider.context.banksClient.getTransaction(
-        (await provider.connection.requestAirdrop(creator.publicKey, 10e9)).toString()
-      )
-    );
+    // Accounts are pre-funded in bankrun
   });
 
   function getGamePda(gameId: BN): [PublicKey, number] {
@@ -416,12 +408,7 @@ describe("cerberus_poker — timeout instructions", () => {
     const [gamePda] = getGamePda(gameId);
     const randomCaller = Keypair.generate();
 
-    // Fund the random caller
-    await provider.context.banksClient.processTransaction(
-      await provider.context.banksClient.getTransaction(
-        (await provider.connection.requestAirdrop(randomCaller.publicKey, 10e9)).toString()
-      )
-    );
+    // Random caller is pre-funded in bankrun
 
     // Create game
     await program.methods
@@ -846,12 +833,7 @@ describe("cerberus_poker — timeout instructions", () => {
     const [gamePda] = getGamePda(gameId);
     const randomCaller = Keypair.generate();
 
-    // Fund the random caller
-    await provider.context.banksClient.processTransaction(
-      await provider.context.banksClient.getTransaction(
-        (await provider.connection.requestAirdrop(randomCaller.publicKey, 10e9)).toString()
-      )
-    );
+    // Random caller is pre-funded in bankrun
 
     // Create game
     await program.methods
@@ -1095,17 +1077,13 @@ describe("cerberus_poker — card uniqueness enforcement (task 9.4)", () => {
   const UNIQUENESS_GAME_ID = new BN(200);
 
   before(async () => {
-    const context = await startAnchor("packages/programs", [], []);
+    const context = await startAnchor(".", [], []);
     provider = new BankrunProvider(context);
     anchor.setProvider(provider);
     program = anchor.workspace.CerberusPoker as Program;
-    creator = Keypair.generate();
+    creator = provider.wallet.payer;
 
-    await provider.context.banksClient.processTransaction(
-      await provider.context.banksClient.getTransaction(
-        (await provider.connection.requestAirdrop(creator.publicKey, 10e9)).toString()
-      )
-    );
+    // Accounts are pre-funded in bankrun
   });
 
   function getGamePda(gameId: BN): [PublicKey, number] {

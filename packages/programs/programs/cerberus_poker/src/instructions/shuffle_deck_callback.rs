@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
+use solana_sha256_hasher::hashv;
 
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, GameState, ShuffleComplete};
@@ -10,8 +11,7 @@ pub fn handler(
 ) -> Result<()> {
     // Match on the MXE output — Success contains the result, Failure means computation failed
     // The macro generates a tuple struct with field_0
-    // Note: The MXE circuit is not yet implemented, so this is a placeholder
-    let _deck_encrypted = match output {
+    let deck_encrypted = match output {
         ComputationOutputs::Success(result) => result.field_0,
         ComputationOutputs::Failure => {
             msg!("MXE computation failed");
@@ -24,10 +24,20 @@ pub fn handler(
     // Verify we're in the right state
     require!(game.state == GameState::Shuffle, CerberusPokerError::InvalidGameState);
 
-    // Store a placeholder deck commitment hash on-chain
-    // TODO: Once MXE circuit is implemented, extract actual hash from encrypted output
-    // For now, use a deterministic placeholder based on computation offset
-    let deck_hash = [0u8; 32]; // Placeholder
+    let mut deck_bytes = Vec::new();
+    deck_encrypted
+        .serialize(&mut deck_bytes)
+        .map_err(|_| CerberusPokerError::InvalidMxeOutput)?;
+    let game_id_bytes = game.game_id.to_le_bytes();
+    let computation_offset_bytes = game.active_computation_offset.to_le_bytes();
+    let deck_hash = hashv(&[
+        b"cerberus_poker:deck",
+        game.key().as_ref(),
+        game_id_bytes.as_ref(),
+        computation_offset_bytes.as_ref(),
+        deck_bytes.as_ref(),
+    ])
+    .to_bytes();
 
     game.encrypted_deck_hash = deck_hash;
 

@@ -73,10 +73,11 @@ export class WalletAdapterWrapper implements AnchorWallet {
    * @returns Signed transaction
    */
   async signTransaction<T extends Transaction | VersionedTransaction>(tx: T): Promise<T> {
-    if (!this.adapter.signTransaction) {
+    const signer = this.adapter as any;
+    if (!signer.signTransaction) {
       throw new Error('Wallet does not support transaction signing');
     }
-    return await this.adapter.signTransaction(tx);
+    return await signer.signTransaction(tx);
   }
 
   /**
@@ -86,10 +87,11 @@ export class WalletAdapterWrapper implements AnchorWallet {
    * @returns Signed transactions
    */
   async signAllTransactions<T extends Transaction | VersionedTransaction>(txs: T[]): Promise<T[]> {
-    if (!this.adapter.signAllTransactions) {
+    const signer = this.adapter as any;
+    if (!signer.signAllTransactions) {
       throw new Error('Wallet does not support batch transaction signing');
     }
-    return await this.adapter.signAllTransactions(txs);
+    return await signer.signAllTransactions(txs);
   }
 }
 

@@ -18,27 +18,35 @@ use crate::errors::TexasHoldemError;
 /// * `InvalidStackAccount` - If player stack accounts don't match expected addresses
 /// * `InsufficientBalance` - If a player doesn't have enough tokens for their blind
 pub fn handler(ctx: Context<PostBlinds>, _game_id: u64, num_players: u8) -> Result<()> {
-    // Validate that blinds haven't been posted yet for this hand
-    // We check if current_bet is still at big_blind and hand_number hasn't advanced
-    // (A more robust check would use a dedicated "blinds_posted" flag, but we work with existing state)
+    let table = &mut ctx.accounts.poker_table;
+
     require!(
-        ctx.accounts.poker_table.current_bet == ctx.accounts.poker_table.big_blind && ctx.accounts.poker_table.hand_number == 0,
+        table.num_players == 0 && table.pot_total == 0,
         TexasHoldemError::BlindsAlreadyPosted
     );
     
     // Validate minimum players
     require!(num_players >= 2, TexasHoldemError::NotEnoughPlayers);
+    require!(num_players <= 6, TexasHoldemError::TableFull);
+    require!(
+        ctx.accounts.small_blind_stack.owner == ctx.accounts.small_blind_player.key(),
+        TexasHoldemError::InvalidStackAccount
+    );
+    require!(
+        ctx.accounts.big_blind_stack.owner == ctx.accounts.big_blind_player.key(),
+        TexasHoldemError::InvalidStackAccount
+    );
     
     // Calculate player positions based on dealer index
     // In Texas Hold'em:
     // - Small blind is the player immediately left of the dealer (dealer_index + 1)
     // - Big blind is two positions left of the dealer (dealer_index + 2)
-    let small_blind_index = (ctx.accounts.poker_table.dealer_index + 1) % num_players;
-    let big_blind_index = (ctx.accounts.poker_table.dealer_index + 2) % num_players;
+    let small_blind_index = (table.dealer_index + 1) % num_players;
+    let big_blind_index = (table.dealer_index + 2) % num_players;
     
-    let small_blind_amount = ctx.accounts.poker_table.small_blind;
-    let big_blind_amount = ctx.accounts.poker_table.big_blind;
-    let table_key = ctx.accounts.poker_table.key();
+    let small_blind_amount = table.small_blind;
+    let big_blind_amount = table.big_blind;
+    let table_key = table.key();
     
     // Transfer small blind amount from small blind player to pot
     let small_blind_transfer = Transfer {
@@ -71,14 +79,22 @@ pub fn handler(ctx: Context<PostBlinds>, _game_id: u64, num_players: u8) -> Resu
     )?;
     
     // Update player stack references in table state
-    ctx.accounts.poker_table.player_stacks[small_blind_index as usize] = ctx.accounts.small_blind_stack.key();
-    ctx.accounts.poker_table.player_stacks[big_blind_index as usize] = ctx.accounts.big_blind_stack.key();
+    table.player_stacks[small_blind_index as usize] = ctx.accounts.small_blind_stack.key();
+    table.player_stacks[big_blind_index as usize] = ctx.accounts.big_blind_stack.key();
+    table.player_round_bets[small_blind_index as usize] = small_blind_amount;
+    table.player_round_bets[big_blind_index as usize] = big_blind_amount;
+    table.pot_total = small_blind_amount
+        .checked_add(big_blind_amount)
+        .ok_or(TexasHoldemError::Overflow)?;
+    table.num_players = num_players;
+    table.acted_bitmap = 0;
+    table.last_raise = big_blind_amount;
     
     // Set current player to the position after big blind (first to act pre-flop)
-    ctx.accounts.poker_table.current_player = (big_blind_index + 1) % num_players;
+    table.current_player = (big_blind_index + 1) % num_players;
     
     // Current bet is set to big blind amount (players must call this to stay in)
-    ctx.accounts.poker_table.current_bet = big_blind_amount;
+    table.current_bet = big_blind_amount;
     
     msg!(
         "Blinds posted for table {} — SB: {} (player {}), BB: {} (player {})",
@@ -120,7 +136,7 @@ pub struct PostBlinds<'info> {
     /// The pot token account (receives blind transfers)
     #[account(
         mut,
-        address = poker_table.pot_account,
+        address = poker_table.escrow_account,
     )]
     pub pot_account: Account<'info, TokenAccount>,
     

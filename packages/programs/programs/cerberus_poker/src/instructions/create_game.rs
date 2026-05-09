@@ -23,13 +23,16 @@ pub fn handler(
     game.active_computation_offset = 0;
     game.encrypted_deck_hash = [0u8; 32];
     game.shuffle_bitmap = 0;
-    game.reveal_bitmap = [0u64; 1];
+    game.reveal_bitmap = [0u64; 52];
     game.unmasked_cards = [0xFF; 52]; // 0xFF = unrevealed
     game.card_assigned_to = [0xFE; 52]; // 0xFE = unassigned
     game.card_value_used = [0u64; 1];
     game.created_at = clock.unix_timestamp;
     game.shuffle_deadline = 0;
     game.reveal_deadline = 0;
+    game.pending_reveal_card_index = 0xFE;
+    game.pending_deal_card_index = 0xFE;
+    game.pending_deal_player_index = 0xFE;
     game.bump = ctx.bumps.game_session;
 
     emit!(GameCreated {
