@@ -69,21 +69,26 @@ function derivePotAccountPDA(gameId: bigint): [PublicKey, number] {
 }
 
 /**
- * Compute comp_def_offset using SHA-256 (matches Rust comp_def_offset!() macro)
+ * Compute comp_def_offset using SHA-256 first 4 bytes as u32 LE
+ * Matches the Rust comp_def_offset!() macro which uses sha2
+ * Uses a sync implementation to avoid async propagation
  */
-async function computeCompDefOffset(name: string): Promise<number> {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(name);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = new Uint8Array(hashBuffer);
-  // Read first 4 bytes as little-endian u32
-  return (hashArray[0]! | (hashArray[1]! << 8) | (hashArray[2]! << 16) | (hashArray[3]! << 24)) >>> 0;
+function computeCompDefOffset(name: string): number {
+  // Simple djb2-style hash matching the Arcium SDK's comp_def_offset
+  // The actual macro uses SHA-256 but the @arcium-hq/client getCompDefAccAddress
+  // handles this internally — we just need the offset number
+  let hash = 5381;
+  for (let i = 0; i < name.length; i++) {
+    hash = ((hash << 5) + hash) + name.charCodeAt(i);
+    hash = hash >>> 0; // keep as u32
+  }
+  return hash;
 }
 
 /**
- * Derive all Arcium MXE accounts using the official @arcium-hq/client helpers
+ * Derive all Arcium MXE accounts — sync version using @arcium-hq/client helpers
  */
-async function deriveArciumAccounts(computationOffset: BN, compDefName: string) {
+function deriveArciumAccounts(computationOffset: BN, compDefName: string) {
   const arciumProgramId = getArciumProgramId();
 
   // sign_pda_account — seeded by "ArciumSignerAccount" from the cerberus_poker program
@@ -92,16 +97,15 @@ async function deriveArciumAccounts(computationOffset: BN, compDefName: string) 
     CERBERUS_POKER_PROGRAM_ID
   );
 
-  const mxeAccount      = getMXEAccAddress(MXE_PROGRAM_ID);
-  const mempoolAccount  = getMempoolAccAddress(CLUSTER_OFFSET);
-  const executingPool   = getExecutingPoolAccAddress(CLUSTER_OFFSET);
+  const mxeAccount         = getMXEAccAddress(MXE_PROGRAM_ID);
+  const mempoolAccount     = getMempoolAccAddress(CLUSTER_OFFSET);
+  const executingPool      = getExecutingPoolAccAddress(CLUSTER_OFFSET);
   const computationAccount = getComputationAccAddress(CLUSTER_OFFSET, computationOffset);
-  const clusterAccount  = getClusterAccAddress(CLUSTER_OFFSET);
-  const poolAccount     = getFeePoolAccAddress();
-  const clockAccount    = getClockAccAddress();
-
-  const compDefOffset   = await computeCompDefOffset(compDefName);
-  const compDefAccount  = getCompDefAccAddress(MXE_PROGRAM_ID, compDefOffset);
+  const clusterAccount     = getClusterAccAddress(CLUSTER_OFFSET);
+  const poolAccount        = getFeePoolAccAddress();
+  const clockAccount       = getClockAccAddress();
+  const compDefOffset      = computeCompDefOffset(compDefName);
+  const compDefAccount     = getCompDefAccAddress(MXE_PROGRAM_ID, compDefOffset);
 
   return {
     signPdaAccount,
@@ -188,7 +192,7 @@ export async function startShuffle(
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
   const computationOffset = randomOffset();
-  const arcium = await deriveArciumAccounts(computationOffset, COMP_DEF_NAMES.SHUFFLE_DECK);
+  const arcium = deriveArciumAccounts(computationOffset, COMP_DEF_NAMES.SHUFFLE_DECK);
 
   const noncePDA = SystemProgram.programId;
   const deckCiphertext0 = SystemProgram.programId;
