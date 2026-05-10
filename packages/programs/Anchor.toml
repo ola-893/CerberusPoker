@@ -7,11 +7,11 @@ resolution = true
 skip-lint = false
 
 [programs.localnet]
-cerberus_poker = "4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG"
+cerberus_poker = "A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V"
 texas_holdem = "h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9"
 
 [programs.devnet]
-cerberus_poker = "4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG"
+cerberus_poker = "A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V"
 texas_holdem = "h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9"
 
 [registry]
