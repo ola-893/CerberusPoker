@@ -84,21 +84,21 @@ function deriveArciumAccounts(computationOffset: BN, compDefName: string) {
     CERBERUS_POKER_PROGRAM_ID
   );
 
-  // mxe_account — seeded by "mxe" from the Arcium program
+  // mxe_account — seeded by "mxe" and calling program ID
   const [mxeAccount] = PublicKey.findProgramAddressSync(
-    [Buffer.from('mxe')],
+    [Buffer.from('mxe'), CERBERUS_POKER_PROGRAM_ID.toBuffer()],
     ARCIUM_PROGRAM_ID
   );
 
   // mempool_account
   const [mempoolAccount] = PublicKey.findProgramAddressSync(
-    [Buffer.from('mempool'), mxeAccount.toBuffer()],
+    [Buffer.from('mempool'), CERBERUS_POKER_PROGRAM_ID.toBuffer()],
     ARCIUM_PROGRAM_ID
   );
 
   // executing_pool
   const [executingPool] = PublicKey.findProgramAddressSync(
-    [Buffer.from('execpool'), mxeAccount.toBuffer()],
+    [Buffer.from('execpool'), CERBERUS_POKER_PROGRAM_ID.toBuffer()],
     ARCIUM_PROGRAM_ID
   );
 
@@ -106,8 +106,8 @@ function deriveArciumAccounts(computationOffset: BN, compDefName: string) {
   const [computationAccount] = PublicKey.findProgramAddressSync(
     [
       Buffer.from('computation'),
+      CERBERUS_POKER_PROGRAM_ID.toBuffer(),
       computationOffset.toArrayLike(Buffer, 'le', 8),
-      mxeAccount.toBuffer(),
     ],
     ARCIUM_PROGRAM_ID
   );
