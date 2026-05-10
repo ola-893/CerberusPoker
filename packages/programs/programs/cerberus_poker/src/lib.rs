@@ -7,7 +7,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG");
+declare_id!("A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V");
 
 // Computation definition offsets — derived from instruction names via sha256
 // These identify each MXE circuit on-chain

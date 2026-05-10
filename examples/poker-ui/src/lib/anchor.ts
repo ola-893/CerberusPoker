@@ -18,7 +18,7 @@ export type AnchorProgramClient = Omit<Program<Idl>, 'methods' | 'provider'> & {
 };
 
 // Program IDs from Anchor.toml
-export const CERBERUS_POKER_PROGRAM_ID = new PublicKey('4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG');
+export const CERBERUS_POKER_PROGRAM_ID = new PublicKey('A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V');
 export const TEXAS_HOLDEM_PROGRAM_ID = new PublicKey('h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9');
 
 // RPC endpoint - use environment variable or default to devnet
