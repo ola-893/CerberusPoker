@@ -625,19 +625,19 @@ export class DeckModule {
 
     // Derive MXE account
     const [mxeAccount] = PublicKey.findProgramAddressSync(
-      [Buffer.from('mxe')],
+      [Buffer.from('mxe'), this.cerberusProgram.programId.toBuffer()],
       this.mxeProgramId
     );
 
     // Derive mempool account
     const [mempoolAccount] = PublicKey.findProgramAddressSync(
-      [Buffer.from('mempool'), mxeAccount.toBuffer()],
+      [Buffer.from('mempool'), this.cerberusProgram.programId.toBuffer()],
       this.mxeProgramId
     );
 
     // Derive executing pool account
     const [executingPool] = PublicKey.findProgramAddressSync(
-      [Buffer.from('execpool'), mxeAccount.toBuffer()],
+      [Buffer.from('execpool'), this.cerberusProgram.programId.toBuffer()],
       this.mxeProgramId
     );
 
@@ -645,8 +645,8 @@ export class DeckModule {
     const [computationAccount] = PublicKey.findProgramAddressSync(
       [
         Buffer.from('computation'),
+        this.cerberusProgram.programId.toBuffer(),
         computationOffset.toArrayLike(Buffer, 'le', 8),
-        mxeAccount.toBuffer(),
       ],
       this.mxeProgramId
     );
