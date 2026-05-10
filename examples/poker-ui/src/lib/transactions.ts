@@ -8,6 +8,17 @@
 import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import BN from 'bn.js';
 import {
+  getMXEAccAddress,
+  getMempoolAccAddress,
+  getExecutingPoolAccAddress,
+  getComputationAccAddress,
+  getCompDefAccAddress,
+  getClusterAccAddress,
+  getFeePoolAccAddress,
+  getClockAccAddress,
+  getArciumProgramId,
+} from '@arcium-hq/client';
+import {
   deriveGameSessionPDA,
   derivePokerTablePDA,
   TEXAS_HOLDEM_PROGRAM_ID,
@@ -21,11 +32,7 @@ import {
 const DEVNET_USDC_MINT = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
 
 // Arcium MXE program ID (deployed on devnet)
-const ARCIUM_PROGRAM_ID = new PublicKey('Bv3Fb9VjzjWGfX18QTUcVycAfeLoQ5zZN6vv2g3cTZxp');
-
-// Fixed Arcium addresses from the IDL
-const ARCIUM_POOL_ACCOUNT  = new PublicKey('FsWbPQcJQ2cCyr9ndse13fDqds4F2Ezx2WgTL25Dke4M');
-const ARCIUM_CLOCK_ACCOUNT = new PublicKey('AxygBawEvVwZPetj3yPJb9sGdZvaJYsVguET1zFUQkV');
+const MXE_PROGRAM_ID = new PublicKey('A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V');
 
 // Cluster offset for devnet
 const CLUSTER_OFFSET = 456;
@@ -60,72 +67,39 @@ function derivePotAccountPDA(gameId: bigint): [PublicKey, number] {
 }
 
 /**
- * Compute comp_def_offset hash — must match Rust comp_def_offset!() macro
- * Uses the same djb2-style hash as the Arcium SDK
+ * Compute comp_def_offset using SHA-256 (matches Rust comp_def_offset!() macro)
  */
-function computeCompDefOffset(name: string): Buffer {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = ((hash << 5) - hash) + name.charCodeAt(i);
-    hash = hash & hash;
-  }
-  const buf = Buffer.alloc(4);
-  buf.writeUInt32LE(Math.abs(hash));
-  return buf;
+async function computeCompDefOffset(name: string): Promise<number> {
+  const encoder = new TextEncoder();
+  const data = encoder.encode(name);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+  const hashArray = new Uint8Array(hashBuffer);
+  // Read first 4 bytes as little-endian u32
+  return (hashArray[0]! | (hashArray[1]! << 8) | (hashArray[2]! << 16) | (hashArray[3]! << 24)) >>> 0;
 }
 
 /**
- * Derive all Arcium MXE accounts needed for queue_computation instructions
+ * Derive all Arcium MXE accounts using the official @arcium-hq/client helpers
  */
-function deriveArciumAccounts(computationOffset: BN, compDefName: string) {
-  // sign_pda_account — seeded by "SignerAccount" from the cerberus_poker program
+async function deriveArciumAccounts(computationOffset: BN, compDefName: string) {
+  const arciumProgramId = getArciumProgramId();
+
+  // sign_pda_account — seeded by "ArciumSignerAccount" from the cerberus_poker program
   const [signPdaAccount] = PublicKey.findProgramAddressSync(
-    [Buffer.from('SignerAccount')],
+    [Buffer.from('ArciumSignerAccount')],
     CERBERUS_POKER_PROGRAM_ID
   );
 
-  // mxe_account — seeded by "mxe" from the Arcium program
-  const [mxeAccount] = PublicKey.findProgramAddressSync(
-    [Buffer.from('mxe')],
-    ARCIUM_PROGRAM_ID
-  );
+  const mxeAccount      = getMXEAccAddress(MXE_PROGRAM_ID);
+  const mempoolAccount  = getMempoolAccAddress(CLUSTER_OFFSET);
+  const executingPool   = getExecutingPoolAccAddress(CLUSTER_OFFSET);
+  const computationAccount = getComputationAccAddress(CLUSTER_OFFSET, computationOffset);
+  const clusterAccount  = getClusterAccAddress(CLUSTER_OFFSET);
+  const poolAccount     = getFeePoolAccAddress();
+  const clockAccount    = getClockAccAddress();
 
-  // mempool_account
-  const [mempoolAccount] = PublicKey.findProgramAddressSync(
-    [Buffer.from('mempool'), mxeAccount.toBuffer()],
-    ARCIUM_PROGRAM_ID
-  );
-
-  // executing_pool
-  const [executingPool] = PublicKey.findProgramAddressSync(
-    [Buffer.from('execpool'), mxeAccount.toBuffer()],
-    ARCIUM_PROGRAM_ID
-  );
-
-  // computation_account — unique per computation offset
-  const [computationAccount] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('computation'),
-      computationOffset.toArrayLike(Buffer, 'le', 8),
-      mxeAccount.toBuffer(),
-    ],
-    ARCIUM_PROGRAM_ID
-  );
-
-  // comp_def_account — unique per circuit name
-  const compDefOffsetBuf = computeCompDefOffset(compDefName);
-  const [compDefAccount] = PublicKey.findProgramAddressSync(
-    [Buffer.from('comp_def'), compDefOffsetBuf],
-    ARCIUM_PROGRAM_ID
-  );
-
-  // cluster_account — unique per cluster offset
-  const clusterOffsetBuf = Buffer.alloc(8);
-  clusterOffsetBuf.writeUInt32LE(CLUSTER_OFFSET);
-  const [clusterAccount] = PublicKey.findProgramAddressSync(
-    [Buffer.from('cluster'), clusterOffsetBuf],
-    ARCIUM_PROGRAM_ID
-  );
+  const compDefOffset   = await computeCompDefOffset(compDefName);
+  const compDefAccount  = getCompDefAccAddress(MXE_PROGRAM_ID, compDefOffset);
 
   return {
     signPdaAccount,
@@ -135,10 +109,10 @@ function deriveArciumAccounts(computationOffset: BN, compDefName: string) {
     computationAccount,
     compDefAccount,
     clusterAccount,
-    poolAccount:    ARCIUM_POOL_ACCOUNT,
-    clockAccount:   ARCIUM_CLOCK_ACCOUNT,
+    poolAccount,
+    clockAccount,
     systemProgram:  SystemProgram.programId,
-    arciumProgram:  ARCIUM_PROGRAM_ID,
+    arciumProgram:  arciumProgramId,
   };
 }
 
@@ -212,31 +186,29 @@ export async function startShuffle(
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
   const computationOffset = randomOffset();
-  const arcium = deriveArciumAccounts(computationOffset, COMP_DEF_NAMES.SHUFFLE_DECK);
+  const arcium = await deriveArciumAccounts(computationOffset, COMP_DEF_NAMES.SHUFFLE_DECK);
 
-  // nonce and deck_ciphertext_0 are UncheckedAccounts used as placeholders
-  // for the encrypted deck input — the MXE reads these off-chain
   const noncePDA = SystemProgram.programId;
   const deckCiphertext0 = SystemProgram.programId;
 
   const signature = await cerberusPokerProgram.methods
     .startShuffle(bn(gameId), computationOffset)
     .accounts({
-      gameSession:      gameSessionPDA,
-      payer:            cerberusPokerProgram.provider.publicKey,
-      signPdaAccount:   arcium.signPdaAccount,
-      mxeAccount:       arcium.mxeAccount,
-      mempoolAccount:   arcium.mempoolAccount,
-      executingPool:    arcium.executingPool,
+      gameSession:        gameSessionPDA,
+      payer:              cerberusPokerProgram.provider.publicKey,
+      signPdaAccount:     arcium.signPdaAccount,
+      mxeAccount:         arcium.mxeAccount,
+      mempoolAccount:     arcium.mempoolAccount,
+      executingPool:      arcium.executingPool,
       computationAccount: arcium.computationAccount,
-      compDefAccount:   arcium.compDefAccount,
-      clusterAccount:   arcium.clusterAccount,
-      poolAccount:      arcium.poolAccount,
-      clockAccount:     arcium.clockAccount,
-      systemProgram:    arcium.systemProgram,
-      arciumProgram:    arcium.arciumProgram,
-      nonce:            noncePDA,
-      deckCiphertext0:  deckCiphertext0,
+      compDefAccount:     arcium.compDefAccount,
+      clusterAccount:     arcium.clusterAccount,
+      poolAccount:        arcium.poolAccount,
+      clockAccount:       arcium.clockAccount,
+      systemProgram:      arcium.systemProgram,
+      arciumProgram:      arcium.arciumProgram,
+      nonce:              noncePDA,
+      deckCiphertext0:    deckCiphertext0,
     })
     .rpc();
 
