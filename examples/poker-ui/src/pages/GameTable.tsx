@@ -31,11 +31,11 @@ export default function GameTable() {
   // Convert gameId to BigInt safely (handle hex strings from URL)
   const gameIdBigInt = useMemo(() => {
     if (!gameId) return BigInt(12345);
-    // If it's a hex string (like 'a3f9'), convert it
-    if (/^[0-9a-fA-F]+$/.test(gameId)) {
-      return BigInt('0x' + gameId);
+    // If it's a hex string starting with 0x, convert it
+    if (gameId.startsWith('0x')) {
+      return BigInt(gameId);
     }
-    // Otherwise try to parse as decimal
+    // Otherwise parse as decimal
     try {
       return BigInt(gameId);
     } catch {
