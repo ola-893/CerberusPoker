@@ -1,13 +1,16 @@
-use anchor_lang::prelude::*;
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, GameState, PlayerJoined};
+use anchor_lang::prelude::*;
 
 pub fn handler(ctx: Context<JoinGame>, game_id: u64) -> Result<()> {
     let game = &mut ctx.accounts.game_session;
     let player = ctx.accounts.player.key();
 
     // Must be in Lobby state
-    require!(game.state == GameState::Lobby, CerberusPokerError::InvalidGameState);
+    require!(
+        game.state == GameState::Lobby,
+        CerberusPokerError::InvalidGameState
+    );
 
     // Must not be full
     require!(
@@ -17,7 +20,10 @@ pub fn handler(ctx: Context<JoinGame>, game_id: u64) -> Result<()> {
 
     // Must not already be registered
     for i in 0..game.num_players as usize {
-        require!(game.players[i] != player, CerberusPokerError::PlayerAlreadyJoined);
+        require!(
+            game.players[i] != player,
+            CerberusPokerError::PlayerAlreadyJoined
+        );
     }
 
     let player_index = game.num_players;

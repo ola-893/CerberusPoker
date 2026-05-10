@@ -1,6 +1,6 @@
-use anchor_lang::prelude::*;
 use crate::errors::CerberusPokerError;
-use crate::state::{GameSession, GameState, GameCreated, DECK_SIZE, MAX_PLAYERS};
+use crate::state::{GameCreated, GameSession, GameState, DECK_SIZE, MAX_PLAYERS};
+use anchor_lang::prelude::*;
 
 pub fn handler(
     ctx: Context<CreateGame>,
@@ -8,8 +8,14 @@ pub fn handler(
     max_players: u8,
     deck_size: u8,
 ) -> Result<()> {
-    require!(max_players >= 2 && max_players <= MAX_PLAYERS, CerberusPokerError::GameFull);
-    require!(deck_size == DECK_SIZE, CerberusPokerError::CardIndexOutOfRange);
+    require!(
+        max_players >= 2 && max_players <= MAX_PLAYERS,
+        CerberusPokerError::GameFull
+    );
+    require!(
+        deck_size == DECK_SIZE,
+        CerberusPokerError::CardIndexOutOfRange
+    );
 
     let game = &mut ctx.accounts.game_session;
     let clock = Clock::get()?;

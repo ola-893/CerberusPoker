@@ -21,15 +21,22 @@ use solana_sdk::{
 use std::str::FromStr;
 
 // Import the program types
-use cerberus_poker::state::{GameSession, GameState};
 use cerberus_poker::instructions::DealtCard;
+use cerberus_poker::state::{GameSession, GameState};
+
+fn processor_entry<'info>(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo<'info>],
+    instruction_data: &[u8],
+) -> anchor_lang::solana_program::entrypoint::ProgramResult {
+    // Anchor's generated entrypoint ties the slice borrow to AccountInfo's lifetime.
+    let accounts: &'info [AccountInfo<'info>] = unsafe { std::mem::transmute(accounts) };
+    cerberus_poker::entry(program_id, accounts, instruction_data)
+}
 
 /// Helper to derive game PDA
 fn get_game_pda(program_id: &Pubkey, game_id: u64) -> (Pubkey, u8) {
-    Pubkey::find_program_address(
-        &[b"game", &game_id.to_le_bytes()],
-        program_id,
-    )
+    Pubkey::find_program_address(&[b"game", &game_id.to_le_bytes()], program_id)
 }
 
 /// Helper to derive dealt card PDA
@@ -115,29 +122,24 @@ async fn test_deal_card_callback_stores_correct_value() {
     // with mock Arcium accounts.
 
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, _) = program_test.start().await;
 
     let game_id = 100u64;
-    let (game_pda, _) = create_game(
-        &mut banks_client,
-        &payer,
-        &program_id,
-        game_id,
-        2,
-        52,
-    )
-    .await
-    .unwrap();
+    let (game_pda, _) = create_game(&mut banks_client, &payer, &program_id, game_id, 2, 52)
+        .await
+        .unwrap();
 
     // Verify initial state: no cards dealt
-    let game = fetch_game_session(&mut banks_client, &game_pda).await.unwrap();
-    assert_eq!(game.card_value_used[0], 0, "No cards should be used initially");
+    let game = fetch_game_session(&mut banks_client, &game_pda)
+        .await
+        .unwrap();
+    assert_eq!(
+        game.card_value_used[0], 0,
+        "No cards should be used initially"
+    );
 
     // Note: Testing the actual callback requires mock Arcium accounts (MXE, Cluster, ComputationDefinition)
     // which are complex to set up in solana-program-test. The callback logic is tested via:
@@ -173,31 +175,32 @@ async fn test_reveal_card_callback_rejects_duplicate_values() {
     // This ensures deck integrity: exactly one of each card value (0-51) can appear in a game.
 
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, _) = program_test.start().await;
 
     let game_id = 200u64;
-    let (game_pda, _) = create_game(
-        &mut banks_client,
-        &payer,
-        &program_id,
-        game_id,
-        2,
-        52,
-    )
-    .await
-    .unwrap();
+    let (game_pda, _) = create_game(&mut banks_client, &payer, &program_id, game_id, 2, 52)
+        .await
+        .unwrap();
 
     // Verify initial state
-    let game = fetch_game_session(&mut banks_client, &game_pda).await.unwrap();
-    assert_eq!(game.card_value_used[0], 0, "No cards should be used initially");
-    assert!(!game.is_card_value_used(5), "Card value 5 should not be used");
-    assert!(!game.is_card_value_used(10), "Card value 10 should not be used");
+    let game = fetch_game_session(&mut banks_client, &game_pda)
+        .await
+        .unwrap();
+    assert_eq!(
+        game.card_value_used[0], 0,
+        "No cards should be used initially"
+    );
+    assert!(
+        !game.is_card_value_used(5),
+        "Card value 5 should not be used"
+    );
+    assert!(
+        !game.is_card_value_used(10),
+        "Card value 10 should not be used"
+    );
 
     // Note: Testing the actual callback with duplicate values requires:
     // 1. Mock Arcium accounts (MXE, Cluster, ComputationDefinition, Computation)
@@ -228,27 +231,19 @@ async fn test_card_value_bitmap_operations() {
     // for tracking which card values have been used in a game.
 
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, _) = program_test.start().await;
 
     let game_id = 300u64;
-    let (game_pda, _) = create_game(
-        &mut banks_client,
-        &payer,
-        &program_id,
-        game_id,
-        2,
-        52,
-    )
-    .await
-    .unwrap();
+    let (game_pda, _) = create_game(&mut banks_client, &payer, &program_id, game_id, 2, 52)
+        .await
+        .unwrap();
 
-    let game = fetch_game_session(&mut banks_client, &game_pda).await.unwrap();
+    let game = fetch_game_session(&mut banks_client, &game_pda)
+        .await
+        .unwrap();
 
     // Verify all 52 card values start as unused
     for card_value in 0..52 {
@@ -260,8 +255,12 @@ async fn test_card_value_bitmap_operations() {
     }
 
     // Verify the bitmap is large enough
-    assert_eq!(game.card_value_used.len(), 1, "Should have 1 u64 for bitmap");
-    
+    assert_eq!(
+        game.card_value_used.len(),
+        1,
+        "Should have 1 u64 for bitmap"
+    );
+
     // A u64 can track 64 different values, which is sufficient for 52 cards
     const BITS_AVAILABLE: usize = 64;
     const CARDS_IN_DECK: usize = 52;
@@ -294,28 +293,20 @@ async fn test_reveal_community_card_callback_stores_correct_value() {
     // 7. Emits CardRevealed event
 
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, _) = program_test.start().await;
 
     let game_id = 400u64;
-    let (game_pda, _) = create_game(
-        &mut banks_client,
-        &payer,
-        &program_id,
-        game_id,
-        2,
-        52,
-    )
-    .await
-    .unwrap();
+    let (game_pda, _) = create_game(&mut banks_client, &payer, &program_id, game_id, 2, 52)
+        .await
+        .unwrap();
 
     // Verify initial state: all cards unrevealed
-    let game = fetch_game_session(&mut banks_client, &game_pda).await.unwrap();
+    let game = fetch_game_session(&mut banks_client, &game_pda)
+        .await
+        .unwrap();
     for i in 0..52u8 {
         assert_eq!(
             game.unmasked_cards[i as usize], 0xFF,
@@ -343,25 +334,15 @@ async fn test_reveal_community_card_callback_validates_card_value_range() {
     // Protection: require!(card_value < 52, CerberusPokerError::CardValueOutOfRange);
 
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, _) = program_test.start().await;
 
     let game_id = 500u64;
-    let (game_pda, _) = create_game(
-        &mut banks_client,
-        &payer,
-        &program_id,
-        game_id,
-        2,
-        52,
-    )
-    .await
-    .unwrap();
+    let (game_pda, _) = create_game(&mut banks_client, &payer, &program_id, game_id, 2, 52)
+        .await
+        .unwrap();
 
     // Note: Testing invalid card values requires calling the callback with mock MXE output
     // containing card_value >= 52. This requires complex Arcium account setup.
@@ -396,11 +377,8 @@ async fn test_atomic_showdown_callback_enforces_uniqueness() {
     // no duplicate card values can slip through.
 
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, _) = program_test.start().await;
 
@@ -417,8 +395,13 @@ async fn test_atomic_showdown_callback_enforces_uniqueness() {
     .unwrap();
 
     // Verify initial state
-    let game = fetch_game_session(&mut banks_client, &game_pda).await.unwrap();
-    assert_eq!(game.card_value_used[0], 0, "No cards should be used initially");
+    let game = fetch_game_session(&mut banks_client, &game_pda)
+        .await
+        .unwrap();
+    assert_eq!(
+        game.card_value_used[0], 0,
+        "No cards should be used initially"
+    );
 
     // Note: Testing atomic_showdown_callback requires:
     // 1. Mock Arcium accounts
@@ -483,32 +466,27 @@ async fn test_full_deal_and_reveal_flow_documentation() {
     // - All callbacks validate card value range (0-51)
 
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, _) = program_test.start().await;
 
     let game_id = 700u64;
-    let (game_pda, _) = create_game(
-        &mut banks_client,
-        &payer,
-        &program_id,
-        game_id,
-        2,
-        52,
-    )
-    .await
-    .unwrap();
+    let (game_pda, _) = create_game(&mut banks_client, &payer, &program_id, game_id, 2, 52)
+        .await
+        .unwrap();
 
-    let game = fetch_game_session(&mut banks_client, &game_pda).await.unwrap();
+    let game = fetch_game_session(&mut banks_client, &game_pda)
+        .await
+        .unwrap();
 
     // Verify all protection mechanisms are in place
-    assert_eq!(game.card_value_used[0], 0, "card_value_used bitmap initialized");
+    assert_eq!(
+        game.card_value_used[0], 0,
+        "card_value_used bitmap initialized"
+    );
     assert_eq!(game.reveal_bitmap[0], 0, "reveal_bitmap initialized");
-    
+
     for i in 0..52 {
         assert_eq!(game.unmasked_cards[i], 0xFF, "All cards start unrevealed");
         assert_eq!(game.card_assigned_to[i], 0xFE, "All cards start unassigned");
@@ -529,25 +507,15 @@ async fn test_error_codes_defined() {
     // - AbortedComputation: Returned when MXE output verification fails
 
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, _) = program_test.start().await;
 
     let game_id = 800u64;
-    let (game_pda, _) = create_game(
-        &mut banks_client,
-        &payer,
-        &program_id,
-        game_id,
-        2,
-        52,
-    )
-    .await
-    .unwrap();
+    let (game_pda, _) = create_game(&mut banks_client, &payer, &program_id, game_id, 2, 52)
+        .await
+        .unwrap();
 
     // Note: Error codes are defined in packages/programs/programs/cerberus_poker/src/errors.rs
     // and are automatically included in the program IDL.
@@ -578,27 +546,19 @@ async fn test_callback_state_consistency() {
     // 4. The number of set bits in card_value_used equals the number of revealed cards
 
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, _) = program_test.start().await;
 
     let game_id = 900u64;
-    let (game_pda, _) = create_game(
-        &mut banks_client,
-        &payer,
-        &program_id,
-        game_id,
-        2,
-        52,
-    )
-    .await
-    .unwrap();
+    let (game_pda, _) = create_game(&mut banks_client, &payer, &program_id, game_id, 2, 52)
+        .await
+        .unwrap();
 
-    let game = fetch_game_session(&mut banks_client, &game_pda).await.unwrap();
+    let game = fetch_game_session(&mut banks_client, &game_pda)
+        .await
+        .unwrap();
 
     // Verify initial state consistency
     let mut revealed_count = 0;

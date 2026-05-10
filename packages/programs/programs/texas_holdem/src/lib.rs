@@ -6,8 +6,8 @@ pub mod hand_eval;
 pub mod instructions;
 pub mod state;
 
-use instructions::*;
 use errors::TexasHoldemError;
+use instructions::*;
 use state::PokerTable;
 
 declare_id!("h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9");

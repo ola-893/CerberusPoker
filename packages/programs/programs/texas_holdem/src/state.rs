@@ -3,30 +3,30 @@ use anchor_lang::prelude::*;
 #[account]
 #[derive(Default)]
 pub struct PokerTable {
-    pub game_session: Pubkey,           // reference to GameSession PDA
+    pub game_session: Pubkey, // reference to GameSession PDA
     pub phase: PokerPhase,
     pub dealer_index: u8,
     pub current_player: u8,
-    pub pot_mint: Pubkey,               // C-SPL token mint for this table
-    pub pot_account: Pubkey,            // encrypted pot balance
-    pub escrow_account: Pubkey,         // USDC+ escrow PDA (Phase 1: standard SPL token account)
-    pub player_stacks: [Pubkey; 10],    // C-SPL token accounts (encrypted)
-    pub player_bets: [Pubkey; 10],      // current round bet accounts
-    pub current_bet: u64,               // plaintext minimum (for UI display)
+    pub pot_mint: Pubkey,            // C-SPL token mint for this table
+    pub pot_account: Pubkey,         // encrypted pot balance
+    pub escrow_account: Pubkey,      // USDC+ escrow PDA (Phase 1: standard SPL token account)
+    pub player_stacks: [Pubkey; 10], // C-SPL token accounts (encrypted)
+    pub player_bets: [Pubkey; 10],   // current round bet accounts
+    pub current_bet: u64,            // plaintext minimum (for UI display)
     pub folded_bitmap: u16,
     pub all_in_bitmap: u16,
-    pub hand_verified_bitmap: u16,      // hole cards verified at showdown
+    pub hand_verified_bitmap: u16, // hole cards verified at showdown
     pub small_blind: u64,
     pub big_blind: u64,
     pub hand_number: u32,
-    pub last_action_time: i64,          // timestamp of last player action (for timeout enforcement)
-    pub num_players: u8,                // players seated in the current hand
-    pub acted_bitmap: u16,              // players who have acted in this betting round
-    pub winners_bitmap: u16,            // last committed showdown winners
-    pub winner_count: u8,               // number of winners in the bitmap
-    pub last_raise: u64,                // standard Hold'em minimum raise basis
-    pub pot_total: u64,                 // plaintext escrow total for Phase 1 UI/accounting
-    pub player_round_bets: [u64; 10],   // current betting-round contribution by player
+    pub last_action_time: i64, // timestamp of last player action (for timeout enforcement)
+    pub num_players: u8,       // players seated in the current hand
+    pub acted_bitmap: u16,     // players who have acted in this betting round
+    pub winners_bitmap: u16,   // last committed showdown winners
+    pub winner_count: u8,      // number of winners in the bitmap
+    pub last_raise: u64,       // standard Hold'em minimum raise basis
+    pub pot_total: u64,        // plaintext escrow total for Phase 1 UI/accounting
+    pub player_round_bets: [u64; 10], // current betting-round contribution by player
     pub bump: u8,
 }
 
@@ -37,7 +37,32 @@ impl PokerTable {
     // + 8 (small_blind) + 8 (big_blind) + 4 (hand_number) + 8 (last_action_time)
     // + 1 (num_players) + 2 (acted_bitmap) + 2 (winners_bitmap) + 1 (winner_count)
     // + 8 (last_raise) + 8 (pot_total) + 80 (player_round_bets: 10*8) + 1 (bump)
-    pub const SPACE: usize = 8 + 32 + 1 + 1 + 1 + 32 + 32 + 32 + 320 + 320 + 8 + 2 + 2 + 2 + 8 + 8 + 4 + 8 + 1 + 2 + 2 + 1 + 8 + 8 + 80 + 1;
+    pub const SPACE: usize = 8
+        + 32
+        + 1
+        + 1
+        + 1
+        + 32
+        + 32
+        + 32
+        + 320
+        + 320
+        + 8
+        + 2
+        + 2
+        + 2
+        + 8
+        + 8
+        + 4
+        + 8
+        + 1
+        + 2
+        + 2
+        + 1
+        + 8
+        + 8
+        + 80
+        + 1;
 
     pub fn active_players(&self) -> u8 {
         let mut count = 0u8;

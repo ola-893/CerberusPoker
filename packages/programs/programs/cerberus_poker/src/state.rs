@@ -78,7 +78,7 @@ impl GameSession {
         + 1   // pending_reveal_card_index
         + 1   // pending_deal_card_index
         + 1   // pending_deal_player_index
-        + 1;  // bump
+        + 1; // bump
 
     /// Check if a card value has already been used in this game
     pub fn is_card_value_used(&self, value: u8) -> bool {
@@ -226,7 +226,7 @@ pub struct ShowdownComplete {
 
 /// Constants
 pub const SHUFFLE_TIMEOUT_SECS: i64 = 300; // 5 minutes
-pub const REVEAL_TIMEOUT_SECS: i64 = 300;  // 5 minutes
+pub const REVEAL_TIMEOUT_SECS: i64 = 300; // 5 minutes
 pub const MAX_PLAYERS: u8 = 6;
 pub const DECK_SIZE: u8 = 52;
 pub const UNASSIGNED: u8 = 0xFE;

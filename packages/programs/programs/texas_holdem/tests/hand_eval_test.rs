@@ -32,10 +32,10 @@ fn test_pair_tiebreaker_by_kickers() {
         make_card(0, 3),  // 2♠
         make_card(1, 0),  // 3♣
     ];
-    
+
     let (rank1, tb1) = evaluate_hand(&hand1);
     let (rank2, tb2) = evaluate_hand(&hand2);
-    
+
     assert_eq!(rank1, HandRank::Pair);
     assert_eq!(rank2, HandRank::Pair);
     assert_eq!(tb1.values[0], 6); // Both have pair of 8s
@@ -69,10 +69,10 @@ fn test_two_pair_tiebreaker_by_kicker() {
         make_card(0, 3),  // 2♠
         make_card(1, 0),  // 3♣
     ];
-    
+
     let (rank1, tb1) = evaluate_hand(&hand1);
     let (rank2, tb2) = evaluate_hand(&hand2);
-    
+
     assert_eq!(rank1, HandRank::TwoPair);
     assert_eq!(rank2, HandRank::TwoPair);
     // hand1 has Q kicker, hand2 has J kicker
@@ -100,10 +100,10 @@ fn test_three_of_a_kind_tiebreaker() {
         make_card(0, 3),  // 2♠
         make_card(1, 0),  // 3♣
     ];
-    
+
     let (rank1, tb1) = evaluate_hand(&hand1);
     let (rank2, tb2) = evaluate_hand(&hand2);
-    
+
     assert_eq!(rank1, HandRank::ThreeOfAKind);
     assert_eq!(rank2, HandRank::ThreeOfAKind);
     // Both have A as first kicker, hand1 has K, hand2 has Q
@@ -131,10 +131,10 @@ fn test_four_of_a_kind_tiebreaker() {
         make_card(0, 3),  // 2♠
         make_card(1, 0),  // 3♣
     ];
-    
+
     let (rank1, tb1) = evaluate_hand(&hand1);
     let (rank2, tb2) = evaluate_hand(&hand2);
-    
+
     assert_eq!(rank1, HandRank::FourOfAKind);
     assert_eq!(rank2, HandRank::FourOfAKind);
     // hand1 has A kicker, hand2 has K kicker
@@ -162,10 +162,10 @@ fn test_flush_tiebreaker() {
         make_card(0, 0),  // 2♣
         make_card(1, 1),  // 3♦
     ];
-    
+
     let (rank1, tb1) = evaluate_hand(&hand1);
     let (rank2, tb2) = evaluate_hand(&hand2);
-    
+
     assert_eq!(rank1, HandRank::Flush);
     assert_eq!(rank2, HandRank::Flush);
     // Both have A-Q-10-8, but hand1 has 6 and hand2 has 5
@@ -193,10 +193,10 @@ fn test_high_card_tiebreaker() {
         make_card(0, 3),  // 2♠
         make_card(1, 0),  // 3♣
     ];
-    
+
     let (rank1, tb1) = evaluate_hand(&hand1);
     let (rank2, tb2) = evaluate_hand(&hand2);
-    
+
     assert_eq!(rank1, HandRank::HighCard);
     assert_eq!(rank2, HandRank::HighCard);
     // Both have A-K-J-9, but hand1 has 7 and hand2 has 6
@@ -207,27 +207,27 @@ fn test_high_card_tiebreaker() {
 fn test_full_house_tiebreaker() {
     // Different trips
     let hand1 = [
-        make_card(8, 0),  // 10♣
-        make_card(8, 1),  // 10♦
-        make_card(8, 2),  // 10♥
-        make_card(5, 0),  // 7♣
-        make_card(5, 1),  // 7♦
-        make_card(0, 2),  // 2♥
-        make_card(1, 3),  // 3♠
+        make_card(8, 0), // 10♣
+        make_card(8, 1), // 10♦
+        make_card(8, 2), // 10♥
+        make_card(5, 0), // 7♣
+        make_card(5, 1), // 7♦
+        make_card(0, 2), // 2♥
+        make_card(1, 3), // 3♠
     ];
     let hand2 = [
-        make_card(7, 0),  // 9♣
-        make_card(7, 1),  // 9♦
-        make_card(7, 2),  // 9♥
-        make_card(5, 2),  // 7♥
-        make_card(5, 3),  // 7♠
-        make_card(0, 0),  // 2♣
-        make_card(1, 1),  // 3♦
+        make_card(7, 0), // 9♣
+        make_card(7, 1), // 9♦
+        make_card(7, 2), // 9♥
+        make_card(5, 2), // 7♥
+        make_card(5, 3), // 7♠
+        make_card(0, 0), // 2♣
+        make_card(1, 1), // 3♦
     ];
-    
+
     let (rank1, tb1) = evaluate_hand(&hand1);
     let (rank2, tb2) = evaluate_hand(&hand2);
-    
+
     assert_eq!(rank1, HandRank::FullHouse);
     assert_eq!(rank2, HandRank::FullHouse);
     // hand1 has 10s full of 7s, hand2 has 9s full of 7s
@@ -238,27 +238,27 @@ fn test_full_house_tiebreaker() {
 fn test_full_house_tiebreaker_same_trips() {
     // Same trips, different pairs
     let hand1 = [
-        make_card(8, 0),  // 10♣
-        make_card(8, 1),  // 10♦
-        make_card(8, 2),  // 10♥
-        make_card(6, 0),  // 8♣
-        make_card(6, 1),  // 8♦
-        make_card(0, 2),  // 2♥
-        make_card(1, 3),  // 3♠
+        make_card(8, 0), // 10♣
+        make_card(8, 1), // 10♦
+        make_card(8, 2), // 10♥
+        make_card(6, 0), // 8♣
+        make_card(6, 1), // 8♦
+        make_card(0, 2), // 2♥
+        make_card(1, 3), // 3♠
     ];
     let hand2 = [
-        make_card(8, 0),  // 10♣
-        make_card(8, 1),  // 10♦
-        make_card(8, 2),  // 10♥
-        make_card(5, 0),  // 7♣
-        make_card(5, 1),  // 7♦
-        make_card(0, 0),  // 2♣
-        make_card(1, 1),  // 3♦
+        make_card(8, 0), // 10♣
+        make_card(8, 1), // 10♦
+        make_card(8, 2), // 10♥
+        make_card(5, 0), // 7♣
+        make_card(5, 1), // 7♦
+        make_card(0, 0), // 2♣
+        make_card(1, 1), // 3♦
     ];
-    
+
     let (rank1, tb1) = evaluate_hand(&hand1);
     let (rank2, tb2) = evaluate_hand(&hand2);
-    
+
     assert_eq!(rank1, HandRank::FullHouse);
     assert_eq!(rank2, HandRank::FullHouse);
     // Both have 10s, but hand1 has 8s and hand2 has 7s

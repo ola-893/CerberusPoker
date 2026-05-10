@@ -1,8 +1,8 @@
-use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount, Transfer};
-use crate::state::{PokerTable, PokerPhase};
 use crate::errors::TexasHoldemError;
 use crate::hand_eval::{evaluate_hand, HandRank, Tiebreaker};
+use crate::state::{PokerPhase, PokerTable};
+use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 
 /// Evaluates all non-folded players' hands and determines the winner(s)
 ///
@@ -38,7 +38,7 @@ pub fn handler<'info>(
     game_id: u64,
 ) -> Result<()> {
     let table = &ctx.accounts.poker_table;
-    
+
     // Verify we're in showdown phase
     require!(
         table.phase == PokerPhase::Showdown,
@@ -47,7 +47,10 @@ pub fn handler<'info>(
 
     let game_data = ctx.accounts.game_session.try_borrow_data()?;
     let game_view = GameSessionView::parse(&game_data)?;
-    require!(table.num_players == game_view.num_players, TexasHoldemError::InvalidGameState);
+    require!(
+        table.num_players == game_view.num_players,
+        TexasHoldemError::InvalidGameState
+    );
 
     let mut active_count = 0u8;
     let mut sole_active_player = 0u8;
@@ -95,7 +98,8 @@ pub fn handler<'info>(
             ];
             let (rank, tiebreaker) = evaluate_hand(&cards);
 
-            if !best_seen || rank > best_rank || (rank == best_rank && tiebreaker > best_tiebreaker) {
+            if !best_seen || rank > best_rank || (rank == best_rank && tiebreaker > best_tiebreaker)
+            {
                 best_seen = true;
                 best_rank = rank;
                 best_tiebreaker = tiebreaker;
@@ -133,27 +137,19 @@ struct GameSessionView {
 
 impl GameSessionView {
     const NUM_PLAYERS_OFFSET: usize = 8 + 8 + 1 + 1 + 1;
-    const UNMASKED_CARDS_OFFSET: usize = 8
-        + 8
-        + 1
-        + 1
-        + 1
-        + 1
-        + 320
-        + 8
-        + 32
-        + 2
-        + 416;
+    const UNMASKED_CARDS_OFFSET: usize = 8 + 8 + 1 + 1 + 1 + 1 + 320 + 8 + 32 + 2 + 416;
     const CARD_ASSIGNED_TO_OFFSET: usize = Self::UNMASKED_CARDS_OFFSET + 52;
     const MIN_LEN: usize = Self::CARD_ASSIGNED_TO_OFFSET + 52;
 
     fn parse(data: &[u8]) -> Result<Self> {
-        require!(data.len() >= Self::MIN_LEN, TexasHoldemError::InvalidGameState);
+        require!(
+            data.len() >= Self::MIN_LEN,
+            TexasHoldemError::InvalidGameState
+        );
 
         let mut unmasked_cards = [0xffu8; 52];
-        unmasked_cards.copy_from_slice(
-            &data[Self::UNMASKED_CARDS_OFFSET..Self::UNMASKED_CARDS_OFFSET + 52],
-        );
+        unmasked_cards
+            .copy_from_slice(&data[Self::UNMASKED_CARDS_OFFSET..Self::UNMASKED_CARDS_OFFSET + 52]);
 
         let mut card_assigned_to = [0xfeu8; 52];
         card_assigned_to.copy_from_slice(
@@ -226,11 +222,7 @@ fn settle_escrow<'info>(
     let share = escrow_amount / winner_count as u64;
     let game_id_bytes = game_id.to_le_bytes();
     let bump = ctx.accounts.poker_table.bump;
-    let signer_seeds: &[&[&[u8]]] = &[&[
-        b"table",
-        game_id_bytes.as_ref(),
-        &[bump],
-    ]];
+    let signer_seeds: &[&[&[u8]]] = &[&[b"table", game_id_bytes.as_ref(), &[bump]]];
 
     for player_index in 0..ctx.accounts.poker_table.num_players {
         if (winners_bitmap & (1u16 << player_index)) == 0 {
@@ -238,7 +230,10 @@ fn settle_escrow<'info>(
         }
 
         let destination = ctx.accounts.poker_table.player_stacks[player_index as usize];
-        require!(destination != Pubkey::default(), TexasHoldemError::InvalidStackAccount);
+        require!(
+            destination != Pubkey::default(),
+            TexasHoldemError::InvalidStackAccount
+        );
 
         let winner_account = ctx
             .remaining_accounts
@@ -272,7 +267,7 @@ pub struct Showdown<'info> {
         bump = poker_table.bump,
     )]
     pub poker_table: Account<'info, PokerTable>,
-    
+
     /// The GameSession PDA from cerberus_poker program.
     /// CHECK: We read card_assigned_to and unmasked_cards from this account
     #[account(
@@ -287,6 +282,6 @@ pub struct Showdown<'info> {
     pub escrow_account: Account<'info, TokenAccount>,
 
     pub token_program: Program<'info, Token>,
-    
+
     pub caller: Signer<'info>,
 }

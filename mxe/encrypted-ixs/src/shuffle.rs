@@ -10,7 +10,6 @@
 /// - Enc<Shared, T> — client + MXE share a secret (dealt cards — only recipient decrypts)
 /// - No Vec/HashMap/String — fixed-size arrays only
 /// - Output limit: ~1232 bytes per callback transaction
-
 use arcis::*;
 
 #[encrypted]
@@ -34,11 +33,11 @@ mod circuits {
     #[instruction]
     pub fn shuffle_deck(deck: Enc<Mxe, [u8; 52]>) -> Enc<Mxe, [u8; 52]> {
         let mut cards = deck.to_arcis();
-        
+
         // ArcisRNG::shuffle: cryptographically uniform, O(n·log³(n))
         // All randomness generated within MPC — no node sees the permutation
         ArcisRNG::shuffle(&mut cards);
-        
+
         // Return the encrypted shuffled deck
         // The Solana callback will compute a hash of the encrypted representation
         // for on-chain commitment without revealing the card order
@@ -56,10 +55,7 @@ mod circuits {
     ///         card_index: u8      — which card slot to deal (0-51)
     /// Output: u8                 — card value (plaintext)
     #[instruction]
-    pub fn deal_card(
-        deck: Enc<Mxe, [u8; 52]>,
-        card_index: u8,
-    ) -> u8 {
+    pub fn deal_card(deck: Enc<Mxe, [u8; 52]>, card_index: u8) -> u8 {
         let cards = deck.to_arcis();
         let card_value = cards[card_index as usize];
         card_value.reveal()

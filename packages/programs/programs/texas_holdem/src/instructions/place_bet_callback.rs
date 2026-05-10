@@ -1,6 +1,6 @@
+use crate::errors::TexasHoldemError;
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use crate::errors::TexasHoldemError;
 
 pub fn handler(
     _ctx: Context<crate::PlaceBetCallback>,

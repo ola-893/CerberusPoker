@@ -67,7 +67,7 @@ impl Ord for Tiebreaker {
 
 /// Evaluate the best 5-card hand from 7 cards.
 /// Returns (HandRank, Tiebreaker).
-/// 
+///
 /// The tiebreaker encodes multiple card ranks for proper comparison:
 /// - High Card: all 5 cards in descending order
 /// - One Pair: pair rank, then 3 kickers in descending order
@@ -82,35 +82,36 @@ impl Ord for Tiebreaker {
 pub fn evaluate_hand(cards: &[u8; 7]) -> (HandRank, Tiebreaker) {
     let mut ranks = [0u8; 7];
     let mut suits = [0u8; 7];
-    
+
     for i in 0..7 {
         ranks[i] = card_rank(cards[i]);
         suits[i] = card_suit(cards[i]);
     }
-    
+
     // Count rank frequencies
     let mut rank_counts = [0u8; 13];
     for &rank in &ranks {
         rank_counts[rank as usize] += 1;
     }
-    
+
     // Check for flush (5+ cards of same suit)
     let flush_suit = find_flush(&suits);
     let has_flush = flush_suit.is_some();
-    
+
     // Check for straight
     let straight_high = find_straight(&ranks);
     let has_straight = straight_high.is_some();
-    
+
     // If both flush and straight, check for straight flush
     if has_flush && has_straight {
         let flush_suit = flush_suit.unwrap();
-        let flush_ranks: Vec<u8> = ranks.iter()
+        let flush_ranks: Vec<u8> = ranks
+            .iter()
             .zip(suits.iter())
             .filter(|(_, &s)| s == flush_suit)
             .map(|(&r, _)| r)
             .collect();
-        
+
         if let Some(sf_high) = find_straight(&flush_ranks) {
             // Royal flush is a straight flush with ace high (rank 12)
             if sf_high == 12 {
@@ -119,20 +120,23 @@ pub fn evaluate_hand(cards: &[u8; 7]) -> (HandRank, Tiebreaker) {
             return (HandRank::StraightFlush, Tiebreaker::new(&[sf_high]));
         }
     }
-    
+
     // Check for four of a kind
     for rank in (0..13).rev() {
         if rank_counts[rank] == 4 {
             // Find the kicker (highest card that's not part of the quads)
             let kicker = get_kickers(&ranks, &[rank as u8], 1);
-            return (HandRank::FourOfAKind, Tiebreaker::new(&[rank as u8, kicker[0]]));
+            return (
+                HandRank::FourOfAKind,
+                Tiebreaker::new(&[rank as u8, kicker[0]]),
+            );
         }
     }
-    
+
     // Check for full house (three of a kind + pair)
     let mut three_rank = None;
     let mut pair_rank = None;
-    
+
     for rank in (0..13).rev() {
         if rank_counts[rank] == 3 && three_rank.is_none() {
             three_rank = Some(rank as u8);
@@ -140,38 +144,45 @@ pub fn evaluate_hand(cards: &[u8; 7]) -> (HandRank, Tiebreaker) {
             pair_rank = Some(rank as u8);
         }
     }
-    
+
     if let (Some(three), Some(pair)) = (three_rank, pair_rank) {
         return (HandRank::FullHouse, Tiebreaker::new(&[three, pair]));
     }
-    
+
     // Check for flush
     if has_flush {
         let flush_suit = flush_suit.unwrap();
-        let mut flush_ranks: Vec<u8> = ranks.iter()
+        let mut flush_ranks: Vec<u8> = ranks
+            .iter()
             .zip(suits.iter())
             .filter(|(_, &s)| s == flush_suit)
             .map(|(&r, _)| r)
             .collect();
         flush_ranks.sort_by(|a, b| b.cmp(a)); // Sort descending
-        // Take top 5 cards for the flush
+                                              // Take top 5 cards for the flush
         return (HandRank::Flush, Tiebreaker::new(&flush_ranks[..5]));
     }
-    
+
     // Check for straight
     if has_straight {
-        return (HandRank::Straight, Tiebreaker::new(&[straight_high.unwrap()]));
+        return (
+            HandRank::Straight,
+            Tiebreaker::new(&[straight_high.unwrap()]),
+        );
     }
-    
+
     // Check for three of a kind
     for rank in (0..13).rev() {
         if rank_counts[rank] == 3 {
             // Find 2 kickers
             let kickers = get_kickers(&ranks, &[rank as u8], 2);
-            return (HandRank::ThreeOfAKind, Tiebreaker::new(&[rank as u8, kickers[0], kickers[1]]));
+            return (
+                HandRank::ThreeOfAKind,
+                Tiebreaker::new(&[rank as u8, kickers[0], kickers[1]]),
+            );
         }
     }
-    
+
     // Check for two pair
     let mut pairs = Vec::new();
     for rank in (0..13).rev() {
@@ -179,20 +190,26 @@ pub fn evaluate_hand(cards: &[u8; 7]) -> (HandRank, Tiebreaker) {
             pairs.push(rank as u8);
         }
     }
-    
+
     if pairs.len() >= 2 {
         // Find 1 kicker - exclude ALL pairs, not just the top 2
         let kicker = get_kickers(&ranks, &pairs, 1);
-        return (HandRank::TwoPair, Tiebreaker::new(&[pairs[0], pairs[1], kicker[0]]));
+        return (
+            HandRank::TwoPair,
+            Tiebreaker::new(&[pairs[0], pairs[1], kicker[0]]),
+        );
     }
-    
+
     // Check for one pair
     if pairs.len() == 1 {
         // Find 3 kickers
         let kickers = get_kickers(&ranks, &[pairs[0]], 3);
-        return (HandRank::Pair, Tiebreaker::new(&[pairs[0], kickers[0], kickers[1], kickers[2]]));
+        return (
+            HandRank::Pair,
+            Tiebreaker::new(&[pairs[0], kickers[0], kickers[1], kickers[2]]),
+        );
     }
-    
+
     // High card - all 5 cards in descending order
     let mut sorted_ranks = ranks;
     sorted_ranks.sort_by(|a, b| b.cmp(a));
@@ -215,19 +232,20 @@ fn find_flush(suits: &[u8]) -> Option<u8> {
 /// Get kicker cards (cards not in the excluded ranks), sorted descending.
 /// Returns up to `count` kickers.
 fn get_kickers(ranks: &[u8], exclude: &[u8], count: usize) -> Vec<u8> {
-    let mut kickers: Vec<u8> = ranks.iter()
+    let mut kickers: Vec<u8> = ranks
+        .iter()
         .filter(|&&r| !exclude.contains(&r))
         .copied()
         .collect();
     kickers.sort_by(|a, b| b.cmp(a)); // Sort descending
     kickers.dedup(); // Remove duplicates
     kickers.truncate(count);
-    
+
     // Pad with zeros if we don't have enough kickers
     while kickers.len() < count {
         kickers.push(0);
     }
-    
+
     kickers
 }
 
@@ -240,7 +258,7 @@ fn find_straight(ranks: &[u8]) -> Option<u8> {
     for &rank in ranks {
         rank_mask |= 1 << rank;
     }
-    
+
     // Check for regular straights (high to low)
     // Straight patterns: 5 consecutive bits set
     for high in (4..=12).rev() {
@@ -249,14 +267,14 @@ fn find_straight(ranks: &[u8]) -> Option<u8> {
             return Some(high);
         }
     }
-    
+
     // Check for ace-low straight (A-2-3-4-5)
     // Ace is rank 12, so we need ranks 0,1,2,3,12
     let ace_low_pattern = 0b1000000001111; // bits 0,1,2,3,12
     if (rank_mask & ace_low_pattern) == ace_low_pattern {
         return Some(3); // In ace-low straight, the high card is the 5 (rank 3)
     }
-    
+
     None
 }
 
@@ -282,13 +300,13 @@ mod tests {
         // Test card encoding: suit = card/13, rank = card%13
         assert_eq!(card_rank(0), 0); // 2 of clubs
         assert_eq!(card_suit(0), 0);
-        
+
         assert_eq!(card_rank(12), 12); // Ace of clubs
         assert_eq!(card_suit(12), 0);
-        
+
         assert_eq!(card_rank(13), 0); // 2 of diamonds
         assert_eq!(card_suit(13), 1);
-        
+
         assert_eq!(card_rank(51), 12); // Ace of spades
         assert_eq!(card_suit(51), 3);
     }
@@ -314,13 +332,13 @@ mod tests {
     fn test_straight_flush() {
         // Straight flush: 5-6-7-8-9 of spades (ranks 3,4,5,6,7, suit 3)
         let cards = [
-            make_card(3, 3),  // 5♠
-            make_card(4, 3),  // 6♠
-            make_card(5, 3),  // 7♠
-            make_card(6, 3),  // 8♠
-            make_card(7, 3),  // 9♠
-            make_card(0, 0),  // 2♣
-            make_card(1, 1),  // 3♦
+            make_card(3, 3), // 5♠
+            make_card(4, 3), // 6♠
+            make_card(5, 3), // 7♠
+            make_card(6, 3), // 8♠
+            make_card(7, 3), // 9♠
+            make_card(0, 0), // 2♣
+            make_card(1, 1), // 3♦
         ];
         let (rank, tiebreaker) = evaluate_hand(&cards);
         assert_eq!(rank, HandRank::StraightFlush);
@@ -359,20 +377,20 @@ mod tests {
         let (rank, tiebreaker) = evaluate_hand(&cards);
         assert_eq!(rank, HandRank::FourOfAKind);
         assert_eq!(tiebreaker.values[0], 11); // Kings
-        assert_eq!(tiebreaker.values[1], 7);  // 9 kicker
+        assert_eq!(tiebreaker.values[1], 7); // 9 kicker
     }
 
     #[test]
     fn test_full_house() {
         // Three 8s and two 5s (ranks 6 and 3)
         let cards = [
-            make_card(6, 0),  // 8♣
-            make_card(6, 1),  // 8♦
-            make_card(6, 2),  // 8♥
-            make_card(3, 0),  // 5♣
-            make_card(3, 1),  // 5♦
-            make_card(0, 2),  // 2♥
-            make_card(1, 3),  // 3♠
+            make_card(6, 0), // 8♣
+            make_card(6, 1), // 8♦
+            make_card(6, 2), // 8♥
+            make_card(3, 0), // 5♣
+            make_card(3, 1), // 5♦
+            make_card(0, 2), // 2♥
+            make_card(1, 3), // 3♠
         ];
         let (rank, tiebreaker) = evaluate_hand(&cards);
         assert_eq!(rank, HandRank::FullHouse);
@@ -395,23 +413,23 @@ mod tests {
         let (rank, tiebreaker) = evaluate_hand(&cards);
         assert_eq!(rank, HandRank::Flush);
         assert_eq!(tiebreaker.values[0], 12); // Ace high
-        assert_eq!(tiebreaker.values[1], 8);  // 10
-        assert_eq!(tiebreaker.values[2], 5);  // 7
-        assert_eq!(tiebreaker.values[3], 3);  // 5
-        assert_eq!(tiebreaker.values[4], 0);  // 2
+        assert_eq!(tiebreaker.values[1], 8); // 10
+        assert_eq!(tiebreaker.values[2], 5); // 7
+        assert_eq!(tiebreaker.values[3], 3); // 5
+        assert_eq!(tiebreaker.values[4], 0); // 2
     }
 
     #[test]
     fn test_straight() {
         // Straight: 6-7-8-9-10 (ranks 4,5,6,7,8) mixed suits
         let cards = [
-            make_card(4, 0),  // 6♣
-            make_card(5, 1),  // 7♦
-            make_card(6, 2),  // 8♥
-            make_card(7, 3),  // 9♠
-            make_card(8, 0),  // 10♣
-            make_card(0, 1),  // 2♦
-            make_card(1, 2),  // 3♥
+            make_card(4, 0), // 6♣
+            make_card(5, 1), // 7♦
+            make_card(6, 2), // 8♥
+            make_card(7, 3), // 9♠
+            make_card(8, 0), // 10♣
+            make_card(0, 1), // 2♦
+            make_card(1, 2), // 3♥
         ];
         let (rank, tiebreaker) = evaluate_hand(&cards);
         assert_eq!(rank, HandRank::Straight);
@@ -466,22 +484,22 @@ mod tests {
         ];
         let (rank, tiebreaker) = evaluate_hand(&cards);
         assert_eq!(rank, HandRank::ThreeOfAKind);
-        assert_eq!(tiebreaker.values[0], 5);  // Three 7s
+        assert_eq!(tiebreaker.values[0], 5); // Three 7s
         assert_eq!(tiebreaker.values[1], 11); // K kicker
-        assert_eq!(tiebreaker.values[2], 8);  // 10 kicker
+        assert_eq!(tiebreaker.values[2], 8); // 10 kicker
     }
 
     #[test]
     fn test_two_pair() {
         // Two jacks and two 4s (ranks 9 and 2)
         let cards = [
-            make_card(9, 0),  // J♣
-            make_card(9, 1),  // J♦
-            make_card(2, 2),  // 4♥
-            make_card(2, 3),  // 4♠
-            make_card(0, 0),  // 2♣
-            make_card(5, 1),  // 7♦
-            make_card(8, 2),  // 10♥
+            make_card(9, 0), // J♣
+            make_card(9, 1), // J♦
+            make_card(2, 2), // 4♥
+            make_card(2, 3), // 4♠
+            make_card(0, 0), // 2♣
+            make_card(5, 1), // 7♦
+            make_card(8, 2), // 10♥
         ];
         let (rank, tiebreaker) = evaluate_hand(&cards);
         assert_eq!(rank, HandRank::TwoPair);
@@ -504,10 +522,10 @@ mod tests {
         ];
         let (rank, tiebreaker) = evaluate_hand(&cards);
         assert_eq!(rank, HandRank::Pair);
-        assert_eq!(tiebreaker.values[0], 7);  // Pair of 9s
+        assert_eq!(tiebreaker.values[0], 7); // Pair of 9s
         assert_eq!(tiebreaker.values[1], 11); // K kicker
-        assert_eq!(tiebreaker.values[2], 8);  // 10 kicker
-        assert_eq!(tiebreaker.values[3], 5);  // 7 kicker
+        assert_eq!(tiebreaker.values[2], 8); // 10 kicker
+        assert_eq!(tiebreaker.values[3], 5); // 7 kicker
     }
 
     #[test]
@@ -526,9 +544,9 @@ mod tests {
         assert_eq!(rank, HandRank::HighCard);
         assert_eq!(tiebreaker.values[0], 12); // Ace high
         assert_eq!(tiebreaker.values[1], 11); // K
-        assert_eq!(tiebreaker.values[2], 9);  // J
-        assert_eq!(tiebreaker.values[3], 8);  // 10
-        assert_eq!(tiebreaker.values[4], 5);  // 7
+        assert_eq!(tiebreaker.values[2], 9); // J
+        assert_eq!(tiebreaker.values[3], 8); // 10
+        assert_eq!(tiebreaker.values[4], 5); // 7
     }
 
     #[test]
@@ -554,13 +572,13 @@ mod tests {
         // When there are two three-of-a-kinds in 7 cards
         // Should pick the higher one as the trips
         let cards = [
-            make_card(8, 0),  // 10♣
-            make_card(8, 1),  // 10♦
-            make_card(8, 2),  // 10♥
-            make_card(5, 0),  // 7♣
-            make_card(5, 1),  // 7♦
-            make_card(5, 2),  // 7♥
-            make_card(0, 3),  // 2♠
+            make_card(8, 0), // 10♣
+            make_card(8, 1), // 10♦
+            make_card(8, 2), // 10♥
+            make_card(5, 0), // 7♣
+            make_card(5, 1), // 7♦
+            make_card(5, 2), // 7♥
+            make_card(0, 3), // 2♠
         ];
         let (rank, tiebreaker) = evaluate_hand(&cards);
         assert_eq!(rank, HandRank::FullHouse);
@@ -583,8 +601,8 @@ mod tests {
         let (rank, tiebreaker) = evaluate_hand(&cards);
         assert_eq!(rank, HandRank::TwoPair);
         assert_eq!(tiebreaker.values[0], 10); // Higher pair is queens
-        assert_eq!(tiebreaker.values[1], 7);  // Lower pair is 9s
-        assert_eq!(tiebreaker.values[2], 0);  // 2 kicker
+        assert_eq!(tiebreaker.values[1], 7); // Lower pair is 9s
+        assert_eq!(tiebreaker.values[2], 0); // 2 kicker
     }
 
     // Tiebreaker tests
@@ -609,10 +627,10 @@ mod tests {
             make_card(0, 3),  // 2♠
             make_card(1, 0),  // 3♣
         ];
-        
+
         let (rank1, tb1) = evaluate_hand(&hand1);
         let (rank2, tb2) = evaluate_hand(&hand2);
-        
+
         assert_eq!(rank1, HandRank::Pair);
         assert_eq!(rank2, HandRank::Pair);
         assert_eq!(tb1.values[0], 6); // Both have pair of 8s
@@ -646,10 +664,10 @@ mod tests {
             make_card(0, 3),  // 2♠
             make_card(1, 0),  // 3♣
         ];
-        
+
         let (rank1, tb1) = evaluate_hand(&hand1);
         let (rank2, tb2) = evaluate_hand(&hand2);
-        
+
         assert_eq!(rank1, HandRank::TwoPair);
         assert_eq!(rank2, HandRank::TwoPair);
         // hand1 has Q kicker, hand2 has J kicker
@@ -677,10 +695,10 @@ mod tests {
             make_card(0, 3),  // 2♠
             make_card(1, 0),  // 3♣
         ];
-        
+
         let (rank1, tb1) = evaluate_hand(&hand1);
         let (rank2, tb2) = evaluate_hand(&hand2);
-        
+
         assert_eq!(rank1, HandRank::ThreeOfAKind);
         assert_eq!(rank2, HandRank::ThreeOfAKind);
         // Both have A as first kicker, hand1 has K, hand2 has Q
@@ -708,10 +726,10 @@ mod tests {
             make_card(0, 3),  // 2♠
             make_card(1, 0),  // 3♣
         ];
-        
+
         let (rank1, tb1) = evaluate_hand(&hand1);
         let (rank2, tb2) = evaluate_hand(&hand2);
-        
+
         assert_eq!(rank1, HandRank::FourOfAKind);
         assert_eq!(rank2, HandRank::FourOfAKind);
         // hand1 has A kicker, hand2 has K kicker
@@ -739,10 +757,10 @@ mod tests {
             make_card(0, 0),  // 2♣
             make_card(1, 1),  // 3♦
         ];
-        
+
         let (rank1, tb1) = evaluate_hand(&hand1);
         let (rank2, tb2) = evaluate_hand(&hand2);
-        
+
         assert_eq!(rank1, HandRank::Flush);
         assert_eq!(rank2, HandRank::Flush);
         // Both have A-Q-10-8, but hand1 has 6 and hand2 has 5
@@ -770,10 +788,10 @@ mod tests {
             make_card(0, 3),  // 2♠
             make_card(1, 0),  // 3♣
         ];
-        
+
         let (rank1, tb1) = evaluate_hand(&hand1);
         let (rank2, tb2) = evaluate_hand(&hand2);
-        
+
         assert_eq!(rank1, HandRank::HighCard);
         assert_eq!(rank2, HandRank::HighCard);
         // Both have A-K-J-9, but hand1 has 7 and hand2 has 6
@@ -784,27 +802,27 @@ mod tests {
     fn test_full_house_tiebreaker() {
         // Different trips
         let hand1 = [
-            make_card(8, 0),  // 10♣
-            make_card(8, 1),  // 10♦
-            make_card(8, 2),  // 10♥
-            make_card(5, 0),  // 7♣
-            make_card(5, 1),  // 7♦
-            make_card(0, 2),  // 2♥
-            make_card(1, 3),  // 3♠
+            make_card(8, 0), // 10♣
+            make_card(8, 1), // 10♦
+            make_card(8, 2), // 10♥
+            make_card(5, 0), // 7♣
+            make_card(5, 1), // 7♦
+            make_card(0, 2), // 2♥
+            make_card(1, 3), // 3♠
         ];
         let hand2 = [
-            make_card(7, 0),  // 9♣
-            make_card(7, 1),  // 9♦
-            make_card(7, 2),  // 9♥
-            make_card(5, 2),  // 7♥
-            make_card(5, 3),  // 7♠
-            make_card(0, 0),  // 2♣
-            make_card(1, 1),  // 3♦
+            make_card(7, 0), // 9♣
+            make_card(7, 1), // 9♦
+            make_card(7, 2), // 9♥
+            make_card(5, 2), // 7♥
+            make_card(5, 3), // 7♠
+            make_card(0, 0), // 2♣
+            make_card(1, 1), // 3♦
         ];
-        
+
         let (rank1, tb1) = evaluate_hand(&hand1);
         let (rank2, tb2) = evaluate_hand(&hand2);
-        
+
         assert_eq!(rank1, HandRank::FullHouse);
         assert_eq!(rank2, HandRank::FullHouse);
         // hand1 has 10s full of 7s, hand2 has 9s full of 7s
@@ -815,27 +833,27 @@ mod tests {
     fn test_full_house_tiebreaker_same_trips() {
         // Same trips, different pairs
         let hand1 = [
-            make_card(8, 0),  // 10♣
-            make_card(8, 1),  // 10♦
-            make_card(8, 2),  // 10♥
-            make_card(6, 0),  // 8♣
-            make_card(6, 1),  // 8♦
-            make_card(0, 2),  // 2♥
-            make_card(1, 3),  // 3♠
+            make_card(8, 0), // 10♣
+            make_card(8, 1), // 10♦
+            make_card(8, 2), // 10♥
+            make_card(6, 0), // 8♣
+            make_card(6, 1), // 8♦
+            make_card(0, 2), // 2♥
+            make_card(1, 3), // 3♠
         ];
         let hand2 = [
-            make_card(8, 0),  // 10♣
-            make_card(8, 1),  // 10♦
-            make_card(8, 2),  // 10♥
-            make_card(5, 0),  // 7♣
-            make_card(5, 1),  // 7♦
-            make_card(0, 0),  // 2♣
-            make_card(1, 1),  // 3♦
+            make_card(8, 0), // 10♣
+            make_card(8, 1), // 10♦
+            make_card(8, 2), // 10♥
+            make_card(5, 0), // 7♣
+            make_card(5, 1), // 7♦
+            make_card(0, 0), // 2♣
+            make_card(1, 1), // 3♦
         ];
-        
+
         let (rank1, tb1) = evaluate_hand(&hand1);
         let (rank2, tb2) = evaluate_hand(&hand2);
-        
+
         assert_eq!(rank1, HandRank::FullHouse);
         assert_eq!(rank2, HandRank::FullHouse);
         // Both have 10s, but hand1 has 8s and hand2 has 7s
@@ -855,18 +873,18 @@ mod tests {
             make_card(1, 2),  // 3♥
         ];
         let hand2 = [
-            make_card(4, 0),  // 6♣
-            make_card(5, 1),  // 7♦
-            make_card(6, 2),  // 8♥
-            make_card(7, 3),  // 9♠
-            make_card(8, 0),  // 10♣
-            make_card(0, 1),  // 2♦
-            make_card(1, 2),  // 3♥
+            make_card(4, 0), // 6♣
+            make_card(5, 1), // 7♦
+            make_card(6, 2), // 8♥
+            make_card(7, 3), // 9♠
+            make_card(8, 0), // 10♣
+            make_card(0, 1), // 2♦
+            make_card(1, 2), // 3♥
         ];
-        
+
         let (rank1, tb1) = evaluate_hand(&hand1);
         let (rank2, tb2) = evaluate_hand(&hand2);
-        
+
         assert_eq!(rank1, HandRank::Straight);
         assert_eq!(rank2, HandRank::Straight);
         // hand1 has A-high straight, hand2 has 10-high straight
@@ -877,27 +895,27 @@ mod tests {
     fn test_straight_flush_tiebreaker() {
         // Both have straight flushes, different high cards
         let hand1 = [
-            make_card(5, 2),  // 7♥
-            make_card(6, 2),  // 8♥
-            make_card(7, 2),  // 9♥
-            make_card(8, 2),  // 10♥
-            make_card(9, 2),  // J♥
-            make_card(0, 0),  // 2♣
-            make_card(1, 1),  // 3♦
+            make_card(5, 2), // 7♥
+            make_card(6, 2), // 8♥
+            make_card(7, 2), // 9♥
+            make_card(8, 2), // 10♥
+            make_card(9, 2), // J♥
+            make_card(0, 0), // 2♣
+            make_card(1, 1), // 3♦
         ];
         let hand2 = [
-            make_card(3, 3),  // 5♠
-            make_card(4, 3),  // 6♠
-            make_card(5, 3),  // 7♠
-            make_card(6, 3),  // 8♠
-            make_card(7, 3),  // 9♠
-            make_card(0, 0),  // 2♣
-            make_card(1, 1),  // 3♦
+            make_card(3, 3), // 5♠
+            make_card(4, 3), // 6♠
+            make_card(5, 3), // 7♠
+            make_card(6, 3), // 8♠
+            make_card(7, 3), // 9♠
+            make_card(0, 0), // 2♣
+            make_card(1, 1), // 3♦
         ];
-        
+
         let (rank1, tb1) = evaluate_hand(&hand1);
         let (rank2, tb2) = evaluate_hand(&hand2);
-        
+
         assert_eq!(rank1, HandRank::StraightFlush);
         assert_eq!(rank2, HandRank::StraightFlush);
         // hand1 has J-high straight flush, hand2 has 9-high straight flush
@@ -907,7 +925,7 @@ mod tests {
     // Task 14.6: Write property test for hand evaluator correctness (Property 7)
     #[test]
     fn property_test_hand_evaluator_correctness() {
-        // Generate 1000 pseudo-random 7-card hands to ensure evaluate_hand never panics 
+        // Generate 1000 pseudo-random 7-card hands to ensure evaluate_hand never panics
         // and always returns a valid HandRank (0-9).
         let mut seed = 123456789u32;
         for _ in 0..1000 {
@@ -921,7 +939,7 @@ mod tests {
                     i += 1;
                 }
             }
-            
+
             let (rank, _) = evaluate_hand(&cards);
             assert!((rank as u8) <= 9, "Rank should be between 0 and 9");
         }

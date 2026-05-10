@@ -1,6 +1,6 @@
-use anchor_lang::prelude::*;
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, GameState};
+use anchor_lang::prelude::*;
 
 pub fn handler(ctx: Context<TimeoutReveal>, _game_id: u64) -> Result<()> {
     let game = &mut ctx.accounts.game_session;

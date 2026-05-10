@@ -32,31 +32,29 @@ pub mod cerberus_poker {
     // Each must be called once after deployment to register the MXE circuit on-chain
 
     pub fn init_shuffle_deck_comp_def(ctx: Context<InitShuffleDeckCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
     pub fn init_deal_card_comp_def(ctx: Context<InitDealCardCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
     pub fn init_reveal_card_comp_def(ctx: Context<InitRevealCardCompDef>) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
     pub fn init_reveal_community_card_comp_def(
         ctx: Context<InitRevealCommunityCardCompDef>,
     ) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
-    pub fn init_atomic_showdown_comp_def(
-        ctx: Context<InitAtomicShowdownCompDef>,
-    ) -> Result<()> {
-        init_comp_def(ctx.accounts, 0, None, None)?;
+    pub fn init_atomic_showdown_comp_def(ctx: Context<InitAtomicShowdownCompDef>) -> Result<()> {
+        init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
 
@@ -88,7 +86,7 @@ pub mod cerberus_poker {
     #[arcium_callback(encrypted_ix = "shuffle_deck")]
     pub fn shuffle_deck_callback(
         ctx: Context<ShuffleDeckCallback>,
-        output: ComputationOutputs<ShuffleDeckOutput>,
+        output: SignedComputationOutputs<ShuffleDeckOutput>,
     ) -> Result<()> {
         instructions::shuffle_deck_callback::handler(ctx, output)
     }
@@ -96,7 +94,7 @@ pub mod cerberus_poker {
     #[arcium_callback(encrypted_ix = "deal_card_to_recipient")]
     pub fn deal_card_to_recipient_callback(
         ctx: Context<DealCardToRecipientCallback>,
-        output: ComputationOutputs<DealCardToRecipientOutput>,
+        output: SignedComputationOutputs<DealCardToRecipientOutput>,
     ) -> Result<()> {
         instructions::deal_card_to_recipient_callback::handler(ctx, output)
     }
@@ -104,7 +102,7 @@ pub mod cerberus_poker {
     #[arcium_callback(encrypted_ix = "reveal_card")]
     pub fn reveal_card_callback(
         ctx: Context<RevealCardCallback>,
-        output: ComputationOutputs<RevealCardOutput>,
+        output: SignedComputationOutputs<RevealCardOutput>,
     ) -> Result<()> {
         instructions::reveal_card_callback::handler(ctx, output)
     }
@@ -112,7 +110,7 @@ pub mod cerberus_poker {
     #[arcium_callback(encrypted_ix = "reveal_community_card")]
     pub fn reveal_community_card_callback(
         ctx: Context<RevealCommunityCardCallback>,
-        output: ComputationOutputs<RevealCommunityCardOutput>,
+        output: SignedComputationOutputs<RevealCommunityCardOutput>,
     ) -> Result<()> {
         instructions::reveal_community_card_callback::handler(ctx, output)
     }
@@ -120,7 +118,7 @@ pub mod cerberus_poker {
     #[arcium_callback(encrypted_ix = "atomic_showdown")]
     pub fn atomic_showdown_callback(
         ctx: Context<AtomicShowdownCallback>,
-        output: ComputationOutputs<AtomicShowdownOutput>,
+        output: SignedComputationOutputs<AtomicShowdownOutput>,
     ) -> Result<()> {
         instructions::atomic_showdown_callback::handler(ctx, output)
     }
@@ -161,8 +159,9 @@ pub mod cerberus_poker {
 
 // Callback accounts structs must be defined in lib.rs for #[arcium_program] macro to find them
 use errors::CerberusPokerError;
-use state::GameSession;
+use errors::CerberusPokerError as ErrorCode;
 use instructions::deal_card_to_recipient_callback::DealtCard;
+use state::GameSession;
 
 #[callback_accounts("shuffle_deck")]
 #[derive(Accounts)]
@@ -175,21 +174,21 @@ pub struct ShuffleDeckCallback<'info> {
     #[account(address = derive_mxe_pda!())]
     pub mxe_account: Box<Account<'info, MXEAccount>>,
 
+    /// CHECK: computation_account
+    pub computation_account: UncheckedAccount<'info>,
+
     #[account(
         mut,
         address = derive_cluster_pda!(mxe_account, CerberusPokerError::InvalidGameState)
     )]
     pub cluster_account: Box<Account<'info, Cluster>>,
 
-    /// CHECK: computation_account
-    pub computation_account: UncheckedAccount<'info>,
-
-    #[account(mut)]
-    pub game_session: Box<Account<'info, GameSession>>,
-
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
+
+    #[account(mut)]
+    pub game_session: Box<Account<'info, GameSession>>,
 }
 
 #[callback_accounts("deal_card_to_recipient")]
@@ -203,14 +202,18 @@ pub struct DealCardToRecipientCallback<'info> {
     #[account(address = derive_mxe_pda!())]
     pub mxe_account: Box<Account<'info, MXEAccount>>,
 
+    /// CHECK: computation_account
+    pub computation_account: UncheckedAccount<'info>,
+
     #[account(
         mut,
         address = derive_cluster_pda!(mxe_account, CerberusPokerError::InvalidGameState)
     )]
     pub cluster_account: Box<Account<'info, Cluster>>,
 
-    /// CHECK: computation_account
-    pub computation_account: UncheckedAccount<'info>,
+    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
+    /// CHECK: instructions_sysvar, checked by the account constraint
+    pub instructions_sysvar: AccountInfo<'info>,
 
     #[account(mut)]
     pub game_session: Box<Account<'info, GameSession>>,
@@ -233,10 +236,6 @@ pub struct DealCardToRecipientCallback<'info> {
     pub payer: Signer<'info>,
 
     pub system_program: Program<'info, System>,
-
-    #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
-    /// CHECK: instructions_sysvar, checked by the account constraint
-    pub instructions_sysvar: AccountInfo<'info>,
 }
 
 #[callback_accounts("reveal_card")]
@@ -250,21 +249,21 @@ pub struct RevealCardCallback<'info> {
     #[account(address = derive_mxe_pda!())]
     pub mxe_account: Box<Account<'info, MXEAccount>>,
 
+    /// CHECK: computation_account
+    pub computation_account: UncheckedAccount<'info>,
+
     #[account(
         mut,
         address = derive_cluster_pda!(mxe_account, CerberusPokerError::InvalidGameState)
     )]
     pub cluster_account: Box<Account<'info, Cluster>>,
 
-    /// CHECK: computation_account
-    pub computation_account: UncheckedAccount<'info>,
-
-    #[account(mut)]
-    pub game_session: Box<Account<'info, GameSession>>,
-
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
+
+    #[account(mut)]
+    pub game_session: Box<Account<'info, GameSession>>,
 }
 
 #[callback_accounts("reveal_community_card")]
@@ -278,21 +277,21 @@ pub struct RevealCommunityCardCallback<'info> {
     #[account(address = derive_mxe_pda!())]
     pub mxe_account: Box<Account<'info, MXEAccount>>,
 
+    /// CHECK: computation_account
+    pub computation_account: UncheckedAccount<'info>,
+
     #[account(
         mut,
         address = derive_cluster_pda!(mxe_account, CerberusPokerError::InvalidGameState)
     )]
     pub cluster_account: Box<Account<'info, Cluster>>,
 
-    /// CHECK: computation_account
-    pub computation_account: UncheckedAccount<'info>,
-
-    #[account(mut)]
-    pub game_session: Box<Account<'info, GameSession>>,
-
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
+
+    #[account(mut)]
+    pub game_session: Box<Account<'info, GameSession>>,
 }
 
 #[callback_accounts("atomic_showdown")]
@@ -306,19 +305,19 @@ pub struct AtomicShowdownCallback<'info> {
     #[account(address = derive_mxe_pda!())]
     pub mxe_account: Box<Account<'info, MXEAccount>>,
 
+    /// CHECK: computation_account
+    pub computation_account: UncheckedAccount<'info>,
+
     #[account(
         mut,
         address = derive_cluster_pda!(mxe_account, CerberusPokerError::InvalidGameState)
     )]
     pub cluster_account: Box<Account<'info, Cluster>>,
 
-    /// CHECK: computation_account
-    pub computation_account: UncheckedAccount<'info>,
-
-    #[account(mut)]
-    pub game_session: Box<Account<'info, GameSession>>,
-
     #[account(address = ::anchor_lang::solana_program::sysvar::instructions::ID)]
     /// CHECK: instructions_sysvar, checked by the account constraint
     pub instructions_sysvar: AccountInfo<'info>,
+
+    #[account(mut)]
+    pub game_session: Box<Account<'info, GameSession>>,
 }

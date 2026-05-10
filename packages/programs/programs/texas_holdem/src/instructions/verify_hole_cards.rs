@@ -1,6 +1,6 @@
-use anchor_lang::prelude::*;
-use crate::state::{PokerTable, PokerPhase};
 use crate::errors::TexasHoldemError;
+use crate::state::{PokerPhase, PokerTable};
+use anchor_lang::prelude::*;
 
 /// Verifies a player's hole cards cryptographically before showdown
 ///
@@ -25,40 +25,36 @@ use crate::errors::TexasHoldemError;
 /// * `PlayerFolded` - If the player folded (no cards to verify)
 /// * `NoCardsToVerify` - If the player has no cards assigned
 /// * `InvalidGameState` - If the GameSession state is invalid
-pub fn handler(
-    ctx: Context<VerifyHoleCards>,
-    _game_id: u64,
-    player_index: u8,
-) -> Result<()> {
+pub fn handler(ctx: Context<VerifyHoleCards>, _game_id: u64, player_index: u8) -> Result<()> {
     let table = &mut ctx.accounts.poker_table;
     let game_session = &ctx.accounts.game_session;
-    
+
     // Verify we're in showdown phase
     require!(
         table.phase == PokerPhase::Showdown,
         TexasHoldemError::NotInShowdown
     );
-    
+
     // Verify player index is valid
     require!(
         player_index < table.num_players,
         TexasHoldemError::InvalidGameState
     );
-    
+
     // Check if player has already been verified
     let verified_mask = 1u16 << player_index;
     require!(
         (table.hand_verified_bitmap & verified_mask) == 0,
         TexasHoldemError::HandAlreadyVerified
     );
-    
+
     // Check if player has folded (folded players don't need verification)
     let folded_mask = 1u16 << player_index;
     require!(
         (table.folded_bitmap & folded_mask) == 0,
         TexasHoldemError::PlayerFolded
     );
-    
+
     // Verify the player has cards assigned. game_session is owned by the
     // cerberus_poker program, so read the stable GameSession layout directly.
     const UNMASKED_CARDS_OFFSET: usize = 8  // discriminator
@@ -82,8 +78,8 @@ pub fn handler(
     );
 
     let unmasked_cards = &game_session_data[UNMASKED_CARDS_OFFSET..UNMASKED_CARDS_OFFSET + 52];
-    let card_assignments = &game_session_data
-        [CARD_ASSIGNED_TO_OFFSET..CARD_ASSIGNED_TO_OFFSET + CARD_ASSIGNED_TO_LEN];
+    let card_assignments =
+        &game_session_data[CARD_ASSIGNED_TO_OFFSET..CARD_ASSIGNED_TO_OFFSET + CARD_ASSIGNED_TO_LEN];
     let mut cards_found = 0u8;
     for (card_index, assigned_to) in card_assignments.iter().enumerate() {
         if *assigned_to == player_index {
@@ -94,27 +90,24 @@ pub fn handler(
             cards_found += 1;
         }
     }
-    
-    require!(
-        cards_found >= 2,
-        TexasHoldemError::NoCardsToVerify
-    );
-    
+
+    require!(cards_found >= 2, TexasHoldemError::NoCardsToVerify);
+
     msg!(
         "Player {} has {} cards assigned — verification passed",
         player_index,
         cards_found
     );
-    
+
     // Mark the player's hand as verified
     table.hand_verified_bitmap |= verified_mask;
-    
+
     msg!(
         "Player {} hand verified — bitmap now: {}",
         player_index,
         table.hand_verified_bitmap
     );
-    
+
     Ok(())
 }
 
@@ -127,7 +120,7 @@ pub struct VerifyHoleCards<'info> {
         bump = poker_table.bump,
     )]
     pub poker_table: Account<'info, PokerTable>,
-    
+
     /// The GameSession PDA from cerberus_poker program
     /// Contains card assignments and revealed card values
     /// CHECK: We read card_assigned_to and unmasked_cards from this account
@@ -135,6 +128,6 @@ pub struct VerifyHoleCards<'info> {
         constraint = game_session.key() == poker_table.game_session @ TexasHoldemError::InvalidGameState
     )]
     pub game_session: UncheckedAccount<'info>,
-    
+
     pub caller: Signer<'info>,
 }

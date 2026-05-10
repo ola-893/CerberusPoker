@@ -1,7 +1,7 @@
+use crate::errors::TexasHoldemError;
+use crate::state::PokerTable;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
-use crate::state::PokerTable;
-use crate::errors::TexasHoldemError;
 
 /// Posts small and big blinds as SPL token transfers to the pot escrow
 ///
@@ -24,7 +24,7 @@ pub fn handler(ctx: Context<PostBlinds>, _game_id: u64, num_players: u8) -> Resu
         table.num_players == 0 && table.pot_total == 0,
         TexasHoldemError::BlindsAlreadyPosted
     );
-    
+
     // Validate minimum players
     require!(num_players >= 2, TexasHoldemError::NotEnoughPlayers);
     require!(num_players <= 6, TexasHoldemError::TableFull);
@@ -36,25 +36,25 @@ pub fn handler(ctx: Context<PostBlinds>, _game_id: u64, num_players: u8) -> Resu
         ctx.accounts.big_blind_stack.owner == ctx.accounts.big_blind_player.key(),
         TexasHoldemError::InvalidStackAccount
     );
-    
+
     // Calculate player positions based on dealer index
     // In Texas Hold'em:
     // - Small blind is the player immediately left of the dealer (dealer_index + 1)
     // - Big blind is two positions left of the dealer (dealer_index + 2)
     let small_blind_index = (table.dealer_index + 1) % num_players;
     let big_blind_index = (table.dealer_index + 2) % num_players;
-    
+
     let small_blind_amount = table.small_blind;
     let big_blind_amount = table.big_blind;
     let table_key = table.key();
-    
+
     // Transfer small blind amount from small blind player to pot
     let small_blind_transfer = Transfer {
         from: ctx.accounts.small_blind_stack.to_account_info(),
         to: ctx.accounts.pot_account.to_account_info(),
         authority: ctx.accounts.small_blind_player.to_account_info(),
     };
-    
+
     token::transfer(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -62,14 +62,14 @@ pub fn handler(ctx: Context<PostBlinds>, _game_id: u64, num_players: u8) -> Resu
         ),
         small_blind_amount,
     )?;
-    
+
     // Transfer big blind amount from big blind player to pot
     let big_blind_transfer = Transfer {
         from: ctx.accounts.big_blind_stack.to_account_info(),
         to: ctx.accounts.pot_account.to_account_info(),
         authority: ctx.accounts.big_blind_player.to_account_info(),
     };
-    
+
     token::transfer(
         CpiContext::new(
             ctx.accounts.token_program.to_account_info(),
@@ -77,7 +77,7 @@ pub fn handler(ctx: Context<PostBlinds>, _game_id: u64, num_players: u8) -> Resu
         ),
         big_blind_amount,
     )?;
-    
+
     // Update player stack references in table state
     table.player_stacks[small_blind_index as usize] = ctx.accounts.small_blind_stack.key();
     table.player_stacks[big_blind_index as usize] = ctx.accounts.big_blind_stack.key();
@@ -89,13 +89,13 @@ pub fn handler(ctx: Context<PostBlinds>, _game_id: u64, num_players: u8) -> Resu
     table.num_players = num_players;
     table.acted_bitmap = 0;
     table.last_raise = big_blind_amount;
-    
+
     // Set current player to the position after big blind (first to act pre-flop)
     table.current_player = (big_blind_index + 1) % num_players;
-    
+
     // Current bet is set to big blind amount (players must call this to stay in)
     table.current_bet = big_blind_amount;
-    
+
     msg!(
         "Blinds posted for table {} — SB: {} (player {}), BB: {} (player {})",
         table_key,
@@ -104,7 +104,7 @@ pub fn handler(ctx: Context<PostBlinds>, _game_id: u64, num_players: u8) -> Resu
         big_blind_amount,
         big_blind_index
     );
-    
+
     Ok(())
 }
 
@@ -118,28 +118,28 @@ pub struct PostBlinds<'info> {
         bump = poker_table.bump,
     )]
     pub poker_table: Account<'info, PokerTable>,
-    
+
     /// Small blind player's wallet (must sign the transaction)
     pub small_blind_player: Signer<'info>,
-    
+
     /// Small blind player's token account (their stack)
     #[account(mut)]
     pub small_blind_stack: Account<'info, TokenAccount>,
-    
+
     /// Big blind player's wallet (must sign the transaction)
     pub big_blind_player: Signer<'info>,
-    
+
     /// Big blind player's token account (their stack)
     #[account(mut)]
     pub big_blind_stack: Account<'info, TokenAccount>,
-    
+
     /// The pot token account (receives blind transfers)
     #[account(
         mut,
         address = poker_table.escrow_account,
     )]
     pub pot_account: Account<'info, TokenAccount>,
-    
+
     /// SPL Token program
     pub token_program: Program<'info, Token>,
 }

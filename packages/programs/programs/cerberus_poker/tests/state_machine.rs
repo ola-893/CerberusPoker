@@ -22,12 +22,19 @@ use std::str::FromStr;
 // Import the program types
 use cerberus_poker::state::{GameSession, GameState};
 
+fn processor_entry<'info>(
+    program_id: &Pubkey,
+    accounts: &[AccountInfo<'info>],
+    instruction_data: &[u8],
+) -> anchor_lang::solana_program::entrypoint::ProgramResult {
+    // Anchor's generated entrypoint ties the slice borrow to AccountInfo's lifetime.
+    let accounts: &'info [AccountInfo<'info>] = unsafe { std::mem::transmute(accounts) };
+    cerberus_poker::entry(program_id, accounts, instruction_data)
+}
+
 /// Helper to derive game PDA
 fn get_game_pda(program_id: &Pubkey, game_id: u64) -> (Pubkey, u8) {
-    Pubkey::find_program_address(
-        &[b"game", &game_id.to_le_bytes()],
-        program_id,
-    )
+    Pubkey::find_program_address(&[b"game", &game_id.to_le_bytes()], program_id)
 }
 
 /// Helper to create a game
@@ -119,29 +126,21 @@ async fn fetch_game_session(
 async fn test_lobby_to_shuffle_transition() {
     // Setup program test environment
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
 
     // Create game
     let game_id = 1u64;
-    let (game_pda, bump) = create_game(
-        &mut banks_client,
-        &payer,
-        &program_id,
-        game_id,
-        2,
-        52,
-    )
-    .await
-    .unwrap();
+    let (game_pda, bump) = create_game(&mut banks_client, &payer, &program_id, game_id, 2, 52)
+        .await
+        .unwrap();
 
     // Verify initial state is Lobby
-    let game = fetch_game_session(&mut banks_client, &game_pda).await.unwrap();
+    let game = fetch_game_session(&mut banks_client, &game_pda)
+        .await
+        .unwrap();
     assert_eq!(game.state, GameState::Lobby);
     assert_eq!(game.num_players, 0);
     assert_eq!(game.max_players, 2);
@@ -163,20 +162,38 @@ async fn test_lobby_to_shuffle_transition() {
     banks_client.process_transaction(tx).await.unwrap();
 
     // Player 1 joins
-    join_game(&mut banks_client, &player1, &program_id, game_id, &game_pda, bump)
+    join_game(
+        &mut banks_client,
+        &player1,
+        &program_id,
+        game_id,
+        &game_pda,
+        bump,
+    )
+    .await
+    .unwrap();
+
+    let game = fetch_game_session(&mut banks_client, &game_pda)
         .await
         .unwrap();
-
-    let game = fetch_game_session(&mut banks_client, &game_pda).await.unwrap();
     assert_eq!(game.num_players, 1);
     assert_eq!(game.players[0], player1.pubkey());
 
     // Player 2 joins
-    join_game(&mut banks_client, &player2, &program_id, game_id, &game_pda, bump)
+    join_game(
+        &mut banks_client,
+        &player2,
+        &program_id,
+        game_id,
+        &game_pda,
+        bump,
+    )
+    .await
+    .unwrap();
+
+    let game = fetch_game_session(&mut banks_client, &game_pda)
         .await
         .unwrap();
-
-    let game = fetch_game_session(&mut banks_client, &game_pda).await.unwrap();
     assert_eq!(game.num_players, 2);
     assert_eq!(game.players[1], player2.pubkey());
     assert_eq!(game.state, GameState::Lobby);
@@ -185,25 +202,15 @@ async fn test_lobby_to_shuffle_transition() {
 #[tokio::test]
 async fn test_player_registration_validation() {
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
 
     let game_id = 2u64;
-    let (game_pda, bump) = create_game(
-        &mut banks_client,
-        &payer,
-        &program_id,
-        game_id,
-        2,
-        52,
-    )
-    .await
-    .unwrap();
+    let (game_pda, bump) = create_game(&mut banks_client, &payer, &program_id, game_id, 2, 52)
+        .await
+        .unwrap();
 
     let player1 = Keypair::new();
     let fund_ix = system_instruction::transfer(&payer.pubkey(), &player1.pubkey(), 1_000_000_000);
@@ -216,23 +223,35 @@ async fn test_player_registration_validation() {
     banks_client.process_transaction(tx).await.unwrap();
 
     // Player joins successfully
-    join_game(&mut banks_client, &player1, &program_id, game_id, &game_pda, bump)
-        .await
-        .unwrap();
+    join_game(
+        &mut banks_client,
+        &player1,
+        &program_id,
+        game_id,
+        &game_pda,
+        bump,
+    )
+    .await
+    .unwrap();
 
     // Attempt duplicate join - should fail
-    let result = join_game(&mut banks_client, &player1, &program_id, game_id, &game_pda, bump).await;
+    let result = join_game(
+        &mut banks_client,
+        &player1,
+        &program_id,
+        game_id,
+        &game_pda,
+        bump,
+    )
+    .await;
     assert!(result.is_err(), "Duplicate join should fail");
 }
 
 #[tokio::test]
 async fn test_game_full_validation() {
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
 
@@ -265,31 +284,50 @@ async fn test_game_full_validation() {
     banks_client.process_transaction(tx).await.unwrap();
 
     // First two players join successfully
-    join_game(&mut banks_client, &player1, &program_id, game_id, &game_pda, bump)
-        .await
-        .unwrap();
-    join_game(&mut banks_client, &player2, &program_id, game_id, &game_pda, bump)
-        .await
-        .unwrap();
+    join_game(
+        &mut banks_client,
+        &player1,
+        &program_id,
+        game_id,
+        &game_pda,
+        bump,
+    )
+    .await
+    .unwrap();
+    join_game(
+        &mut banks_client,
+        &player2,
+        &program_id,
+        game_id,
+        &game_pda,
+        bump,
+    )
+    .await
+    .unwrap();
 
     // Third player should fail - game is full
-    let result = join_game(&mut banks_client, &player3, &program_id, game_id, &game_pda, bump).await;
+    let result = join_game(
+        &mut banks_client,
+        &player3,
+        &program_id,
+        game_id,
+        &game_pda,
+        bump,
+    )
+    .await;
     assert!(result.is_err(), "Join should fail when game is full");
 }
 
 #[tokio::test]
 async fn test_invalid_deck_size() {
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, _) = program_test.start().await;
 
     let game_id = 4u64;
-    
+
     // Attempt to create game with invalid deck size (not 52)
     let result = create_game(
         &mut banks_client,
@@ -307,16 +345,13 @@ async fn test_invalid_deck_size() {
 #[tokio::test]
 async fn test_invalid_max_players() {
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, _) = program_test.start().await;
 
     let game_id = 5u64;
-    
+
     // Attempt to create game with too many players (> 6)
     let result = create_game(
         &mut banks_client,
@@ -334,39 +369,42 @@ async fn test_invalid_max_players() {
 #[tokio::test]
 async fn test_card_assignment_tracking() {
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, _) = program_test.start().await;
 
     let game_id = 6u64;
-    let (game_pda, _) = create_game(
-        &mut banks_client,
-        &payer,
-        &program_id,
-        game_id,
-        2,
-        52,
-    )
-    .await
-    .unwrap();
+    let (game_pda, _) = create_game(&mut banks_client, &payer, &program_id, game_id, 2, 52)
+        .await
+        .unwrap();
 
-    let game = fetch_game_session(&mut banks_client, &game_pda).await.unwrap();
+    let game = fetch_game_session(&mut banks_client, &game_pda)
+        .await
+        .unwrap();
 
     // Verify initial state
-    assert_eq!(game.card_value_used[0], 0, "No cards should be used initially");
-    
+    assert_eq!(
+        game.card_value_used[0], 0,
+        "No cards should be used initially"
+    );
+
     // All cards should be unassigned (0xFE)
     for i in 0..52 {
-        assert_eq!(game.card_assigned_to[i], 0xFE, "Card {} should be unassigned", i);
+        assert_eq!(
+            game.card_assigned_to[i], 0xFE,
+            "Card {} should be unassigned",
+            i
+        );
     }
 
     // All cards should be unrevealed (0xFF)
     for i in 0..52 {
-        assert_eq!(game.unmasked_cards[i], 0xFF, "Card {} should be unrevealed", i);
+        assert_eq!(
+            game.unmasked_cards[i], 0xFF,
+            "Card {} should be unrevealed",
+            i
+        );
     }
 
     // Verify bitmap helpers work correctly
@@ -378,11 +416,8 @@ async fn test_card_assignment_tracking() {
 #[tokio::test]
 async fn test_shuffle_bitmap_tracking() {
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
 
@@ -414,47 +449,65 @@ async fn test_shuffle_bitmap_tracking() {
     );
     banks_client.process_transaction(tx).await.unwrap();
 
-    join_game(&mut banks_client, &player1, &program_id, game_id, &game_pda, bump)
-        .await
-        .unwrap();
-    join_game(&mut banks_client, &player2, &program_id, game_id, &game_pda, bump)
-        .await
-        .unwrap();
-    join_game(&mut banks_client, &player3, &program_id, game_id, &game_pda, bump)
-        .await
-        .unwrap();
+    join_game(
+        &mut banks_client,
+        &player1,
+        &program_id,
+        game_id,
+        &game_pda,
+        bump,
+    )
+    .await
+    .unwrap();
+    join_game(
+        &mut banks_client,
+        &player2,
+        &program_id,
+        game_id,
+        &game_pda,
+        bump,
+    )
+    .await
+    .unwrap();
+    join_game(
+        &mut banks_client,
+        &player3,
+        &program_id,
+        game_id,
+        &game_pda,
+        bump,
+    )
+    .await
+    .unwrap();
 
-    let game = fetch_game_session(&mut banks_client, &game_pda).await.unwrap();
+    let game = fetch_game_session(&mut banks_client, &game_pda)
+        .await
+        .unwrap();
     assert_eq!(game.num_players, 3);
-    assert_eq!(game.shuffle_bitmap, 0, "No players should have shuffled yet");
+    assert_eq!(
+        game.shuffle_bitmap, 0,
+        "No players should have shuffled yet"
+    );
     assert!(!game.all_players_shuffled());
 }
 
 #[tokio::test]
 async fn test_state_transitions() {
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
 
     let game_id = 8u64;
-    let (game_pda, bump) = create_game(
-        &mut banks_client,
-        &payer,
-        &program_id,
-        game_id,
-        2,
-        52,
-    )
-    .await
-    .unwrap();
+    let (game_pda, bump) = create_game(&mut banks_client, &payer, &program_id, game_id, 2, 52)
+        .await
+        .unwrap();
 
     // Initial state: Lobby
-    let game = fetch_game_session(&mut banks_client, &game_pda).await.unwrap();
+    let game = fetch_game_session(&mut banks_client, &game_pda)
+        .await
+        .unwrap();
     assert_eq!(game.state, GameState::Lobby);
 
     // Join players
@@ -471,15 +524,31 @@ async fn test_state_transitions() {
     );
     banks_client.process_transaction(tx).await.unwrap();
 
-    join_game(&mut banks_client, &player1, &program_id, game_id, &game_pda, bump)
-        .await
-        .unwrap();
-    join_game(&mut banks_client, &player2, &program_id, game_id, &game_pda, bump)
-        .await
-        .unwrap();
+    join_game(
+        &mut banks_client,
+        &player1,
+        &program_id,
+        game_id,
+        &game_pda,
+        bump,
+    )
+    .await
+    .unwrap();
+    join_game(
+        &mut banks_client,
+        &player2,
+        &program_id,
+        game_id,
+        &game_pda,
+        bump,
+    )
+    .await
+    .unwrap();
 
     // Still in Lobby after players join
-    let game = fetch_game_session(&mut banks_client, &game_pda).await.unwrap();
+    let game = fetch_game_session(&mut banks_client, &game_pda)
+        .await
+        .unwrap();
     assert_eq!(game.state, GameState::Lobby);
     assert_eq!(game.num_players, 2);
 
@@ -490,11 +559,8 @@ async fn test_state_transitions() {
 #[tokio::test]
 async fn test_multiple_games_isolation() {
     let program_id = Pubkey::from_str("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX").unwrap();
-    let mut program_test = ProgramTest::new(
-        "cerberus_poker",
-        program_id,
-        processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
-    );
+    let mut program_test =
+        ProgramTest::new("cerberus_poker", program_id, processor!(processor_entry));
 
     let (mut banks_client, payer, recent_blockhash) = program_test.start().await;
 
@@ -502,31 +568,23 @@ async fn test_multiple_games_isolation() {
     let game_id_1 = 10u64;
     let game_id_2 = 11u64;
 
-    let (game_pda_1, bump_1) = create_game(
-        &mut banks_client,
-        &payer,
-        &program_id,
-        game_id_1,
-        2,
-        52,
-    )
-    .await
-    .unwrap();
+    let (game_pda_1, bump_1) =
+        create_game(&mut banks_client, &payer, &program_id, game_id_1, 2, 52)
+            .await
+            .unwrap();
 
-    let (game_pda_2, bump_2) = create_game(
-        &mut banks_client,
-        &payer,
-        &program_id,
-        game_id_2,
-        3,
-        52,
-    )
-    .await
-    .unwrap();
+    let (game_pda_2, bump_2) =
+        create_game(&mut banks_client, &payer, &program_id, game_id_2, 3, 52)
+            .await
+            .unwrap();
 
     // Verify games are independent
-    let game1 = fetch_game_session(&mut banks_client, &game_pda_1).await.unwrap();
-    let game2 = fetch_game_session(&mut banks_client, &game_pda_2).await.unwrap();
+    let game1 = fetch_game_session(&mut banks_client, &game_pda_1)
+        .await
+        .unwrap();
+    let game2 = fetch_game_session(&mut banks_client, &game_pda_2)
+        .await
+        .unwrap();
 
     assert_eq!(game1.game_id, game_id_1);
     assert_eq!(game2.game_id, game_id_2);
@@ -544,13 +602,24 @@ async fn test_multiple_games_isolation() {
     );
     banks_client.process_transaction(tx).await.unwrap();
 
-    join_game(&mut banks_client, &player1, &program_id, game_id_1, &game_pda_1, bump_1)
-        .await
-        .unwrap();
+    join_game(
+        &mut banks_client,
+        &player1,
+        &program_id,
+        game_id_1,
+        &game_pda_1,
+        bump_1,
+    )
+    .await
+    .unwrap();
 
     // Verify only game 1 is affected
-    let game1 = fetch_game_session(&mut banks_client, &game_pda_1).await.unwrap();
-    let game2 = fetch_game_session(&mut banks_client, &game_pda_2).await.unwrap();
+    let game1 = fetch_game_session(&mut banks_client, &game_pda_1)
+        .await
+        .unwrap();
+    let game2 = fetch_game_session(&mut banks_client, &game_pda_2)
+        .await
+        .unwrap();
 
     assert_eq!(game1.num_players, 1);
     assert_eq!(game2.num_players, 0);

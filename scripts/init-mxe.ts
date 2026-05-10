@@ -1,5 +1,19 @@
-import { Connection, Keypair, PublicKey, SystemProgram } from '@solana/web3.js';
+import {
+  AddressLookupTableProgram,
+  Connection,
+  Keypair,
+  PublicKey,
+  SystemProgram,
+} from '@solana/web3.js';
 import * as anchor from '@coral-xyz/anchor';
+import {
+  getArciumProgram,
+  getArciumProgramId,
+  getCompDefAccAddress,
+  getCompDefAccOffset,
+  getLookupTableAddress,
+  getMXEAccAddress,
+} from '@arcium-hq/client';
 import fs from 'fs';
 import os from 'os';
 import path from 'path';
@@ -12,18 +26,11 @@ const idl = JSON.parse(
   )
 );
 
-const CERBERUS_POKER_PROGRAM_ID = new PublicKey('A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V');
-const ARCIUM_PROGRAM_ID = new PublicKey('Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ');
+const CERBERUS_POKER_PROGRAM_ID = new PublicKey('4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG');
+const ARCIUM_PROGRAM_ID = getArciumProgramId();
 
-function computeCompDefOffset(name: string): Buffer {
-  let hash = 0;
-  for (let i = 0; i < name.length; i++) {
-    hash = ((hash << 5) - hash) + name.charCodeAt(i);
-    hash = hash & hash;
-  }
-  const buf = Buffer.alloc(4);
-  buf.writeUInt32LE(Math.abs(hash));
-  return buf;
+function compDefOffset(name: string): number {
+  return Buffer.from(getCompDefAccOffset(name)).readUInt32LE(0);
 }
 
 async function main() {
@@ -38,12 +45,10 @@ async function main() {
   });
   anchor.setProvider(provider);
 
-  const program = new anchor.Program(idl, provider);
+  const program = new anchor.Program(idl, provider) as any;
 
-  const [mxeAccount] = PublicKey.findProgramAddressSync(
-    [Buffer.from('mxe'), CERBERUS_POKER_PROGRAM_ID.toBuffer()],
-    ARCIUM_PROGRAM_ID
-  );
+  const arciumProgram = getArciumProgram(provider);
+  const mxeAccount = getMXEAccAddress(CERBERUS_POKER_PROGRAM_ID);
 
   console.log('MXE Account:', mxeAccount.toBase58());
 
@@ -56,6 +61,13 @@ async function main() {
     console.log('MXE Account IS initialized!');
   }
 
+  const mxe = await arciumProgram.account.mxeAccount.fetch(mxeAccount);
+  const lutOffset = mxe.lutOffsetSlot;
+  if (!lutOffset) {
+    throw new Error('Unable to read MXE LUT offset slot');
+  }
+  const addressLookupTable = getLookupTableAddress(CERBERUS_POKER_PROGRAM_ID, lutOffset);
+
   const compDefs = [
     'shuffle_deck',
     'deal_card_to_recipient',
@@ -65,11 +77,8 @@ async function main() {
   ];
 
   for (const defName of compDefs) {
-    const compDefOffsetBuf = computeCompDefOffset(defName);
-    const [compDefAccount] = PublicKey.findProgramAddressSync(
-      [Buffer.from('comp_def'), compDefOffsetBuf],
-      ARCIUM_PROGRAM_ID
-    );
+    const offset = compDefOffset(defName);
+    const compDefAccount = getCompDefAccAddress(CERBERUS_POKER_PROGRAM_ID, offset);
 
     console.log(`Checking comp def: ${defName} at ${compDefAccount.toBase58()}`);
     const info = await connection.getAccountInfo(compDefAccount);
@@ -91,6 +100,8 @@ async function main() {
       const tx = await program.methods[methodName]()
         .accounts({
           compDefAccount,
+          addressLookupTable,
+          lutProgram: AddressLookupTableProgram.programId,
           mxeAccount,
           payer: wallet.publicKey,
           systemProgram: SystemProgram.programId,

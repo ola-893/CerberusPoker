@@ -5,25 +5,30 @@ use crate::errors::CerberusPokerError;
 
 pub fn handler(
     ctx: Context<crate::DealCardToRecipientCallback>,
-    output: ComputationOutputs<crate::DealCardToRecipientOutput>,
+    output: SignedComputationOutputs<crate::DealCardToRecipientOutput>,
 ) -> Result<()> {
-    // Match on the MXE output
-    let card_value = match output {
-        ComputationOutputs::Success(result) => result.field_0,
-        ComputationOutputs::Failure => {
-            msg!("Deal card MXE computation failed");
-            return Err(CerberusPokerError::AbortedComputation.into());
-        }
-    };
+    let card_value = output
+        .verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        )
+        .map_err(|_| CerberusPokerError::AbortedComputation)?
+        .field_0;
 
     let game = &mut ctx.accounts.game_session;
     let card_index = game.pending_deal_card_index;
     let player_index = game.pending_deal_player_index;
 
     require!(card_value < 52, CerberusPokerError::CardValueOutOfRange);
-    require!(card_index < game.deck_size, CerberusPokerError::CardIndexOutOfRange);
-    require!(player_index < game.num_players, CerberusPokerError::PlayerNotFound);
-    
+    require!(
+        card_index < game.deck_size,
+        CerberusPokerError::CardIndexOutOfRange
+    );
+    require!(
+        player_index < game.num_players,
+        CerberusPokerError::PlayerNotFound
+    );
+
     // Store the dealt card for the recipient
     let dealt_card = &mut ctx.accounts.dealt_card;
     dealt_card.game_id = game.game_id;

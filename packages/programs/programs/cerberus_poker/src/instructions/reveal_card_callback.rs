@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
 use crate::errors::CerberusPokerError;
-use crate::state::{GameSession, CardRevealed};
+use crate::state::CardRevealed;
 
 /// Callback handler for reveal_card MXE computation.
 ///
@@ -20,16 +20,15 @@ use crate::state::{GameSession, CardRevealed};
 /// - Marks card as revealed to prevent double-reveals
 pub fn handler(
     ctx: Context<crate::RevealCardCallback>,
-    output: ComputationOutputs<crate::RevealCardOutput>,
+    output: SignedComputationOutputs<crate::RevealCardOutput>,
 ) -> Result<()> {
-    // Match on the MXE output
-    let card_value = match output {
-        ComputationOutputs::Success(result) => result.field_0,
-        ComputationOutputs::Failure => {
-            msg!("Reveal card MXE computation failed");
-            return Err(CerberusPokerError::AbortedComputation.into());
-        }
-    };
+    let card_value = output
+        .verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        )
+        .map_err(|_| CerberusPokerError::AbortedComputation)?
+        .field_0;
 
     let game = &mut ctx.accounts.game_session;
 
@@ -43,7 +42,10 @@ pub fn handler(
     );
 
     let card_index = game.pending_reveal_card_index;
-    require!(card_index < game.deck_size, CerberusPokerError::CardIndexOutOfRange);
+    require!(
+        card_index < game.deck_size,
+        CerberusPokerError::CardIndexOutOfRange
+    );
     require!(
         !game.is_card_revealed(card_index),
         CerberusPokerError::CardAlreadyRevealed

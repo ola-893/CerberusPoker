@@ -22,16 +22,16 @@ pub mod cerberus_poker_mxe {
         nonce: u128,
     ) -> Result<()> {
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
-        
+
         let mut args = ArgBuilder::new()
             .x25519_pubkey(pubkey)
             .plaintext_u128(nonce);
-        
+
         // Add all 52 encrypted card values
         for card_ct in deck_ciphertext.iter() {
             args = args.encrypted_u8(*card_ct);
         }
-        
+
         let args = args.build();
 
         queue_computation(
@@ -41,7 +41,7 @@ pub mod cerberus_poker_mxe {
             vec![ShuffleDeckCallback::callback_ix(
                 computation_offset,
                 &ctx.accounts.mxe_account,
-                &[]
+                &[],
             )?],
             1,
             0,
@@ -54,7 +54,10 @@ pub mod cerberus_poker_mxe {
         ctx: Context<ShuffleDeckCallback>,
         output: SignedComputationOutputs<ShuffleDeckOutput>,
     ) -> Result<()> {
-        let o = match output.verify_output(&ctx.accounts.cluster_account, &ctx.accounts.computation_account) {
+        let o = match output.verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        ) {
             Ok(ShuffleDeckOutput { field_0 }) => field_0,
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };

@@ -1,6 +1,6 @@
-use anchor_lang::prelude::*;
-use crate::state::{PokerPhase, PokerTable, BETTING_TIMEOUT_SECS};
 use crate::errors::TexasHoldemError;
+use crate::state::{PokerPhase, PokerTable, BETTING_TIMEOUT_SECS};
+use anchor_lang::prelude::*;
 
 /// Forces the current player to fold if they haven't acted within BETTING_TIMEOUT_SECS
 ///
@@ -22,34 +22,35 @@ use crate::errors::TexasHoldemError;
 pub fn handler(ctx: Context<TimeoutBet>, _game_id: u64) -> Result<()> {
     let table = &mut ctx.accounts.poker_table;
     let clock = Clock::get()?;
-    
+
     // Calculate timeout deadline
-    let timeout_deadline = table.last_action_time
+    let timeout_deadline = table
+        .last_action_time
         .checked_add(BETTING_TIMEOUT_SECS)
         .ok_or(TexasHoldemError::Overflow)?;
-    
+
     // Verify timeout has been reached
     require!(
         clock.unix_timestamp >= timeout_deadline,
         TexasHoldemError::BettingTimeoutNotReached
     );
-    
+
     let player_index = table.current_player;
-    
+
     msg!(
         "Bet timeout triggered at {} for player {} (deadline was {})",
         clock.unix_timestamp,
         player_index,
         timeout_deadline
     );
-    
+
     // Force fold the current player
     let folded_mask = 1u16 << player_index;
     table.folded_bitmap |= folded_mask;
     table.mark_acted(player_index);
-    
+
     msg!("Player {} forced to fold due to timeout", player_index);
-    
+
     if table.active_players() <= 1 {
         table.phase = PokerPhase::Showdown;
         msg!("Only one active player remains after timeout; advancing to showdown");
@@ -59,10 +60,10 @@ pub fn handler(ctx: Context<TimeoutBet>, _game_id: u64) -> Result<()> {
         table.current_player = next_player;
         msg!("Next player: {}", next_player);
     }
-    
+
     // Update last action time to current time
     table.last_action_time = clock.unix_timestamp;
-    
+
     Ok(())
 }
 

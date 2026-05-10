@@ -22,7 +22,7 @@
       "accounts": [
         {
           "name": "arcium_program",
-          "address": "Bv3Fb9VjzjWGfX18QTUcVycAfeLoQ5zZN6vv2g3cTZxp"
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "comp_def_account"
@@ -31,19 +31,19 @@
           "name": "mxe_account"
         },
         {
-          "name": "cluster_account",
-          "writable": true
-        },
-        {
           "name": "computation_account"
         },
         {
-          "name": "game_session",
+          "name": "cluster_account",
           "writable": true
         },
         {
           "name": "instructions_sysvar",
           "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "game_session",
+          "writable": true
         }
       ],
       "args": [
@@ -51,7 +51,7 @@
           "name": "output",
           "type": {
             "defined": {
-              "name": "ComputationOutputs",
+              "name": "SignedComputationOutputs",
               "generics": [
                 {
                   "kind": "type",
@@ -141,7 +141,7 @@
       "accounts": [
         {
           "name": "arcium_program",
-          "address": "Bv3Fb9VjzjWGfX18QTUcVycAfeLoQ5zZN6vv2g3cTZxp"
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "comp_def_account"
@@ -150,11 +150,15 @@
           "name": "mxe_account"
         },
         {
+          "name": "computation_account"
+        },
+        {
           "name": "cluster_account",
           "writable": true
         },
         {
-          "name": "computation_account"
+          "name": "instructions_sysvar",
+          "address": "Sysvar1nstructions1111111111111111111111111"
         },
         {
           "name": "game_session",
@@ -172,10 +176,6 @@
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "instructions_sysvar",
-          "address": "Sysvar1nstructions1111111111111111111111111"
         }
       ],
       "args": [
@@ -183,7 +183,7 @@
           "name": "output",
           "type": {
             "defined": {
-              "name": "ComputationOutputs",
+              "name": "SignedComputationOutputs",
               "generics": [
                 {
                   "kind": "type",
@@ -246,6 +246,12 @@
               {
                 "kind": "const",
                 "value": [
+                  65,
+                  114,
+                  99,
+                  105,
+                  117,
+                  109,
                   83,
                   105,
                   103,
@@ -289,12 +295,12 @@
         {
           "name": "pool_account",
           "writable": true,
-          "address": "FsWbPQcJQ2cCyr9ndse13fDqds4F2Ezx2WgTL25Dke4M"
+          "address": "G2sRWJvi3xoyh5k2gY49eG9L8YhAEWQPtNb1zb1GXTtC"
         },
         {
           "name": "clock_account",
           "writable": true,
-          "address": "AxygBawEvVwZPetj3yPJb9sGdZvaJYsVguET1zFUQkV"
+          "address": "7EbMUTLo5DjdzbN7s8BXeZwXzEwNQb1hScfRvWg8a6ot"
         },
         {
           "name": "system_program",
@@ -302,7 +308,7 @@
         },
         {
           "name": "arcium_program",
-          "address": "Bv3Fb9VjzjWGfX18QTUcVycAfeLoQ5zZN6vv2g3cTZxp"
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "encrypted_card_c1"
@@ -346,25 +352,33 @@
       ],
       "accounts": [
         {
-          "name": "comp_def_account",
-          "writable": true
+          "name": "payer",
+          "writable": true,
+          "signer": true
         },
         {
           "name": "mxe_account",
           "writable": true
         },
         {
-          "name": "payer",
-          "writable": true,
-          "signer": true
+          "name": "comp_def_account",
+          "writable": true
+        },
+        {
+          "name": "address_lookup_table",
+          "writable": true
+        },
+        {
+          "name": "lut_program",
+          "address": "AddressLookupTab1e1111111111111111111111111"
+        },
+        {
+          "name": "arcium_program",
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "arcium_program",
-          "address": "Bv3Fb9VjzjWGfX18QTUcVycAfeLoQ5zZN6vv2g3cTZxp"
         }
       ],
       "args": []
@@ -383,25 +397,33 @@
       ],
       "accounts": [
         {
-          "name": "comp_def_account",
-          "writable": true
+          "name": "payer",
+          "writable": true,
+          "signer": true
         },
         {
           "name": "mxe_account",
           "writable": true
         },
         {
-          "name": "payer",
-          "writable": true,
-          "signer": true
+          "name": "comp_def_account",
+          "writable": true
+        },
+        {
+          "name": "address_lookup_table",
+          "writable": true
+        },
+        {
+          "name": "lut_program",
+          "address": "AddressLookupTab1e1111111111111111111111111"
+        },
+        {
+          "name": "arcium_program",
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "arcium_program",
-          "address": "Bv3Fb9VjzjWGfX18QTUcVycAfeLoQ5zZN6vv2g3cTZxp"
         }
       ],
       "args": []
@@ -420,25 +442,33 @@
       ],
       "accounts": [
         {
-          "name": "comp_def_account",
-          "writable": true
+          "name": "payer",
+          "writable": true,
+          "signer": true
         },
         {
           "name": "mxe_account",
           "writable": true
         },
         {
-          "name": "payer",
-          "writable": true,
-          "signer": true
+          "name": "comp_def_account",
+          "writable": true
+        },
+        {
+          "name": "address_lookup_table",
+          "writable": true
+        },
+        {
+          "name": "lut_program",
+          "address": "AddressLookupTab1e1111111111111111111111111"
+        },
+        {
+          "name": "arcium_program",
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "arcium_program",
-          "address": "Bv3Fb9VjzjWGfX18QTUcVycAfeLoQ5zZN6vv2g3cTZxp"
         }
       ],
       "args": []
@@ -457,25 +487,33 @@
       ],
       "accounts": [
         {
-          "name": "comp_def_account",
-          "writable": true
+          "name": "payer",
+          "writable": true,
+          "signer": true
         },
         {
           "name": "mxe_account",
           "writable": true
         },
         {
-          "name": "payer",
-          "writable": true,
-          "signer": true
+          "name": "comp_def_account",
+          "writable": true
+        },
+        {
+          "name": "address_lookup_table",
+          "writable": true
+        },
+        {
+          "name": "lut_program",
+          "address": "AddressLookupTab1e1111111111111111111111111"
+        },
+        {
+          "name": "arcium_program",
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "arcium_program",
-          "address": "Bv3Fb9VjzjWGfX18QTUcVycAfeLoQ5zZN6vv2g3cTZxp"
         }
       ],
       "args": []
@@ -494,25 +532,33 @@
       ],
       "accounts": [
         {
-          "name": "comp_def_account",
-          "writable": true
+          "name": "payer",
+          "writable": true,
+          "signer": true
         },
         {
           "name": "mxe_account",
           "writable": true
         },
         {
-          "name": "payer",
-          "writable": true,
-          "signer": true
+          "name": "comp_def_account",
+          "writable": true
+        },
+        {
+          "name": "address_lookup_table",
+          "writable": true
+        },
+        {
+          "name": "lut_program",
+          "address": "AddressLookupTab1e1111111111111111111111111"
+        },
+        {
+          "name": "arcium_program",
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "system_program",
           "address": "11111111111111111111111111111111"
-        },
-        {
-          "name": "arcium_program",
-          "address": "Bv3Fb9VjzjWGfX18QTUcVycAfeLoQ5zZN6vv2g3cTZxp"
         }
       ],
       "args": []
@@ -611,6 +657,12 @@
               {
                 "kind": "const",
                 "value": [
+                  65,
+                  114,
+                  99,
+                  105,
+                  117,
+                  109,
                   83,
                   105,
                   103,
@@ -654,12 +706,12 @@
         {
           "name": "pool_account",
           "writable": true,
-          "address": "FsWbPQcJQ2cCyr9ndse13fDqds4F2Ezx2WgTL25Dke4M"
+          "address": "G2sRWJvi3xoyh5k2gY49eG9L8YhAEWQPtNb1zb1GXTtC"
         },
         {
           "name": "clock_account",
           "writable": true,
-          "address": "AxygBawEvVwZPetj3yPJb9sGdZvaJYsVguET1zFUQkV"
+          "address": "7EbMUTLo5DjdzbN7s8BXeZwXzEwNQb1hScfRvWg8a6ot"
         },
         {
           "name": "system_program",
@@ -667,7 +719,7 @@
         },
         {
           "name": "arcium_program",
-          "address": "Bv3Fb9VjzjWGfX18QTUcVycAfeLoQ5zZN6vv2g3cTZxp"
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "encrypted_card_c1"
@@ -706,7 +758,7 @@
       "accounts": [
         {
           "name": "arcium_program",
-          "address": "Bv3Fb9VjzjWGfX18QTUcVycAfeLoQ5zZN6vv2g3cTZxp"
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "comp_def_account"
@@ -715,19 +767,19 @@
           "name": "mxe_account"
         },
         {
-          "name": "cluster_account",
-          "writable": true
-        },
-        {
           "name": "computation_account"
         },
         {
-          "name": "game_session",
+          "name": "cluster_account",
           "writable": true
         },
         {
           "name": "instructions_sysvar",
           "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "game_session",
+          "writable": true
         }
       ],
       "args": [
@@ -735,7 +787,7 @@
           "name": "output",
           "type": {
             "defined": {
-              "name": "ComputationOutputs",
+              "name": "SignedComputationOutputs",
               "generics": [
                 {
                   "kind": "type",
@@ -766,7 +818,7 @@
       "accounts": [
         {
           "name": "arcium_program",
-          "address": "Bv3Fb9VjzjWGfX18QTUcVycAfeLoQ5zZN6vv2g3cTZxp"
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "comp_def_account"
@@ -775,19 +827,19 @@
           "name": "mxe_account"
         },
         {
-          "name": "cluster_account",
-          "writable": true
-        },
-        {
           "name": "computation_account"
         },
         {
-          "name": "game_session",
+          "name": "cluster_account",
           "writable": true
         },
         {
           "name": "instructions_sysvar",
           "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "game_session",
+          "writable": true
         }
       ],
       "args": [
@@ -795,7 +847,7 @@
           "name": "output",
           "type": {
             "defined": {
-              "name": "ComputationOutputs",
+              "name": "SignedComputationOutputs",
               "generics": [
                 {
                   "kind": "type",
@@ -826,7 +878,7 @@
       "accounts": [
         {
           "name": "arcium_program",
-          "address": "Bv3Fb9VjzjWGfX18QTUcVycAfeLoQ5zZN6vv2g3cTZxp"
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "comp_def_account"
@@ -835,19 +887,19 @@
           "name": "mxe_account"
         },
         {
-          "name": "cluster_account",
-          "writable": true
-        },
-        {
           "name": "computation_account"
         },
         {
-          "name": "game_session",
+          "name": "cluster_account",
           "writable": true
         },
         {
           "name": "instructions_sysvar",
           "address": "Sysvar1nstructions1111111111111111111111111"
+        },
+        {
+          "name": "game_session",
+          "writable": true
         }
       ],
       "args": [
@@ -855,7 +907,7 @@
           "name": "output",
           "type": {
             "defined": {
-              "name": "ComputationOutputs",
+              "name": "SignedComputationOutputs",
               "generics": [
                 {
                   "kind": "type",
@@ -918,6 +970,12 @@
               {
                 "kind": "const",
                 "value": [
+                  65,
+                  114,
+                  99,
+                  105,
+                  117,
+                  109,
                   83,
                   105,
                   103,
@@ -961,12 +1019,12 @@
         {
           "name": "pool_account",
           "writable": true,
-          "address": "FsWbPQcJQ2cCyr9ndse13fDqds4F2Ezx2WgTL25Dke4M"
+          "address": "G2sRWJvi3xoyh5k2gY49eG9L8YhAEWQPtNb1zb1GXTtC"
         },
         {
           "name": "clock_account",
           "writable": true,
-          "address": "AxygBawEvVwZPetj3yPJb9sGdZvaJYsVguET1zFUQkV"
+          "address": "7EbMUTLo5DjdzbN7s8BXeZwXzEwNQb1hScfRvWg8a6ot"
         },
         {
           "name": "system_program",
@@ -974,7 +1032,7 @@
         },
         {
           "name": "arcium_program",
-          "address": "Bv3Fb9VjzjWGfX18QTUcVycAfeLoQ5zZN6vv2g3cTZxp"
+          "address": "Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ"
         },
         {
           "name": "nonce"
@@ -1089,6 +1147,19 @@
   ],
   "accounts": [
     {
+      "name": "ArciumSignerAccount",
+      "discriminator": [
+        214,
+        157,
+        122,
+        114,
+        117,
+        44,
+        214,
+        74
+      ]
+    },
+    {
       "name": "ClockAccount",
       "discriminator": [
         152,
@@ -1177,19 +1248,6 @@
         159,
         17,
         117
-      ]
-    },
-    {
-      "name": "SignerAccount",
-      "discriminator": [
-        127,
-        212,
-        7,
-        180,
-        17,
-        50,
-        249,
-        193
       ]
     }
   ],
@@ -1384,16 +1442,21 @@
     },
     {
       "code": 6019,
+      "name": "ClusterNotSet",
+      "msg": "Arcium cluster is not set"
+    },
+    {
+      "code": 6020,
       "name": "UnauthorizedCreator",
       "msg": "Only the game creator can perform this action"
     },
     {
-      "code": 6020,
+      "code": 6021,
       "name": "UnauthorizedPlayer",
       "msg": "Signer is not a participant in this game"
     },
     {
-      "code": 6021,
+      "code": 6022,
       "name": "Overflow",
       "msg": "Arithmetic overflow"
     }
@@ -1424,6 +1487,18 @@
       }
     },
     {
+      "name": "ArciumSignerAccount",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "bump",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
       "name": "AtomicShowdownOutput",
       "docs": [
         "The output of the callback instruction. Provided as a struct with ordered fields",
@@ -1440,6 +1515,20 @@
                 12
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "BN254G2BLSPublicKey",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "array": [
+              "u8",
+              64
+            ]
           }
         ]
       }
@@ -1586,14 +1675,24 @@
         "kind": "struct",
         "fields": [
           {
+            "name": "td_info",
+            "type": {
+              "option": {
+                "defined": {
+                  "name": "NodeMetadata"
+                }
+              }
+            }
+          },
+          {
             "name": "authority",
             "type": {
               "option": "pubkey"
             }
           },
           {
-            "name": "max_size",
-            "type": "u32"
+            "name": "cluster_size",
+            "type": "u16"
           },
           {
             "name": "activation",
@@ -1629,12 +1728,6 @@
             }
           },
           {
-            "name": "mxes",
-            "type": {
-              "vec": "pubkey"
-            }
-          },
-          {
             "name": "nodes",
             "type": {
               "vec": {
@@ -1647,10 +1740,24 @@
           {
             "name": "pending_nodes",
             "type": {
-              "vec": {
-                "defined": {
-                  "name": "NodeRef"
-                }
+              "vec": "u32"
+            }
+          },
+          {
+            "name": "bls_public_key",
+            "type": {
+              "defined": {
+                "name": "SetUnset",
+                "generics": [
+                  {
+                    "kind": "type",
+                    "type": {
+                      "defined": {
+                        "name": "BN254G2BLSPublicKey"
+                      }
+                    }
+                  }
+                ]
               }
             }
           },
@@ -1721,31 +1828,6 @@
                 "name": "ComputationSignature"
               }
             }
-          }
-        ]
-      }
-    },
-    {
-      "name": "ComputationOutputs",
-      "generics": [
-        {
-          "kind": "type",
-          "name": "O"
-        }
-      ],
-      "type": {
-        "kind": "enum",
-        "variants": [
-          {
-            "name": "Success",
-            "fields": [
-              {
-                "generic": "O"
-              }
-            ]
-          },
-          {
-            "name": "Failure"
           }
         ]
       }
@@ -2115,6 +2197,12 @@
         "variants": [
           {
             "name": "MxeKeygen"
+          },
+          {
+            "name": "MxeKeyRecoveryInit"
+          },
+          {
+            "name": "MxeKeyRecoveryFinalize"
           }
         ]
       }
@@ -2128,15 +2216,27 @@
         "kind": "struct",
         "fields": [
           {
-            "name": "authority",
-            "type": {
-              "option": "pubkey"
-            }
-          },
-          {
             "name": "cluster",
             "type": {
               "option": "u32"
+            }
+          },
+          {
+            "name": "keygen_offset",
+            "type": "u64"
+          },
+          {
+            "name": "key_recovery_init_offset",
+            "type": "u64"
+          },
+          {
+            "name": "mxe_program_id",
+            "type": "pubkey"
+          },
+          {
+            "name": "authority",
+            "type": {
+              "option": "pubkey"
             }
           },
           {
@@ -2158,21 +2258,21 @@
             }
           },
           {
-            "name": "fallback_clusters",
-            "type": {
-              "vec": "u32"
-            }
-          },
-          {
-            "name": "rejected_clusters",
-            "type": {
-              "vec": "u32"
-            }
+            "name": "lut_offset_slot",
+            "type": "u64"
           },
           {
             "name": "computation_definitions",
             "type": {
               "vec": "u32"
+            }
+          },
+          {
+            "name": "status",
+            "type": {
+              "defined": {
+                "name": "MxeStatus"
+              }
             }
           },
           {
@@ -2213,6 +2313,56 @@
                 }
               ]
             }
+          }
+        ]
+      }
+    },
+    {
+      "name": "MxeStatus",
+      "docs": [
+        "The status of an MXE."
+      ],
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "Active"
+          },
+          {
+            "name": "Migration"
+          }
+        ]
+      }
+    },
+    {
+      "name": "NodeMetadata",
+      "docs": [
+        "location as [ISO 3166-1 alpha-2](https://www.iso.org/iso-3166-country-codes.html) country code"
+      ],
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "ip",
+            "type": {
+              "array": [
+                "u8",
+                4
+              ]
+            }
+          },
+          {
+            "name": "peer_id",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
+          },
+          {
+            "name": "location",
+            "type": "u8"
           }
         ]
       }
@@ -2312,13 +2462,28 @@
             "name": "Ciphertext"
           },
           {
-            "name": "ArcisPubkey"
+            "name": "ArcisX25519Pubkey"
           },
           {
             "name": "PlaintextFloat"
           },
           {
             "name": "PlaintextPoint"
+          },
+          {
+            "name": "PlaintextI8"
+          },
+          {
+            "name": "PlaintextI16"
+          },
+          {
+            "name": "PlaintextI32"
+          },
+          {
+            "name": "PlaintextI64"
+          },
+          {
+            "name": "PlaintextI128"
           }
         ]
       }
@@ -2357,7 +2522,7 @@
             "name": "Ciphertext"
           },
           {
-            "name": "ArcisPubkey"
+            "name": "ArcisX25519Pubkey"
           },
           {
             "name": "ArcisSignature"
@@ -2366,10 +2531,22 @@
             "name": "PlaintextFloat"
           },
           {
-            "name": "ManticoreAlgo"
+            "name": "PlaintextI8"
           },
           {
-            "name": "InputDataset"
+            "name": "PlaintextI16"
+          },
+          {
+            "name": "PlaintextI32"
+          },
+          {
+            "name": "PlaintextI64"
+          },
+          {
+            "name": "PlaintextI128"
+          },
+          {
+            "name": "PlaintextPoint"
           }
         ]
       }
@@ -2428,6 +2605,11 @@
     },
     {
       "name": "SetUnset",
+      "docs": [
+        "Utility struct to store a value that needs to be set by a certain number of participants (keys",
+        "in our case). Once all participants have set the value, the value is considered set and we only",
+        "store it once."
+      ],
       "generics": [
         {
           "kind": "type",
@@ -2548,13 +2730,40 @@
       }
     },
     {
-      "name": "SignerAccount",
+      "name": "SignedComputationOutputs",
+      "generics": [
+        {
+          "kind": "type",
+          "name": "O"
+        }
+      ],
       "type": {
-        "kind": "struct",
-        "fields": [
+        "kind": "enum",
+        "variants": [
           {
-            "name": "bump",
-            "type": "u8"
+            "name": "Success",
+            "fields": [
+              {
+                "generic": "O"
+              },
+              {
+                "array": [
+                  "u8",
+                  64
+                ]
+              }
+            ]
+          },
+          {
+            "name": "Failure"
+          },
+          {
+            "name": "MarkerForIdlBuildDoNotUseThis",
+            "fields": [
+              {
+                "generic": "O"
+              }
+            ]
           }
         ]
       }

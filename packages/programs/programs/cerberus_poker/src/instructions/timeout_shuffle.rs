@@ -1,12 +1,15 @@
-use anchor_lang::prelude::*;
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, GameState};
+use anchor_lang::prelude::*;
 
 pub fn handler(ctx: Context<TimeoutShuffle>, _game_id: u64) -> Result<()> {
     let game = &mut ctx.accounts.game_session;
     let clock = Clock::get()?;
 
-    require!(game.state == GameState::Shuffle, CerberusPokerError::InvalidGameState);
+    require!(
+        game.state == GameState::Shuffle,
+        CerberusPokerError::InvalidGameState
+    );
     require!(game.shuffle_deadline > 0, CerberusPokerError::NoDeadlineSet);
     require!(
         clock.unix_timestamp > game.shuffle_deadline,

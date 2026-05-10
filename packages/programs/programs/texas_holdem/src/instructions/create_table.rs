@@ -1,6 +1,6 @@
-use anchor_lang::prelude::*;
-use crate::state::{PokerTable, PokerPhase};
 use crate::errors::TexasHoldemError;
+use crate::state::{PokerPhase, PokerTable};
+use anchor_lang::prelude::*;
 
 /// Initializes a PokerTable PDA with specified blind levels and links it to a GameSession
 ///
@@ -23,50 +23,53 @@ pub fn handler(
 ) -> Result<()> {
     // Validate blind amounts: big blind must be at least 2x small blind
     require!(
-        big_blind >= small_blind.checked_mul(2).ok_or(TexasHoldemError::Overflow)?,
+        big_blind
+            >= small_blind
+                .checked_mul(2)
+                .ok_or(TexasHoldemError::Overflow)?,
         TexasHoldemError::InvalidBlindAmounts
     );
 
     let table = &mut ctx.accounts.poker_table;
-    
+
     // Link to the GameSession from cerberus_poker program
     table.game_session = ctx.accounts.game_session.key();
-    
+
     // Initialize phase to PreFlop (game starts here after blinds are posted)
     table.phase = PokerPhase::PreFlop;
-    
+
     // Dealer position starts at 0 (first player)
     table.dealer_index = 0;
-    
+
     // Current player starts at 0 (will be set properly when blinds are posted)
     table.current_player = 0;
-    
+
     // Store pot mint and account references (C-SPL token accounts)
     table.pot_mint = ctx.accounts.pot_mint.key();
     table.pot_account = ctx.accounts.pot_account.key();
-    
+
     // Store escrow account reference (USDC+ escrow PDA for Phase 1)
     table.escrow_account = ctx.accounts.escrow_account.key();
-    
+
     // Initialize player stack and bet account arrays (empty at creation)
     table.player_stacks = [Pubkey::default(); 10];
     table.player_bets = [Pubkey::default(); 10];
-    
+
     // Set initial current bet to big blind (for pre-flop betting)
     table.current_bet = big_blind;
-    
+
     // Initialize bitmaps (no players folded, all-in, or verified yet)
     table.folded_bitmap = 0;
     table.all_in_bitmap = 0;
     table.hand_verified_bitmap = 0;
-    
+
     // Store blind levels
     table.small_blind = small_blind;
     table.big_blind = big_blind;
-    
+
     // Initialize hand counter
     table.hand_number = 0;
-    
+
     // Initialize last action time to current time
     let clock = Clock::get()?;
     table.last_action_time = clock.unix_timestamp;
@@ -78,11 +81,16 @@ pub fn handler(
     table.last_raise = big_blind;
     table.pot_total = 0;
     table.player_round_bets = [0u64; 10];
-    
+
     // Store PDA bump seed for future verification
     table.bump = ctx.bumps.poker_table;
 
-    msg!("PokerTable created for game {} with blinds {}/{}", game_id, small_blind, big_blind);
+    msg!(
+        "PokerTable created for game {} with blinds {}/{}",
+        game_id,
+        small_blind,
+        big_blind
+    );
     Ok(())
 }
 

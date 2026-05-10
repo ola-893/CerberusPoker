@@ -2,22 +2,19 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
 use crate::errors::CerberusPokerError;
-use crate::state::{GameSession, GameState, ShowdownComplete};
+use crate::state::{GameState, ShowdownComplete};
 
 pub fn handler(
     ctx: Context<crate::AtomicShowdownCallback>,
-    output: ComputationOutputs<crate::AtomicShowdownOutput>,
+    output: SignedComputationOutputs<crate::AtomicShowdownOutput>,
 ) -> Result<()> {
-    // Match on the MXE output
-    // For now, field_0 contains the revealed_hands array
-    // In production, the MXE circuit should return both revealed_hands and num_players
-    let revealed_hands = match output {
-        ComputationOutputs::Success(result) => result.field_0,
-        ComputationOutputs::Failure => {
-            msg!("Atomic showdown MXE computation failed");
-            return Err(CerberusPokerError::AbortedComputation.into());
-        }
-    };
+    let revealed_hands = output
+        .verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        )
+        .map_err(|_| CerberusPokerError::AbortedComputation)?
+        .field_0;
 
     let game = &mut ctx.accounts.game_session;
 

@@ -2,22 +2,19 @@ use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
 use crate::errors::CerberusPokerError;
-use crate::state::{GameSession, CardRevealed};
+use crate::state::CardRevealed;
 
 pub fn handler(
     ctx: Context<crate::RevealCommunityCardCallback>,
-    output: ComputationOutputs<crate::RevealCommunityCardOutput>,
+    output: SignedComputationOutputs<crate::RevealCommunityCardOutput>,
 ) -> Result<()> {
-    // Match on the MXE output
-    // For now, we'll extract just the card_value from field_0
-    // In production, the MXE circuit should return both card_value and card_index
-    let card_value = match output {
-        ComputationOutputs::Success(result) => result.field_0,
-        ComputationOutputs::Failure => {
-            msg!("Reveal community card MXE computation failed");
-            return Err(CerberusPokerError::AbortedComputation.into());
-        }
-    };
+    let card_value = output
+        .verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        )
+        .map_err(|_| CerberusPokerError::AbortedComputation)?
+        .field_0;
 
     let game = &mut ctx.accounts.game_session;
 
@@ -31,7 +28,10 @@ pub fn handler(
     );
 
     let card_index = game.pending_reveal_card_index;
-    require!(card_index < game.deck_size, CerberusPokerError::CardIndexOutOfRange);
+    require!(
+        card_index < game.deck_size,
+        CerberusPokerError::CardIndexOutOfRange
+    );
     require!(
         !game.is_card_revealed(card_index),
         CerberusPokerError::CardAlreadyRevealed
@@ -50,7 +50,11 @@ pub fn handler(
         card_value,
     });
 
-    msg!("Community card {} revealed: value {}", card_index, card_value);
+    msg!(
+        "Community card {} revealed: value {}",
+        card_index,
+        card_value
+    );
     Ok(())
 }
 

@@ -3,26 +3,27 @@ use arcium_anchor::prelude::*;
 use solana_sha256_hasher::hashv;
 
 use crate::errors::CerberusPokerError;
-use crate::state::{GameSession, GameState, ShuffleComplete};
+use crate::state::{GameState, ShuffleComplete};
 
 pub fn handler(
     ctx: Context<crate::ShuffleDeckCallback>,
-    output: ComputationOutputs<crate::ShuffleDeckOutput>,
+    output: SignedComputationOutputs<crate::ShuffleDeckOutput>,
 ) -> Result<()> {
-    // Match on the MXE output — Success contains the result, Failure means computation failed
-    // The macro generates a tuple struct with field_0
-    let deck_encrypted = match output {
-        ComputationOutputs::Success(result) => result.field_0,
-        ComputationOutputs::Failure => {
-            msg!("MXE computation failed");
-            return Err(CerberusPokerError::AbortedComputation.into());
-        }
-    };
+    let deck_encrypted = output
+        .verify_output(
+            &ctx.accounts.cluster_account,
+            &ctx.accounts.computation_account,
+        )
+        .map_err(|_| CerberusPokerError::AbortedComputation)?
+        .field_0;
 
     let game = &mut ctx.accounts.game_session;
 
     // Verify we're in the right state
-    require!(game.state == GameState::Shuffle, CerberusPokerError::InvalidGameState);
+    require!(
+        game.state == GameState::Shuffle,
+        CerberusPokerError::InvalidGameState
+    );
 
     let mut deck_bytes = Vec::new();
     deck_encrypted
@@ -46,15 +47,9 @@ pub fn handler(
     game.shuffle_deadline = 0; // Clear deadline
 
     let game_id = game.game_id;
-    emit!(ShuffleComplete {
-        game_id,
-        deck_hash,
-    });
+    emit!(ShuffleComplete { game_id, deck_hash });
 
-    msg!(
-        "Shuffle complete for game {}. Deck hash stored.",
-        game_id
-    );
+    msg!("Shuffle complete for game {}. Deck hash stored.", game_id);
 
     Ok(())
 }

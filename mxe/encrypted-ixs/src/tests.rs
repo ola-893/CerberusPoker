@@ -25,14 +25,14 @@ mod tests {
         // let encrypted_deck = Enc<Mxe, [u8; 52]>::from(deck);
         // let shuffled = shuffle_deck(encrypted_deck);
         // let result = shuffled.decrypt();
-        
+
         // For unit testing, we simulate the shuffle logic
         // The actual shuffle happens inside the MPC context
-        
+
         // Verify the deck contains exactly 52 unique values
         let mut seen = [false; 52];
         let mut unique_count = 0;
-        
+
         for &card in deck.iter() {
             assert!(card < 52, "Card value {} is out of range (0-51)", card);
             if !seen[card as usize] {
@@ -40,9 +40,12 @@ mod tests {
                 unique_count += 1;
             }
         }
-        
-        assert_eq!(unique_count, 52, "Deck must contain exactly 52 unique card values");
-        
+
+        assert_eq!(
+            unique_count, 52,
+            "Deck must contain exactly 52 unique card values"
+        );
+
         // Verify all values 0-51 are present
         for i in 0..52 {
             assert!(seen[i], "Card value {} is missing from the deck", i);
@@ -63,17 +66,21 @@ mod tests {
 
         // Simulate multiple shuffles (in practice, each player contributes a shuffle)
         // The MXE would apply ArcisRNG::shuffle inside the MPC context
-        
+
         // After shuffle, verify no duplicates
         let mut card_counts = [0u8; 52];
         for &card in deck.iter() {
             assert!(card < 52, "Invalid card value: {}", card);
             card_counts[card as usize] += 1;
         }
-        
+
         // Verify each card appears exactly once
         for (card_value, &count) in card_counts.iter().enumerate() {
-            assert_eq!(count, 1, "Card {} appears {} times (expected 1)", card_value, count);
+            assert_eq!(
+                count, 1,
+                "Card {} appears {} times (expected 1)",
+                card_value, count
+            );
         }
     }
 
@@ -94,14 +101,16 @@ mod tests {
             // let encrypted_deck = Enc<Mxe, [u8; 52]>::from(deck);
             // let dealt_card = deal_card(encrypted_deck, card_index);
             // let card_value = dealt_card.decrypt_for_recipient();
-            
+
             // Simulate the deal operation
             let expected_card = deck[card_index as usize];
-            
+
             // Verify the dealt card matches the expected value
-            assert_eq!(expected_card, card_index, 
-                "Card at index {} should be {}, got {}", 
-                card_index, card_index, expected_card);
+            assert_eq!(
+                expected_card, card_index,
+                "Card at index {} should be {}, got {}",
+                card_index, card_index, expected_card
+            );
         }
     }
 
@@ -112,10 +121,9 @@ mod tests {
     fn test_deal_card_specific_positions() {
         // Create a shuffled deck (simulated)
         let deck = [
-            13, 27, 41, 3, 18, 32, 46, 9, 24, 38, 51, 15, 29,
-            43, 6, 20, 34, 48, 11, 25, 39, 52, 17, 31, 45, 8,
-            22, 36, 50, 14, 28, 42, 5, 19, 33, 47, 10, 23, 37,
-            0, 16, 30, 44, 7, 21, 35, 49, 12, 26, 40, 1, 2
+            13, 27, 41, 3, 18, 32, 46, 9, 24, 38, 51, 15, 29, 43, 6, 20, 34, 48, 11, 25, 39, 52,
+            17, 31, 45, 8, 22, 36, 50, 14, 28, 42, 5, 19, 33, 47, 10, 23, 37, 0, 16, 30, 44, 7, 21,
+            35, 49, 12, 26, 40, 1, 2,
         ];
 
         // Test dealing the first card (index 0)
@@ -215,7 +223,10 @@ mod tests {
             seen[card as usize] = true;
         }
 
-        assert!(!is_valid, "Deck with duplicates should fail integrity check");
+        assert!(
+            !is_valid,
+            "Deck with duplicates should fail integrity check"
+        );
     }
 
     /// Test verify_deck_integrity rejects out-of-range values
@@ -246,7 +257,10 @@ mod tests {
             seen[card as usize] = true;
         }
 
-        assert!(!is_valid, "Deck with invalid values should fail integrity check");
+        assert!(
+            !is_valid,
+            "Deck with invalid values should fail integrity check"
+        );
     }
 
     /// Test atomic_showdown reveals all hole cards correctly for 2 players
@@ -271,10 +285,10 @@ mod tests {
         // In the actual MXE context:
         // let encrypted_deck = Enc<Mxe, [u8; 52]>::from(deck);
         // let revealed = atomic_showdown(encrypted_deck, hole_card_indices, num_players);
-        
+
         let mut revealed_hands = [0u8; 12];
         let num_cards = (num_players as usize).min(6) * 2;
-        
+
         for i in 0..num_cards {
             let card_index = hole_card_indices[i] as usize;
             if card_index < 52 {
@@ -285,11 +299,11 @@ mod tests {
         // Verify player 0's cards
         assert_eq!(revealed_hands[0], 0, "Player 0 card 1 should be 0");
         assert_eq!(revealed_hands[1], 1, "Player 0 card 2 should be 1");
-        
+
         // Verify player 1's cards
         assert_eq!(revealed_hands[2], 2, "Player 1 card 1 should be 2");
         assert_eq!(revealed_hands[3], 3, "Player 1 card 2 should be 3");
-        
+
         // Verify unused slots are 0
         for i in 4..12 {
             assert_eq!(revealed_hands[i], 0, "Unused slot {} should be 0", i);
@@ -303,10 +317,9 @@ mod tests {
     fn test_atomic_showdown_six_players() {
         // Create a shuffled deck
         let deck = [
-            13, 27, 41, 3, 18, 32, 46, 9, 24, 38, 51, 15, 29,
-            43, 6, 20, 34, 48, 11, 25, 39, 52, 17, 31, 45, 8,
-            22, 36, 50, 14, 28, 42, 5, 19, 33, 47, 10, 23, 37,
-            0, 16, 30, 44, 7, 21, 35, 49, 12, 26, 40, 1, 2
+            13, 27, 41, 3, 18, 32, 46, 9, 24, 38, 51, 15, 29, 43, 6, 20, 34, 48, 11, 25, 39, 52,
+            17, 31, 45, 8, 22, 36, 50, 14, 28, 42, 5, 19, 33, 47, 10, 23, 37, 0, 16, 30, 44, 7, 21,
+            35, 49, 12, 26, 40, 1, 2,
         ];
 
         // Define hole card indices for 6 players (12 cards total)
@@ -322,7 +335,7 @@ mod tests {
         // Simulate atomic_showdown
         let mut revealed_hands = [0u8; 12];
         let num_cards = (num_players as usize).min(6) * 2;
-        
+
         for i in 0..num_cards {
             let card_index = hole_card_indices[i] as usize;
             if card_index < 52 {
@@ -363,7 +376,7 @@ mod tests {
         // Simulate atomic_showdown
         let mut revealed_hands = [0u8; 12];
         let num_cards = (num_players as usize).min(6) * 2;
-        
+
         for i in 0..num_cards {
             let card_index = hole_card_indices[i] as usize;
             if card_index < 52 {
@@ -380,7 +393,7 @@ mod tests {
         assert_eq!(revealed_hands[5], 30, "Player 2 card 2");
         assert_eq!(revealed_hands[6], 35, "Player 3 card 1");
         assert_eq!(revealed_hands[7], 40, "Player 3 card 2");
-        
+
         // Verify unused slots remain 0
         assert_eq!(revealed_hands[8], 0, "Unused slot 8");
         assert_eq!(revealed_hands[9], 0, "Unused slot 9");
@@ -406,7 +419,7 @@ mod tests {
         // Simulate atomic_showdown with bounds checking
         let mut revealed_hands = [0u8; 12];
         let num_cards = (num_players as usize).min(6) * 2;
-        
+
         for i in 0..num_cards {
             let card_index = hole_card_indices[i] as usize;
             if card_index < 52 {
@@ -418,11 +431,11 @@ mod tests {
         // Verify valid indices are revealed
         assert_eq!(revealed_hands[0], 0, "Player 0 card 1 (valid index)");
         assert_eq!(revealed_hands[1], 1, "Player 0 card 2 (valid index)");
-        
+
         // Verify out-of-bounds indices result in 0
         assert_eq!(revealed_hands[2], 0, "Player 1 card 1 (out of bounds)");
         assert_eq!(revealed_hands[3], 0, "Player 1 card 2 (out of bounds)");
-        
+
         // Verify remaining valid indices
         assert_eq!(revealed_hands[4], 4, "Player 2 card 1 (valid index)");
         assert_eq!(revealed_hands[5], 5, "Player 2 card 2 (valid index)");
@@ -437,7 +450,10 @@ mod tests {
         // This is well within the 1232 byte callback limit
         let output_size = std::mem::size_of::<[u8; 12]>();
         assert_eq!(output_size, 12, "Output size should be 12 bytes");
-        assert!(output_size <= 1232, "Output must fit within 1232 byte callback limit");
+        assert!(
+            output_size <= 1232,
+            "Output must fit within 1232 byte callback limit"
+        );
     }
 
     /// Test reveal_community_card returns correct card value
@@ -456,10 +472,13 @@ mod tests {
             // In the actual MXE context:
             // let encrypted_deck = Enc<Mxe, [u8; 52]>::from(deck);
             // let revealed = reveal_community_card(encrypted_deck, card_index);
-            
+
             let revealed_card = deck[card_index as usize];
-            assert_eq!(revealed_card, card_index, 
-                "Community card at index {} should be {}", card_index, card_index);
+            assert_eq!(
+                revealed_card, card_index,
+                "Community card at index {} should be {}",
+                card_index, card_index
+            );
         }
     }
 }

@@ -51,7 +51,7 @@ mod bug_condition_tests {
         // Read workspace Cargo.toml to verify arcium-anchor version
         let cargo_toml = std::fs::read_to_string("../../Cargo.toml")
             .expect("Failed to read workspace Cargo.toml");
-        
+
         assert!(
             cargo_toml.contains("arcium-anchor = \"0.9.7\""),
             "Expected arcium-anchor version 0.9.7 in Cargo.toml"
@@ -73,7 +73,7 @@ mod bug_condition_tests {
     fn test_rust_toolchain_version() {
         let toolchain = std::fs::read_to_string("../../rust-toolchain.toml")
             .expect("Failed to read rust-toolchain.toml");
-        
+
         assert!(
             toolchain.contains("channel = \"1.89.0\""),
             "Expected rust-toolchain channel 1.89.0"
@@ -107,15 +107,20 @@ mod bug_condition_tests {
         println!("{}", combined_output);
 
         // Document the specific errors we're seeing
-        let has_stack_offset_error = combined_output.contains("Stack offset") 
+        let has_stack_offset_error = combined_output.contains("Stack offset")
             && combined_output.contains("exceeded max offset");
-        let has_instructions_sysvar_error = combined_output.contains("missing field `instructions_sysvar`");
+        let has_instructions_sysvar_error =
+            combined_output.contains("missing field `instructions_sysvar`");
         let has_type_mismatch_error = combined_output.contains("mismatched types");
-        let has_result_error = combined_output.contains("type alias takes 1 generic argument but 2 generic arguments were supplied");
+        let has_result_error = combined_output
+            .contains("type alias takes 1 generic argument but 2 generic arguments were supplied");
 
         println!("\n=== Error Analysis ===");
         println!("Stack offset errors: {}", has_stack_offset_error);
-        println!("Missing instructions_sysvar errors: {}", has_instructions_sysvar_error);
+        println!(
+            "Missing instructions_sysvar errors: {}",
+            has_instructions_sysvar_error
+        );
         println!("Type mismatch errors: {}", has_type_mismatch_error);
         println!("Result type errors: {}", has_result_error);
 
@@ -145,13 +150,13 @@ mod bug_condition_tests {
     /// This test confirms the lock file has resolved to the problematic version.
     #[test]
     fn test_cargo_lock_has_sdk_0_9_7() {
-        let cargo_lock = std::fs::read_to_string("../../Cargo.lock")
-            .expect("Failed to read Cargo.lock");
-        
+        let cargo_lock =
+            std::fs::read_to_string("../../Cargo.lock").expect("Failed to read Cargo.lock");
+
         // Check for arcium-anchor 0.9.7 in Cargo.lock
         let has_arcium_anchor_0_9_7 = cargo_lock.contains("name = \"arcium-anchor\"")
             && cargo_lock.contains("version = \"0.9.7\"");
-        
+
         assert!(
             has_arcium_anchor_0_9_7,
             "Expected arcium-anchor 0.9.7 in Cargo.lock"
@@ -165,24 +170,28 @@ mod bug_condition_tests {
     fn test_workaround_artifacts_present() {
         // Check if arcium-client-mock directory exists
         let mock_dir_exists = std::path::Path::new("../../arcium-client-mock").exists();
-        
+
         // Check if Cargo.toml has [patch.crates-io] section
-        let cargo_toml = std::fs::read_to_string("../../Cargo.toml")
-            .expect("Failed to read Cargo.toml");
+        let cargo_toml =
+            std::fs::read_to_string("../../Cargo.toml").expect("Failed to read Cargo.toml");
         let has_patch_section = cargo_toml.contains("[patch.crates-io]");
-        
+
         println!("=== Workaround Artifacts ===");
         println!("arcium-client-mock directory exists: {}", mock_dir_exists);
         println!("[patch.crates-io] section present: {}", has_patch_section);
-        
+
         // Document the presence of workarounds
         if mock_dir_exists {
-            println!("Found arcium-client-mock directory - this is a workaround that should be removed");
+            println!(
+                "Found arcium-client-mock directory - this is a workaround that should be removed"
+            );
         }
         if has_patch_section {
-            println!("Found [patch.crates-io] section - this is a workaround that should be removed");
+            println!(
+                "Found [patch.crates-io] section - this is a workaround that should be removed"
+            );
         }
-        
+
         // At least one workaround should be present (documenting the bug condition)
         assert!(
             mock_dir_exists || has_patch_section,

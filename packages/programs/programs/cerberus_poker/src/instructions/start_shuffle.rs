@@ -1,24 +1,23 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_client::idl::arcium::{ID, ID_CONST};
+use arcium_client::idl::arcium::types::CallbackAccount;
 
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, GameState, ShuffleStarted, SHUFFLE_TIMEOUT_SECS};
 use crate::ShuffleDeckCallback;
-use crate::SignerAccount;
+use crate::{ArciumSignerAccount, ID, ID_CONST};
 
 const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck");
 
 #[inline(never)]
-pub fn handler(
-    ctx: Context<StartShuffle>,
-    game_id: u64,
-    computation_offset: u64,
-) -> Result<()> {
+pub fn handler(ctx: Context<StartShuffle>, game_id: u64, computation_offset: u64) -> Result<()> {
     let game = &mut ctx.accounts.game_session;
 
     // Must be in Lobby with enough players
-    require!(game.state == GameState::Lobby, CerberusPokerError::InvalidGameState);
+    require!(
+        game.state == GameState::Lobby,
+        CerberusPokerError::InvalidGameState
+    );
     require!(game.num_players >= 2, CerberusPokerError::NotEnoughPlayers);
 
     // Transition to Shuffle phase
@@ -35,21 +34,30 @@ pub fn handler(
     // - For Enc<Mxe, T>: pass nonce + ciphertext (no pubkey needed)
     // - The client encrypts the initial deck with the MXE's public key
     //   before calling this instruction
-    // TODO: Build arguments for shuffle_deck computation
-    // In 0.4.0, arguments are Vec<Argument> from arcium_client::idl::arcium::types
-    // Need to construct: nonce (u128) and encrypted deck (Enc<Mxe, [u8; 52]>)
-    let args = vec![];
+    // TODO: Build arguments for shuffle_deck computation once the frontend
+    // passes encrypted deck input. Keep a valid empty ArgumentList for now.
+    let args = ArgBuilder::new().build();
 
     ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
+    let callback_accounts = vec![CallbackAccount {
+        pubkey: ctx.accounts.game_session.key(),
+        is_writable: true,
+    }];
+    let callback_ix = ShuffleDeckCallback::callback_ix(
+        computation_offset,
+        &ctx.accounts.mxe_account,
+        &callback_accounts,
+    )?;
 
     // Queue the shuffle_deck computation on the Arcium MXE
     queue_computation(
         ctx.accounts,
         computation_offset,
         args,
-        None,
-        vec![ShuffleDeckCallback::callback_ix(&[])],
+        vec![callback_ix],
         1, // num_callback_txs
+        0,
     )?;
 
     emit!(ShuffleStarted {
@@ -57,7 +65,11 @@ pub fn handler(
         computation_offset,
     });
 
-    msg!("Shuffle started for game {}, computation offset: {}", game_id, computation_offset);
+    msg!(
+        "Shuffle started for game {}, computation offset: {}",
+        game_id,
+        computation_offset
+    );
     Ok(())
 }
 
@@ -83,28 +95,28 @@ pub struct StartShuffle<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Box<Account<'info, SignerAccount>>,
+    pub sign_pda_account: Box<Account<'info, ArciumSignerAccount>>,
 
     #[account(address = derive_mxe_pda!())]
     pub mxe_account: Box<Account<'info, MXEAccount>>,
 
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, CerberusPokerError::InvalidGameState)
     )]
     /// CHECK: mempool_account, checked by the arcium program.
     pub mempool_account: UncheckedAccount<'info>,
 
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, CerberusPokerError::InvalidGameState)
     )]
     /// CHECK: executing_pool, checked by the arcium program.
     pub executing_pool: UncheckedAccount<'info>,
 
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, CerberusPokerError::InvalidGameState)
     )]
     /// CHECK: computation_account, checked by the arcium program.
     pub computation_account: UncheckedAccount<'info>,

@@ -1,10 +1,10 @@
+use crate::errors::TexasHoldemError;
+use crate::state::PokerTable;
+use crate::{PlaceBetCallback, SignerAccount};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use arcium_anchor::prelude::*;
 use arcium_client::idl::arcium::{ID, ID_CONST};
-use crate::errors::TexasHoldemError;
-use crate::state::PokerTable;
-use crate::{PlaceBetCallback, SignerAccount};
 
 const COMP_DEF_OFFSET_PLACE_BET: u32 = comp_def_offset("place_bet");
 
@@ -40,7 +40,10 @@ pub fn handler(
 
         require!(player_index < 10, TexasHoldemError::InvalidGameState);
         if table.num_players > 0 {
-            require!(player_index < table.num_players, TexasHoldemError::InvalidGameState);
+            require!(
+                player_index < table.num_players,
+                TexasHoldemError::InvalidGameState
+            );
         }
         require!(
             ctx.accounts.player_token_account.owner == ctx.accounts.player.key(),
@@ -61,10 +64,12 @@ pub fn handler(
             );
         }
 
-        table.player_round_bets[player_index as usize] = table.player_round_bets[player_index as usize]
+        table.player_round_bets[player_index as usize] = table.player_round_bets
+            [player_index as usize]
             .checked_add(amount)
             .ok_or(TexasHoldemError::Overflow)?;
-        table.pot_total = table.pot_total
+        table.pot_total = table
+            .pot_total
             .checked_add(amount)
             .ok_or(TexasHoldemError::Overflow)?;
     }
@@ -78,12 +83,16 @@ pub fn handler(
 
     token::transfer(cpi_ctx, amount)?;
 
-    msg!("Transferred {} USDC+ from player {} to escrow", amount, player_index);
+    msg!(
+        "Transferred {} USDC+ from player {} to escrow",
+        amount,
+        player_index
+    );
 
     // Queue MXE computation to store encrypted bet amount
     // The MXE will store Enc<Mxe, u64> — hidden from all observers
     // The callback (place_bet_callback) will confirm the encrypted bet was stored
-    
+
     // TODO: Build arguments for place_bet computation
     // In 0.4.0, arguments are Vec<Argument> from arcium_client::idl::arcium::types
     let args = vec![];
@@ -99,7 +108,10 @@ pub fn handler(
         1, // num_callback_txs
     )?;
 
-    msg!("Queued MXE computation to store encrypted bet for player {}", player_index);
+    msg!(
+        "Queued MXE computation to store encrypted bet for player {}",
+        player_index
+    );
     Ok(())
 }
 
@@ -141,7 +153,6 @@ pub struct PlaceBet<'info> {
     // ─── Arcium MXE Accounts ──────────────────────────────────────────────────
     // These accounts are required for queue_computation() to work
     // The #[queue_computation_accounts] macro generates most of these constraints
-
     #[account(
         init_if_needed,
         space = 9,

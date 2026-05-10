@@ -13,7 +13,6 @@
 /// This is simpler than Enc<Shared, u8> because we're not doing
 /// client-side decryption - the MXE reveals the card and posts it on-chain
 /// where only the designated recipient's DealtCard PDA can read it.
-
 use arcis::*;
 
 #[encrypted]
@@ -33,15 +32,12 @@ mod circuits {
     ///         card_index: u8            — which card to deal (0-51)
     /// Output: u8                       — card value (plaintext, 0-51)
     #[instruction]
-    pub fn deal_card_to_recipient(
-        deck: Enc<Mxe, [u8; 52]>,
-        card_index: u8,
-    ) -> u8 {
+    pub fn deal_card_to_recipient(deck: Enc<Mxe, [u8; 52]>, card_index: u8) -> u8 {
         let cards = deck.to_arcis();
-        
+
         // Extract the card at the specified index
         let card_value = cards[card_index as usize];
-        
+
         // Threshold decryption: all MPC nodes contribute partial decryptions
         // to reveal the card value. The .reveal() operation performs this
         // multi-party computation and returns the plaintext card value.

@@ -3,7 +3,6 @@ use anchor_lang::prelude::*;
 #[error_code]
 pub enum TexasHoldemError {
     // ─── Turn / Action Errors ─────────────────────────────────────────────────
-
     /// It is not this player's turn to act
     #[msg("Not your turn to act")]
     NotYourTurn,
@@ -25,7 +24,6 @@ pub enum TexasHoldemError {
     PlayerAllIn,
 
     // ─── Betting Errors ───────────────────────────────────────────────────────
-
     /// Insufficient balance to complete the action
     #[msg("Insufficient balance")]
     InsufficientBalance,
@@ -47,7 +45,6 @@ pub enum TexasHoldemError {
     BettingRoundIncomplete,
 
     // ─── Phase / Game State Errors ────────────────────────────────────────────
-
     /// Invalid game state for this action
     #[msg("Invalid game state")]
     InvalidGameState,
@@ -69,7 +66,6 @@ pub enum TexasHoldemError {
     AllPlayersFolded,
 
     // ─── Hand Verification Errors ─────────────────────────────────────────────
-
     /// Hand not verified before showdown
     #[msg("Hand not verified before showdown")]
     HandNotVerified,
@@ -87,7 +83,6 @@ pub enum TexasHoldemError {
     NoCardsToVerify,
 
     // ─── Pot / Settlement Errors ──────────────────────────────────────────────
-
     /// Pot account is invalid or does not match expected address
     #[msg("Invalid pot account")]
     InvalidPotAccount,
@@ -105,7 +100,6 @@ pub enum TexasHoldemError {
     NoWinner,
 
     // ─── Timeout Errors ───────────────────────────────────────────────────────
-
     /// Betting timeout not reached yet
     #[msg("Betting timeout not reached")]
     BettingTimeoutNotReached,
@@ -119,7 +113,6 @@ pub enum TexasHoldemError {
     TimeoutAlreadyTriggered,
 
     // ─── Table / Setup Errors ─────────────────────────────────────────────────
-
     /// Table is not properly initialized
     #[msg("Table not initialized")]
     TableNotInitialized,
@@ -145,7 +138,6 @@ pub enum TexasHoldemError {
     TableFull,
 
     // ─── MXE / Computation Errors ─────────────────────────────────────────────
-
     /// MXE computation was aborted
     #[msg("MXE computation aborted")]
     AbortedComputation,
@@ -159,7 +151,6 @@ pub enum TexasHoldemError {
     ComputationOffsetMismatch,
 
     // ─── Arithmetic / Overflow ────────────────────────────────────────────────
-
     /// Arithmetic overflow
     #[msg("Arithmetic overflow")]
     Overflow,

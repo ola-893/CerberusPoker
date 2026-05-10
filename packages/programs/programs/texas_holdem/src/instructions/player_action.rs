@@ -1,11 +1,11 @@
-use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount, Transfer};
-use arcium_anchor::prelude::*;
-use arcium_client::idl::arcium::{ID, ID_CONST};
 use crate::errors::TexasHoldemError;
 use crate::state::PokerTable;
 use crate::Action;
 use crate::{PlaceBetCallback, SignerAccount};
+use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount, Transfer};
+use arcium_anchor::prelude::*;
+use arcium_client::idl::arcium::{ID, ID_CONST};
 
 const COMP_DEF_OFFSET_PLACE_BET: u32 = comp_def_offset("place_bet");
 
@@ -49,7 +49,10 @@ pub fn handler(
         let table = &mut ctx.accounts.poker_table;
 
         require!(table.num_players >= 2, TexasHoldemError::NotEnoughPlayers);
-        require!(player_index < table.num_players, TexasHoldemError::NotYourTurn);
+        require!(
+            player_index < table.num_players,
+            TexasHoldemError::NotYourTurn
+        );
         require!(
             ctx.accounts.player_token_account.owner == ctx.accounts.payer.key(),
             TexasHoldemError::InvalidStackAccount
@@ -70,10 +73,16 @@ pub fn handler(
         }
 
         let folded_mask = 1u16 << player_index;
-        require!((table.folded_bitmap & folded_mask) == 0, TexasHoldemError::PlayerFolded);
+        require!(
+            (table.folded_bitmap & folded_mask) == 0,
+            TexasHoldemError::PlayerFolded
+        );
 
         let all_in_mask = 1u16 << player_index;
-        require!((table.all_in_bitmap & all_in_mask) == 0, TexasHoldemError::PlayerAllIn);
+        require!(
+            (table.all_in_bitmap & all_in_mask) == 0,
+            TexasHoldemError::PlayerAllIn
+        );
 
         let mut transfer_amount = 0u64;
         let current_player_bet = table.player_round_bets[player_index as usize];
@@ -95,8 +104,12 @@ pub fn handler(
             }
 
             Action::Call => {
-                require!(table.current_bet > current_player_bet, TexasHoldemError::InvalidAction);
-                transfer_amount = table.current_bet
+                require!(
+                    table.current_bet > current_player_bet,
+                    TexasHoldemError::InvalidAction
+                );
+                transfer_amount = table
+                    .current_bet
                     .checked_sub(current_player_bet)
                     .ok_or(TexasHoldemError::Underflow)?;
                 table.player_round_bets[player_index as usize] = table.current_bet;
@@ -109,7 +122,10 @@ pub fn handler(
                 let raise_delta = amount
                     .checked_sub(table.current_bet)
                     .ok_or(TexasHoldemError::Underflow)?;
-                require!(raise_delta >= table.last_raise, TexasHoldemError::RaiseTooSmall);
+                require!(
+                    raise_delta >= table.last_raise,
+                    TexasHoldemError::RaiseTooSmall
+                );
                 transfer_amount = amount
                     .checked_sub(current_player_bet)
                     .ok_or(TexasHoldemError::Underflow)?;
@@ -151,10 +167,12 @@ pub fn handler(
                 to: ctx.accounts.escrow_account.to_account_info(),
                 authority: ctx.accounts.payer.to_account_info(),
             };
-            let cpi_ctx = CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
+            let cpi_ctx =
+                CpiContext::new(ctx.accounts.token_program.to_account_info(), cpi_accounts);
             token::transfer(cpi_ctx, transfer_amount)?;
 
-            table.pot_total = table.pot_total
+            table.pot_total = table
+                .pot_total
                 .checked_add(transfer_amount)
                 .ok_or(TexasHoldemError::Overflow)?;
             queue_bet_computation = true;
@@ -184,7 +202,10 @@ pub fn handler(
             1,
         )?;
 
-        msg!("Queued MXE computation to store encrypted bet for player {}", player_index);
+        msg!(
+            "Queued MXE computation to store encrypted bet for player {}",
+            player_index
+        );
     }
 
     Ok(())

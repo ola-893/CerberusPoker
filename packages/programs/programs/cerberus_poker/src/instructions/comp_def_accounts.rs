@@ -1,3 +1,4 @@
+use crate::ID;
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
@@ -6,17 +7,31 @@ use arcium_anchor::prelude::*;
 #[derive(Accounts)]
 pub struct InitShuffleDeckCompDef<'info> {
     #[account(mut)]
+    pub payer: Signer<'info>,
+
+    #[account(
+        mut,
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
+
+    #[account(mut)]
     /// CHECK: initialized via CPI
     pub comp_def_account: UncheckedAccount<'info>,
 
-    #[account(mut)]
-    pub mxe_account: Account<'info, MXEAccount>,
+    #[account(
+        mut,
+        address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot)
+    )]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
 
-    #[account(mut)]
-    pub payer: Signer<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
 
-    pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
 }
 
 /// Accounts for initializing the deal_card_to_recipient computation definition.
@@ -24,17 +39,31 @@ pub struct InitShuffleDeckCompDef<'info> {
 #[derive(Accounts)]
 pub struct InitDealCardCompDef<'info> {
     #[account(mut)]
+    pub payer: Signer<'info>,
+
+    #[account(
+        mut,
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
+
+    #[account(mut)]
     /// CHECK: initialized via CPI
     pub comp_def_account: UncheckedAccount<'info>,
 
-    #[account(mut)]
-    pub mxe_account: Account<'info, MXEAccount>,
+    #[account(
+        mut,
+        address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot)
+    )]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
 
-    #[account(mut)]
-    pub payer: Signer<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
 
-    pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
 }
 
 /// Accounts for initializing the reveal_card computation definition.
@@ -42,17 +71,31 @@ pub struct InitDealCardCompDef<'info> {
 #[derive(Accounts)]
 pub struct InitRevealCardCompDef<'info> {
     #[account(mut)]
+    pub payer: Signer<'info>,
+
+    #[account(
+        mut,
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
+
+    #[account(mut)]
     /// CHECK: initialized via CPI
     pub comp_def_account: UncheckedAccount<'info>,
 
-    #[account(mut)]
-    pub mxe_account: Account<'info, MXEAccount>,
+    #[account(
+        mut,
+        address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot)
+    )]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
 
-    #[account(mut)]
-    pub payer: Signer<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
 
-    pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
 }
 
 /// Accounts for initializing the reveal_community_card computation definition.
@@ -60,17 +103,31 @@ pub struct InitRevealCardCompDef<'info> {
 #[derive(Accounts)]
 pub struct InitRevealCommunityCardCompDef<'info> {
     #[account(mut)]
+    pub payer: Signer<'info>,
+
+    #[account(
+        mut,
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
+
+    #[account(mut)]
     /// CHECK: initialized via CPI
     pub comp_def_account: UncheckedAccount<'info>,
 
-    #[account(mut)]
-    pub mxe_account: Account<'info, MXEAccount>,
+    #[account(
+        mut,
+        address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot)
+    )]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
 
-    #[account(mut)]
-    pub payer: Signer<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
 
-    pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
 }
 
 /// Accounts for initializing the atomic_showdown computation definition.
@@ -78,15 +135,29 @@ pub struct InitRevealCommunityCardCompDef<'info> {
 #[derive(Accounts)]
 pub struct InitAtomicShowdownCompDef<'info> {
     #[account(mut)]
+    pub payer: Signer<'info>,
+
+    #[account(
+        mut,
+        address = derive_mxe_pda!()
+    )]
+    pub mxe_account: Box<Account<'info, MXEAccount>>,
+
+    #[account(mut)]
     /// CHECK: initialized via CPI
     pub comp_def_account: UncheckedAccount<'info>,
 
-    #[account(mut)]
-    pub mxe_account: Account<'info, MXEAccount>,
+    #[account(
+        mut,
+        address = derive_mxe_lut_pda!(mxe_account.lut_offset_slot)
+    )]
+    /// CHECK: address_lookup_table, checked by arcium program.
+    pub address_lookup_table: UncheckedAccount<'info>,
 
-    #[account(mut)]
-    pub payer: Signer<'info>,
+    #[account(address = LUT_PROGRAM_ID)]
+    /// CHECK: lut_program is the Address Lookup Table program.
+    pub lut_program: UncheckedAccount<'info>,
 
-    pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
+    pub system_program: Program<'info, System>,
 }

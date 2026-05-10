@@ -1,11 +1,13 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
-use arcium_client::idl::arcium::{ID, ID_CONST};
+use arcium_client::idl::arcium::types::CallbackAccount;
 
 use crate::errors::CerberusPokerError;
-use crate::state::{GameSession, GameState, CardDealt, COMMUNITY_CARD, UNASSIGNED, REVEAL_TIMEOUT_SECS};
+use crate::state::{
+    CardDealt, GameSession, GameState, COMMUNITY_CARD, REVEAL_TIMEOUT_SECS, UNASSIGNED,
+};
 use crate::DealCardToRecipientCallback;
-use crate::SignerAccount;
+use crate::{ArciumSignerAccount, ID, ID_CONST};
 
 const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card_to_recipient");
 
@@ -18,11 +20,17 @@ pub fn handler(
 ) -> Result<()> {
     let game = &mut ctx.accounts.game_session;
 
-    require!(game.state == GameState::Deal, CerberusPokerError::InvalidGameState);
+    require!(
+        game.state == GameState::Deal,
+        CerberusPokerError::InvalidGameState
+    );
 
     // Record card assignments
     for (card_index, player_index) in &assignments {
-        require!(*card_index < game.deck_size, CerberusPokerError::CardIndexOutOfRange);
+        require!(
+            *card_index < game.deck_size,
+            CerberusPokerError::CardIndexOutOfRange
+        );
         require!(
             *player_index < game.num_players || *player_index == COMMUNITY_CARD,
             CerberusPokerError::PlayerNotFound
@@ -79,23 +87,61 @@ pub fn handler(
         game.state = GameState::Active;
     }
 
-    // TODO: Build arguments for deal_card_to_recipient computation
-    // In 0.4.0, arguments are Vec<Argument> from arcium_client::idl::arcium::types
-    // Need to construct: encrypted card (C1, C2) and card_index (u8)
-    let args = vec![];
+    // TODO: Build arguments for deal_card_to_recipient once encrypted card
+    // inputs are wired through. Keep a valid empty ArgumentList for now.
+    let args = ArgBuilder::new().build();
 
     ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
+
+    let game_session_key = ctx.accounts.game_session.key();
+    let dealt_card = Pubkey::find_program_address(
+        &[
+            b"dealt_card",
+            game_session_key.as_ref(),
+            &[*first_player_index],
+            &[*first_card_index],
+        ],
+        &crate::ID,
+    )
+    .0;
+    let callback_accounts = vec![
+        CallbackAccount {
+            pubkey: game_session_key,
+            is_writable: true,
+        },
+        CallbackAccount {
+            pubkey: dealt_card,
+            is_writable: true,
+        },
+        CallbackAccount {
+            pubkey: ctx.accounts.payer.key(),
+            is_writable: true,
+        },
+        CallbackAccount {
+            pubkey: ctx.accounts.system_program.key(),
+            is_writable: false,
+        },
+    ];
+    let callback_ix = DealCardToRecipientCallback::callback_ix(
+        computation_offset,
+        &ctx.accounts.mxe_account,
+        &callback_accounts,
+    )?;
 
     queue_computation(
         ctx.accounts,
         computation_offset,
         args,
-        None,
-        vec![DealCardToRecipientCallback::callback_ix(&[])],
+        vec![callback_ix],
         1,
+        0,
     )?;
 
-    msg!("Queued deal_card_to_recipient computation for card {} (offset: {})", first_card_index, computation_offset);
+    msg!(
+        "Queued deal_card_to_recipient computation for card {} (offset: {})",
+        first_card_index,
+        computation_offset
+    );
     Ok(())
 }
 
@@ -121,28 +167,28 @@ pub struct DealCards<'info> {
         bump,
         address = derive_sign_pda!(),
     )]
-    pub sign_pda_account: Box<Account<'info, SignerAccount>>,
+    pub sign_pda_account: Box<Account<'info, ArciumSignerAccount>>,
 
     #[account(address = derive_mxe_pda!())]
     pub mxe_account: Box<Account<'info, MXEAccount>>,
 
     #[account(
         mut,
-        address = derive_mempool_pda!()
+        address = derive_mempool_pda!(mxe_account, CerberusPokerError::InvalidGameState)
     )]
     /// CHECK: mempool_account
     pub mempool_account: UncheckedAccount<'info>,
 
     #[account(
         mut,
-        address = derive_execpool_pda!()
+        address = derive_execpool_pda!(mxe_account, CerberusPokerError::InvalidGameState)
     )]
     /// CHECK: executing_pool
     pub executing_pool: UncheckedAccount<'info>,
 
     #[account(
         mut,
-        address = derive_comp_pda!(computation_offset)
+        address = derive_comp_pda!(computation_offset, mxe_account, CerberusPokerError::InvalidGameState)
     )]
     /// CHECK: computation_account
     pub computation_account: UncheckedAccount<'info>,

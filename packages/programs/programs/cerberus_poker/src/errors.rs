@@ -3,7 +3,6 @@ use anchor_lang::prelude::*;
 #[error_code]
 pub enum CerberusPokerError {
     // ─── Game State Errors ────────────────────────────────────────────────────
-
     /// Action requires a different game state than the current one
     #[msg("Invalid game state for this action")]
     InvalidGameState,
@@ -25,7 +24,6 @@ pub enum CerberusPokerError {
     PlayerAlreadyJoined,
 
     // ─── Turn / Action Errors ─────────────────────────────────────────────────
-
     /// It is not this player's turn to act
     #[msg("Not your turn")]
     NotYourTurn,
@@ -43,7 +41,6 @@ pub enum CerberusPokerError {
     RevealAlreadySubmitted,
 
     // ─── Card / Deck Errors ───────────────────────────────────────────────────
-
     /// A card value appeared more than once in the game — deck integrity violation
     #[msg("Duplicate card value detected")]
     DuplicateCardValue,
@@ -65,7 +62,6 @@ pub enum CerberusPokerError {
     DeckIntegrityFailed,
 
     // ─── Timeout Errors ───────────────────────────────────────────────────────
-
     /// Timeout cannot be triggered — deadline has not passed yet
     #[msg("Timeout deadline has not been reached yet")]
     TimeoutNotReached,
@@ -75,7 +71,6 @@ pub enum CerberusPokerError {
     NoDeadlineSet,
 
     // ─── MXE / Computation Errors ─────────────────────────────────────────────
-
     /// The Arcium MXE computation was aborted or returned an error
     #[msg("MXE computation was aborted")]
     AbortedComputation,
@@ -88,8 +83,11 @@ pub enum CerberusPokerError {
     #[msg("Computation offset mismatch")]
     ComputationOffsetMismatch,
 
-    // ─── Authorization Errors ─────────────────────────────────────────────────
+    /// The Arcium MXE account does not have a configured cluster
+    #[msg("Arcium cluster is not set")]
+    ClusterNotSet,
 
+    // ─── Authorization Errors ─────────────────────────────────────────────────
     /// Only the game creator can perform this action
     #[msg("Only the game creator can perform this action")]
     UnauthorizedCreator,
@@ -99,7 +97,6 @@ pub enum CerberusPokerError {
     UnauthorizedPlayer,
 
     // ─── Arithmetic / Overflow ────────────────────────────────────────────────
-
     /// Arithmetic overflow
     #[msg("Arithmetic overflow")]
     Overflow,
