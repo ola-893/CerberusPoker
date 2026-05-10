@@ -68,7 +68,10 @@ function useOpenTables() {
           });
         }
 
-        return tables;
+        return tables.sort((a, b) => 
+          // Sort by gameId descending (newest first) — stable order across polls
+          Number(BigInt(b.gameId) - BigInt(a.gameId))
+        );
       } catch (err) {
         console.error('Failed to fetch tables:', err);
         return [];
@@ -299,10 +302,12 @@ export default function Lobby() {
                     const alreadyJoined = !!publicKey && table.players.includes(publicKey.toString());
 
                     return (
-                      <motion.div
+                      <div
                         key={table.gameId}
-                        whileHover={{ y: -4 }}
-                        className="bg-surface border border-zinc-800 p-6 rounded-3xl hover:border-gold/30 transition-all group"
+                        className="bg-surface border border-zinc-800 p-6 rounded-3xl hover:border-gold/30 transition-colors group cursor-pointer"
+                        onClick={() => {
+                          if (alreadyJoined) navigate(`/game/${table.gameId}`);
+                        }}
                       >
                         <div className="flex items-center justify-between mb-4">
                           <div className="flex items-center gap-2">
@@ -352,7 +357,7 @@ export default function Lobby() {
                             : isFull ? 'Table Full'
                             : 'Join Game'}
                         </button>
-                      </motion.div>
+                      </div>
                     );
                   })}
                 </div>

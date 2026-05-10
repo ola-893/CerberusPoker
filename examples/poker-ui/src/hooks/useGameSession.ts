@@ -10,7 +10,8 @@ import { GameSession, GameState } from '../types';
 import { deriveGameSessionPDA, useAnchorPrograms, getConnection } from '../lib/anchor';
 
 function parseGameId(gameId: string): bigint {
-  if (/^[0-9a-fA-F]+$/.test(gameId) && /[a-fA-F]/.test(gameId)) {
+  // Only treat as hex if it contains a-f letters — pure digits are always decimal
+  if (/[a-fA-F]/.test(gameId)) {
     return BigInt(`0x${gameId}`);
   }
   return BigInt(gameId);

@@ -28,15 +28,15 @@ export default function GameTable() {
   const [isStarting, setIsStarting] = useState(false);
   const [startError, setStartError] = useState<string | null>(null);
   
-  // Convert gameId to BigInt safely (handle hex strings from URL)
+  // Convert gameId to BigInt safely
+  // Only treat as hex if it contains a-f letters (e.g. 'a3f9')
+  // Pure numeric strings like '885725551' are always decimal
   const gameIdBigInt = useMemo(() => {
     if (!gameId) return BigInt(12345);
-    // If it's a hex string starting with 0x, convert it
-    if (gameId.startsWith('0x')) {
-      return BigInt(gameId);
-    }
-    // Otherwise parse as decimal
     try {
+      if (/[a-fA-F]/.test(gameId)) {
+        return BigInt('0x' + gameId);
+      }
       return BigInt(gameId);
     } catch {
       return BigInt(12345);

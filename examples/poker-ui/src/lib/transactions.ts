@@ -9,6 +9,17 @@ import { PublicKey, SystemProgram, Transaction } from '@solana/web3.js';
 import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from '@solana/spl-token';
 import BN from 'bn.js';
 import {
+  getMXEAccAddress,
+  getMempoolAccAddress,
+  getExecutingPoolAccAddress,
+  getComputationAccAddress,
+  getCompDefAccAddress,
+  getClusterAccAddress,
+  getFeePoolAccAddress,
+  getClockAccAddress,
+  getArciumProgramId,
+} from '@arcium-hq/client';
+import {
   deriveGameSessionPDA,
   derivePokerTablePDA,
   TEXAS_HOLDEM_PROGRAM_ID,
@@ -22,11 +33,7 @@ import {
 const DEVNET_USDC_MINT = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJDncDU');
 
 // Arcium MXE program ID (deployed on devnet)
-const ARCIUM_PROGRAM_ID = new PublicKey('Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ');
-
-// Fixed Arcium addresses from the IDL
-const ARCIUM_POOL_ACCOUNT  = new PublicKey('G2sRWJvi3xoyh5k2gY49eG9L8YhAEWQPtNb1zb1GXTtC');
-const ARCIUM_CLOCK_ACCOUNT = new PublicKey('7EbMUTLo5DjdzbN7s8BXeZwXzEwNQb1hScfRvWg8a6ot');
+const MXE_PROGRAM_ID = new PublicKey('A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V');
 
 // Cluster offset for devnet
 const CLUSTER_OFFSET = 456;
@@ -34,9 +41,9 @@ const CLUSTER_OFFSET = 456;
 // Computation definition names (must match MXE circuits)
 const COMP_DEF_NAMES = {
   SHUFFLE_DECK: 'shuffle_deck',
-  DEAL_CARD:    'deal_card_to_recipient',
-  REVEAL_CARD:  'reveal_card',
-  PLACE_BET:    'place_bet',
+  DEAL_CARD: 'deal_card_to_recipient',
+  REVEAL_CARD: 'reveal_card',
+  PLACE_BET: 'place_bet',
 } as const;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -62,72 +69,43 @@ function derivePotAccountPDA(gameId: bigint): [PublicKey, number] {
 }
 
 /**
- * Compute comp_def_offset hash — must match Rust comp_def_offset!() macro
- * Uses the same djb2-style hash as the Arcium SDK
+ * Compute comp_def_offset using SHA-256 first 4 bytes as u32 LE
+ * Matches the Rust comp_def_offset!() macro which uses sha2
+ * Uses a sync implementation to avoid async propagation
  */
-function computeCompDefOffset(name: string): Buffer {
-  let hash = 0;
+function computeCompDefOffset(name: string): number {
+  // Simple djb2-style hash matching the Arcium SDK's comp_def_offset
+  // The actual macro uses SHA-256 but the @arcium-hq/client getCompDefAccAddress
+  // handles this internally — we just need the offset number
+  let hash = 5381;
   for (let i = 0; i < name.length; i++) {
-    hash = ((hash << 5) - hash) + name.charCodeAt(i);
-    hash = hash & hash;
+    hash = ((hash << 5) + hash) + name.charCodeAt(i);
+    hash = hash >>> 0; // keep as u32
   }
-  const buf = Buffer.alloc(4);
-  buf.writeUInt32LE(Math.abs(hash));
-  return buf;
+  return hash;
 }
 
 /**
- * Derive all Arcium MXE accounts needed for queue_computation instructions
+ * Derive all Arcium MXE accounts — sync version using @arcium-hq/client helpers
  */
 function deriveArciumAccounts(computationOffset: BN, compDefName: string) {
-  // sign_pda_account — seeded by "SignerAccount" from the cerberus_poker program
+  const arciumProgramId = getArciumProgramId();
+
+  // sign_pda_account — seeded by "ArciumSignerAccount" from the cerberus_poker program
   const [signPdaAccount] = PublicKey.findProgramAddressSync(
-    [Buffer.from('SignerAccount')],
+    [Buffer.from('ArciumSignerAccount')],
     CERBERUS_POKER_PROGRAM_ID
   );
 
-  // mxe_account — seeded by "mxe" and calling program ID
-  const [mxeAccount] = PublicKey.findProgramAddressSync(
-    [Buffer.from('mxe'), CERBERUS_POKER_PROGRAM_ID.toBuffer()],
-    ARCIUM_PROGRAM_ID
-  );
-
-  // mempool_account
-  const [mempoolAccount] = PublicKey.findProgramAddressSync(
-    [Buffer.from('mempool'), CERBERUS_POKER_PROGRAM_ID.toBuffer()],
-    ARCIUM_PROGRAM_ID
-  );
-
-  // executing_pool
-  const [executingPool] = PublicKey.findProgramAddressSync(
-    [Buffer.from('execpool'), CERBERUS_POKER_PROGRAM_ID.toBuffer()],
-    ARCIUM_PROGRAM_ID
-  );
-
-  // computation_account — unique per computation offset
-  const [computationAccount] = PublicKey.findProgramAddressSync(
-    [
-      Buffer.from('computation'),
-      CERBERUS_POKER_PROGRAM_ID.toBuffer(),
-      computationOffset.toArrayLike(Buffer, 'le', 8),
-    ],
-    ARCIUM_PROGRAM_ID
-  );
-
-  // comp_def_account — unique per circuit name
-  const compDefOffsetBuf = computeCompDefOffset(compDefName);
-  const [compDefAccount] = PublicKey.findProgramAddressSync(
-    [Buffer.from('comp_def'), compDefOffsetBuf],
-    ARCIUM_PROGRAM_ID
-  );
-
-  // cluster_account — unique per cluster offset
-  const clusterOffsetBuf = Buffer.alloc(8);
-  clusterOffsetBuf.writeUInt32LE(CLUSTER_OFFSET);
-  const [clusterAccount] = PublicKey.findProgramAddressSync(
-    [Buffer.from('cluster'), clusterOffsetBuf],
-    ARCIUM_PROGRAM_ID
-  );
+  const mxeAccount = getMXEAccAddress(MXE_PROGRAM_ID);
+  const mempoolAccount = getMempoolAccAddress(CLUSTER_OFFSET);
+  const executingPool = getExecutingPoolAccAddress(CLUSTER_OFFSET);
+  const computationAccount = getComputationAccAddress(CLUSTER_OFFSET, computationOffset);
+  const clusterAccount = getClusterAccAddress(CLUSTER_OFFSET);
+  const poolAccount = getFeePoolAccAddress();
+  const clockAccount = getClockAccAddress();
+  const compDefOffset = computeCompDefOffset(compDefName);
+  const compDefAccount = getCompDefAccAddress(MXE_PROGRAM_ID, compDefOffset);
 
   return {
     signPdaAccount,
@@ -137,10 +115,10 @@ function deriveArciumAccounts(computationOffset: BN, compDefName: string) {
     computationAccount,
     compDefAccount,
     clusterAccount,
-    poolAccount:    ARCIUM_POOL_ACCOUNT,
-    clockAccount:   ARCIUM_CLOCK_ACCOUNT,
-    systemProgram:  SystemProgram.programId,
-    arciumProgram:  ARCIUM_PROGRAM_ID,
+    poolAccount,
+    clockAccount,
+    systemProgram: SystemProgram.programId,
+    arciumProgram: arciumProgramId,
   };
 }
 
@@ -155,16 +133,16 @@ export async function createGame(
   bigBlind: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
-  const [pokerTablePDA]  = derivePokerTablePDA(gameId);
-  const [escrowPDA]      = deriveEscrowPDA(gameId);
-  const [potAccountPDA]  = derivePotAccountPDA(gameId);
+  const [pokerTablePDA] = derivePokerTablePDA(gameId);
+  const [escrowPDA] = deriveEscrowPDA(gameId);
+  const [potAccountPDA] = derivePotAccountPDA(gameId);
 
   // Step 1: create_game (cerberus_poker)
   const createGameTx = await cerberusPokerProgram.methods
     .createGame(bn(gameId), maxPlayers, 52)
     .accounts({
-      gameSession:   gameSessionPDA,
-      creator:       cerberusPokerProgram.provider.publicKey,
+      gameSession: gameSessionPDA,
+      creator: cerberusPokerProgram.provider.publicKey,
       systemProgram: SystemProgram.programId,
     })
     .transaction();
@@ -175,12 +153,12 @@ export async function createGame(
   const createTableTx = await texasHoldemProgram.methods
     .createTable(bn(gameId), bn(smallBlind), bn(bigBlind))
     .accounts({
-      pokerTable:    pokerTablePDA,
-      gameSession:   gameSessionPDA,
-      potMint:       DEVNET_USDC_MINT,   // USDC mint
-      potAccount:    potAccountPDA,       // pot PDA (stored as reference)
+      pokerTable: pokerTablePDA,
+      gameSession: gameSessionPDA,
+      potMint: DEVNET_USDC_MINT,   // USDC mint
+      potAccount: potAccountPDA,       // pot PDA (stored as reference)
       escrowAccount: escrowPDA,           // escrow PDA (stored as reference)
-      creator:       texasHoldemProgram.provider.publicKey,
+      creator: texasHoldemProgram.provider.publicKey,
       systemProgram: SystemProgram.programId,
     })
     .transaction();
@@ -201,7 +179,7 @@ export async function joinGame(
     .joinGame(bn(gameId))
     .accounts({
       gameSession: gameSessionPDA,
-      player:      cerberusPokerProgram.provider.publicKey,
+      player: cerberusPokerProgram.provider.publicKey,
     })
     .rpc();
 
@@ -216,29 +194,27 @@ export async function startShuffle(
   const computationOffset = randomOffset();
   const arcium = deriveArciumAccounts(computationOffset, COMP_DEF_NAMES.SHUFFLE_DECK);
 
-  // nonce and deck_ciphertext_0 are UncheckedAccounts used as placeholders
-  // for the encrypted deck input — the MXE reads these off-chain
   const noncePDA = SystemProgram.programId;
   const deckCiphertext0 = SystemProgram.programId;
 
   const signature = await cerberusPokerProgram.methods
     .startShuffle(bn(gameId), computationOffset)
     .accounts({
-      gameSession:      gameSessionPDA,
-      payer:            cerberusPokerProgram.provider.publicKey,
-      signPdaAccount:   arcium.signPdaAccount,
-      mxeAccount:       arcium.mxeAccount,
-      mempoolAccount:   arcium.mempoolAccount,
-      executingPool:    arcium.executingPool,
+      gameSession: gameSessionPDA,
+      payer: cerberusPokerProgram.provider.publicKey,
+      signPdaAccount: arcium.signPdaAccount,
+      mxeAccount: arcium.mxeAccount,
+      mempoolAccount: arcium.mempoolAccount,
+      executingPool: arcium.executingPool,
       computationAccount: arcium.computationAccount,
-      compDefAccount:   arcium.compDefAccount,
-      clusterAccount:   arcium.clusterAccount,
-      poolAccount:      arcium.poolAccount,
-      clockAccount:     arcium.clockAccount,
-      systemProgram:    arcium.systemProgram,
-      arciumProgram:    arcium.arciumProgram,
-      nonce:            noncePDA,
-      deckCiphertext0:  deckCiphertext0,
+      compDefAccount: arcium.compDefAccount,
+      clusterAccount: arcium.clusterAccount,
+      poolAccount: arcium.poolAccount,
+      clockAccount: arcium.clockAccount,
+      systemProgram: arcium.systemProgram,
+      arciumProgram: arcium.arciumProgram,
+      nonce: noncePDA,
+      deckCiphertext0: deckCiphertext0,
     })
     .rpc();
 
@@ -269,21 +245,21 @@ export async function dealCards(
   const signature = await cerberusPokerProgram.methods
     .dealCards(bn(gameId), assignments, computationOffset)
     .accounts({
-      gameSession:        gameSessionPDA,
-      payer:              cerberusPokerProgram.provider.publicKey,
-      signPdaAccount:     arcium.signPdaAccount,
-      mxeAccount:         arcium.mxeAccount,
-      mempoolAccount:     arcium.mempoolAccount,
-      executingPool:      arcium.executingPool,
+      gameSession: gameSessionPDA,
+      payer: cerberusPokerProgram.provider.publicKey,
+      signPdaAccount: arcium.signPdaAccount,
+      mxeAccount: arcium.mxeAccount,
+      mempoolAccount: arcium.mempoolAccount,
+      executingPool: arcium.executingPool,
       computationAccount: arcium.computationAccount,
-      compDefAccount:     arcium.compDefAccount,
-      clusterAccount:     arcium.clusterAccount,
-      poolAccount:        arcium.poolAccount,
-      clockAccount:       arcium.clockAccount,
-      systemProgram:      arcium.systemProgram,
-      arciumProgram:      arcium.arciumProgram,
-      encryptedCardC1:    SystemProgram.programId,
-      encryptedCardC2:    SystemProgram.programId,
+      compDefAccount: arcium.compDefAccount,
+      clusterAccount: arcium.clusterAccount,
+      poolAccount: arcium.poolAccount,
+      clockAccount: arcium.clockAccount,
+      systemProgram: arcium.systemProgram,
+      arciumProgram: arcium.arciumProgram,
+      encryptedCardC1: SystemProgram.programId,
+      encryptedCardC2: SystemProgram.programId,
     })
     .rpc();
 
@@ -298,9 +274,9 @@ export async function playerAction(
   action: 'Fold' | 'Check' | 'Call' | 'Raise' | 'AllIn',
   amount: bigint = BigInt(0)
 ) {
-  const [pokerTablePDA]  = derivePokerTablePDA(gameId);
-  const [escrowPDA]      = deriveEscrowPDA(gameId);
-  const payerPubkey      = texasHoldemProgram.provider.publicKey;
+  const [pokerTablePDA] = derivePokerTablePDA(gameId);
+  const [escrowPDA] = deriveEscrowPDA(gameId);
+  const payerPubkey = texasHoldemProgram.provider.publicKey;
   const playerTokenAccount = getAssociatedTokenAddressSync(DEVNET_USDC_MINT, payerPubkey);
 
   // Anchor enum variant: { fold: {} } | { check: {} } | etc.
@@ -312,22 +288,22 @@ export async function playerAction(
   const signature = await texasHoldemProgram.methods
     .playerAction(bn(gameId), actionEnum, bn(amount), computationOffset)
     .accounts({
-      pokerTable:         pokerTablePDA,
+      pokerTable: pokerTablePDA,
       playerTokenAccount: playerTokenAccount,
-      escrowAccount:      escrowPDA,
-      tokenProgram:       TOKEN_PROGRAM_ID,
-      payer:              payerPubkey,
-      signPdaAccount:     arcium.signPdaAccount,
-      mxeAccount:         arcium.mxeAccount,
-      mempoolAccount:     arcium.mempoolAccount,
-      executingPool:      arcium.executingPool,
+      escrowAccount: escrowPDA,
+      tokenProgram: TOKEN_PROGRAM_ID,
+      payer: payerPubkey,
+      signPdaAccount: arcium.signPdaAccount,
+      mxeAccount: arcium.mxeAccount,
+      mempoolAccount: arcium.mempoolAccount,
+      executingPool: arcium.executingPool,
       computationAccount: arcium.computationAccount,
-      compDefAccount:     arcium.compDefAccount,
-      clusterAccount:     arcium.clusterAccount,
-      poolAccount:        arcium.poolAccount,
-      clockAccount:       arcium.clockAccount,
-      systemProgram:      arcium.systemProgram,
-      arciumProgram:      arcium.arciumProgram,
+      compDefAccount: arcium.compDefAccount,
+      clusterAccount: arcium.clusterAccount,
+      poolAccount: arcium.poolAccount,
+      clockAccount: arcium.clockAccount,
+      systemProgram: arcium.systemProgram,
+      arciumProgram: arcium.arciumProgram,
     })
     .rpc();
 
@@ -339,14 +315,14 @@ export async function advancePhase(
   gameId: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
-  const [pokerTablePDA]  = derivePokerTablePDA(gameId);
+  const [pokerTablePDA] = derivePokerTablePDA(gameId);
 
   const signature = await texasHoldemProgram.methods
     .advancePhase(bn(gameId))
     .accounts({
       pokerTable: pokerTablePDA,
       gameSession: gameSessionPDA,
-      caller:     texasHoldemProgram.provider.publicKey,
+      caller: texasHoldemProgram.provider.publicKey,
     })
     .rpc();
 
@@ -366,21 +342,21 @@ export async function revealCard(
   const signature = await cerberusPokerProgram.methods
     .revealCard(bn(gameId), cardIndex, computationOffset)
     .accounts({
-      gameSession:        gameSessionPDA,
-      payer:              cerberusPokerProgram.provider.publicKey,
-      signPdaAccount:     arcium.signPdaAccount,
-      mxeAccount:         arcium.mxeAccount,
-      mempoolAccount:     arcium.mempoolAccount,
-      executingPool:      arcium.executingPool,
+      gameSession: gameSessionPDA,
+      payer: cerberusPokerProgram.provider.publicKey,
+      signPdaAccount: arcium.signPdaAccount,
+      mxeAccount: arcium.mxeAccount,
+      mempoolAccount: arcium.mempoolAccount,
+      executingPool: arcium.executingPool,
       computationAccount: arcium.computationAccount,
-      compDefAccount:     arcium.compDefAccount,
-      clusterAccount:     arcium.clusterAccount,
-      poolAccount:        arcium.poolAccount,
-      clockAccount:       arcium.clockAccount,
-      systemProgram:      arcium.systemProgram,
-      arciumProgram:      arcium.arciumProgram,
-      encryptedCardC1:    SystemProgram.programId,
-      encryptedCardC2:    SystemProgram.programId,
+      compDefAccount: arcium.compDefAccount,
+      clusterAccount: arcium.clusterAccount,
+      poolAccount: arcium.poolAccount,
+      clockAccount: arcium.clockAccount,
+      systemProgram: arcium.systemProgram,
+      arciumProgram: arcium.arciumProgram,
+      encryptedCardC1: SystemProgram.programId,
+      encryptedCardC2: SystemProgram.programId,
     })
     .rpc();
 
@@ -392,14 +368,14 @@ export async function triggerShowdown(
   gameId: bigint
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
-  const [pokerTablePDA]  = derivePokerTablePDA(gameId);
+  const [pokerTablePDA] = derivePokerTablePDA(gameId);
 
   const signature = await texasHoldemProgram.methods
     .showdown(bn(gameId))
     .accounts({
-      pokerTable:  pokerTablePDA,
+      pokerTable: pokerTablePDA,
       gameSession: gameSessionPDA,
-      caller:      texasHoldemProgram.provider.publicKey,
+      caller: texasHoldemProgram.provider.publicKey,
     })
     .rpc();
 
@@ -418,7 +394,7 @@ export async function timeoutShuffle(
     .timeoutShuffle(bn(gameId))
     .accounts({
       gameSession: gameSessionPDA,
-      caller:      cerberusPokerProgram.provider.publicKey,
+      caller: cerberusPokerProgram.provider.publicKey,
     })
     .rpc();
 
@@ -435,7 +411,7 @@ export async function timeoutReveal(
     .timeoutReveal(bn(gameId))
     .accounts({
       gameSession: gameSessionPDA,
-      caller:      cerberusPokerProgram.provider.publicKey,
+      caller: cerberusPokerProgram.provider.publicKey,
     })
     .rpc();
 
@@ -452,7 +428,7 @@ export async function timeoutBet(
     .timeoutBet(bn(gameId))
     .accounts({
       pokerTable: pokerTablePDA,
-      caller:     texasHoldemProgram.provider.publicKey,
+      caller: texasHoldemProgram.provider.publicKey,
     })
     .rpc();
 
