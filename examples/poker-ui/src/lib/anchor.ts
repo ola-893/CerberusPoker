@@ -11,15 +11,16 @@ import { useMemo } from 'react';
 
 import cerberusPokerIdl from '../idl/cerberus_poker.json';
 import texasHoldemIdl from '../idl/texas_holdem.json';
+import { PROGRAM_IDS } from '../constants';
 
 export type AnchorProgramClient = Omit<Program<Idl>, 'methods' | 'provider'> & {
   methods: any;
   provider: AnchorProvider;
 };
 
-// Program IDs from Anchor.toml
-export const CERBERUS_POKER_PROGRAM_ID = new PublicKey('A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V');
-export const TEXAS_HOLDEM_PROGRAM_ID = new PublicKey('h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9');
+// Program IDs from the deployed devnet programs.
+export const CERBERUS_POKER_PROGRAM_ID = new PublicKey(PROGRAM_IDS.CERBERUS_POKER);
+export const TEXAS_HOLDEM_PROGRAM_ID = new PublicKey(PROGRAM_IDS.TEXAS_HOLDEM);
 
 // RPC endpoint - use environment variable or default to devnet
 export const RPC_ENDPOINT = import.meta.env['VITE_RPC_URL'] || clusterApiUrl('devnet');
