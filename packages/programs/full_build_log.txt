@@ -1,0 +1,1234 @@
+   Compiling ahash v0.8.12
+warning: unused import: `core::hint`
+  --> patches/zmij/src/lib.rs:82:5
+   |
+82 | use core::hint;
+   |     ^^^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: `zmij` (lib) generated 1 warning (run `cargo fix --lib -p zmij` to apply 1 suggestion)
+warning: `zmij` (lib) generated 1 warning (1 duplicate)
+   Compiling log v0.4.29
+   Compiling hybrid-array v0.4.11
+   Compiling arrayref v0.3.9
+   Compiling lazy_static v1.5.0
+   Compiling bv v0.11.1
+   Compiling serde_bytes v0.11.19
+   Compiling cmov v0.5.3
+   Compiling blake3 v1.8.5
+   Compiling constant_time_eq v0.4.2
+   Compiling hashbrown v0.13.2
+   Compiling solana-fee-calculator v2.2.1
+   Compiling subtle v2.6.1
+   Compiling arrayvec v0.7.6
+   Compiling ctutils v0.4.2
+   Compiling solana-curve25519 v2.3.13
+   Compiling solana-short-vec v2.2.1
+   Compiling memoffset v0.9.1
+   Compiling sha3 v0.10.9
+   Compiling solana-serde-varint v2.2.2
+   Compiling foldhash v0.1.5
+   Compiling solana-native-token v2.3.0
+   Compiling equivalent v1.0.2
+   Compiling allocator-api2 v0.2.21
+   Compiling num_enum v0.7.6
+   Compiling solana-keccak-hasher v2.2.1
+   Compiling solana-secp256k1-recover v2.2.1
+   Compiling thiserror v1.0.69
+   Compiling solana-big-mod-exp v2.2.1
+   Compiling getrandom v0.2.17
+   Compiling bs58 v0.5.1
+   Compiling borsh v0.10.4
+   Compiling base64 v0.21.7
+   Compiling crypto-common v0.2.1
+   Compiling block-buffer v0.12.0
+   Compiling hashbrown v0.15.2
+   Compiling sha2-const-stable v0.1.0
+   Compiling keccak-const v0.2.0
+   Compiling getrandom v0.1.16
+   Compiling const-crypto v0.3.0
+   Compiling solana-pubkey v2.4.0
+   Compiling solana-borsh v2.2.1
+   Compiling solana-security-txt v1.1.2
+   Compiling solana-instruction v2.3.3
+   Compiling solana-sdk-ids v2.2.1
+   Compiling solana-nonce v2.2.1
+   Compiling solana-sysvar-id v2.2.1
+   Compiling solana-clock v2.2.3
+   Compiling solana-rent v2.2.1
+   Compiling solana-slot-hashes v2.2.1
+   Compiling solana-slot-history v2.2.1
+   Compiling solana-epoch-rewards v2.2.1
+   Compiling solana-program-error v2.2.2
+   Compiling solana-system-interface v1.0.0
+   Compiling solana-stable-layout v2.2.1
+   Compiling solana-zk-sdk v2.3.13
+   Compiling solana-serialize-utils v2.2.1
+   Compiling solana-epoch-schedule v2.2.1
+   Compiling solana-last-restart-slot v2.2.1
+   Compiling solana-account-info v2.3.0
+   Compiling spl-discriminator v0.4.1
+   Compiling solana-program-pack v2.2.1
+   Compiling digest v0.11.3
+   Compiling spl-program-error v0.7.0
+   Compiling solana-program-entrypoint v2.3.0
+   Compiling solana-cpi v2.2.1
+   Compiling solana-instructions-sysvar v2.2.2
+   Compiling solana-stake-interface v1.2.1
+   Compiling solana-account v2.2.1
+   Compiling solana-bincode v2.2.1
+   Compiling solana-transaction-error v2.2.1
+   Compiling solana-loader-v3-interface v5.0.0
+   Compiling solana-vote-interface v2.2.6
+   Compiling solana-feature-gate-interface v2.2.2
+   Compiling solana-loader-v4-interface v2.2.1
+   Compiling spl-pod v0.5.1
+   Compiling solana-address-lookup-table-interface v2.2.2
+   Compiling solana-blake3-hasher v2.2.1
+   Compiling solana-message v2.4.0
+   Compiling solana-loader-v2-interface v2.2.1
+   Compiling spl-token-confidential-transfer-ciphertext-arithmetic v0.3.1
+   Compiling spl-type-length-value v0.8.0
+   Compiling spl-token-confidential-transfer-proof-extraction v0.3.0
+   Compiling spl-token-group-interface v0.6.0
+   Compiling spl-memo v6.0.0
+   Compiling spl-tlv-account-resolution v0.10.0
+   Compiling solana-sysvar v2.3.0
+   Compiling spl-token-metadata-interface v0.7.0
+   Compiling solana-invoke v0.4.0
+   Compiling solana-loader-v3-interface v3.0.0
+   Compiling spl-associated-token-account-client v2.0.0
+   Compiling spl-transfer-hook-interface v0.10.0
+   Compiling anchor-lang v0.32.1
+   Compiling spl-token v8.0.0
+   Compiling spl-elgamal-registry v0.2.0
+   Compiling spl-token-2022 v8.0.1
+   Compiling solana-program v2.3.0
+   Compiling arcium-client v0.4.0
+Error: Function _ZN109_$LT$arcium_client..idl..arcium..utils..Account$u20$as$u20$core..convert..TryFrom$LT$$RF$$u5b$u8$u5d$$GT$$GT$8try_from17h05b059f1bc60d51dE Stack offset of 721512 exceeded max offset of 4096 by 717416 bytes, please minimize large stack variables. Estimated function frame size: 721536 bytes. Exceeding the maximum stack offset may cause undefined behavior during execution.
+
+   Compiling spl-associated-token-account v7.0.0
+   Compiling anchor-spl v0.32.1
+   Compiling arcium-anchor v0.4.0
+   Compiling cerberus_poker v0.1.0 (/Users/ola/Documents/Github/CerberusPoker/packages/programs/programs/cerberus_poker)
+warning: unexpected `cfg` condition value: `custom-heap`
+  --> programs/cerberus_poker/src/lib.rs:27:1
+   |
+27 | #[arcium_program]
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = help: consider adding `custom-heap` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: requested on the command line with `-W unexpected-cfgs`
+   = note: this warning originates in the macro `$crate::custom_heap_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `custom-panic`
+  --> programs/cerberus_poker/src/lib.rs:27:1
+   |
+27 | #[arcium_program]
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = help: consider adding `custom-panic` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the macro `$crate::custom_panic_default` which comes from the expansion of the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/cerberus_poker/src/instructions/create_game.rs:49:10
+   |
+49 | #[derive(Accounts)]
+   |          ^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/cerberus_poker/src/instructions/join_game.rs:42:10
+   |
+42 | #[derive(Accounts)]
+   |          ^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/cerberus_poker/src/instructions/start_shuffle.rs:65:10
+   |
+65 | #[derive(Accounts)]
+   |          ^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused import: `GameSession`
+ --> programs/cerberus_poker/src/instructions/shuffle_deck_callback.rs:6:20
+  |
+6 | use crate::state::{GameSession, GameState, ShuffleComplete};
+  |                    ^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` on by default
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/cerberus_poker/src/instructions/deal_cards.rs:103:10
+    |
+103 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+    = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/cerberus_poker/src/instructions/reveal_card.rs:111:10
+    |
+111 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+    = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused import: `GameSession`
+ --> programs/cerberus_poker/src/instructions/reveal_card_callback.rs:5:20
+  |
+5 | use crate::state::{GameSession, CardRevealed};
+  |                    ^^^^^^^^^^^
+
+warning: unused import: `GameSession`
+ --> programs/cerberus_poker/src/instructions/reveal_community_card_callback.rs:5:20
+  |
+5 | use crate::state::{GameSession, CardRevealed};
+  |                    ^^^^^^^^^^^
+
+warning: unused import: `GameSession`
+ --> programs/cerberus_poker/src/instructions/atomic_showdown_callback.rs:5:20
+  |
+5 | use crate::state::{GameSession, GameState, ShowdownComplete};
+  |                    ^^^^^^^^^^^
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/cerberus_poker/src/instructions/timeout_shuffle.rs:22:10
+   |
+22 | #[derive(Accounts)]
+   |          ^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/cerberus_poker/src/instructions/timeout_reveal.rs:24:10
+   |
+24 | #[derive(Accounts)]
+   |          ^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+ --> programs/cerberus_poker/src/instructions/comp_def_accounts.rs:6:10
+  |
+6 | #[derive(Accounts)]
+  |          ^^^^^^^^
+  |
+  = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+  = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+  = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+  = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/cerberus_poker/src/instructions/comp_def_accounts.rs:24:10
+   |
+24 | #[derive(Accounts)]
+   |          ^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/cerberus_poker/src/instructions/comp_def_accounts.rs:42:10
+   |
+42 | #[derive(Accounts)]
+   |          ^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/cerberus_poker/src/instructions/comp_def_accounts.rs:60:10
+   |
+60 | #[derive(Accounts)]
+   |          ^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/cerberus_poker/src/instructions/comp_def_accounts.rs:78:10
+   |
+78 | #[derive(Accounts)]
+   |          ^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: ambiguous glob re-exports
+  --> programs/cerberus_poker/src/instructions/mod.rs:15:9
+   |
+15 | pub use create_game::*;
+   |         ^^^^^^^^^^^^^^ the name `handler` in the value namespace is first re-exported here
+...
+22 | pub use timeout_reveal::*;
+   |         ----------------- but the name `handler` in the value namespace is also re-exported here
+   |
+   = note: `#[warn(ambiguous_glob_reexports)]` on by default
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/cerberus_poker/src/lib.rs:27:1
+   |
+27 | #[arcium_program]
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the attribute macro `program` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+  --> programs/cerberus_poker/src/lib.rs:27:1
+   |
+27 | #[arcium_program]
+   | ^^^^^^^^^^^^^^^^^
+   |
+   = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+   = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+   = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+   = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/cerberus_poker/src/lib.rs:168:10
+    |
+168 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+    = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/cerberus_poker/src/lib.rs:196:10
+    |
+196 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+    = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/cerberus_poker/src/lib.rs:243:10
+    |
+243 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+    = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/cerberus_poker/src/lib.rs:271:10
+    |
+271 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+    = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unexpected `cfg` condition value: `anchor-debug`
+   --> programs/cerberus_poker/src/lib.rs:299:10
+    |
+299 | #[derive(Accounts)]
+    |          ^^^^^^^^
+    |
+    = note: expected values for `feature` are: `cpi`, `default`, `idl-build`, `no-entrypoint`, `no-idl`, and `no-log-ix-name`
+    = help: consider adding `anchor-debug` as a feature in `Cargo.toml`
+    = note: see <https://doc.rust-lang.org/nightly/rustc/check-cfg/cargo-specifics.html> for more information about checking conditional configuration
+    = note: this warning originates in the derive macro `Accounts` (in Nightly builds, run with -Z macro-backtrace for more info)
+
+warning: unused variable: `game_id`
+  --> programs/cerberus_poker/src/instructions/reveal_card.rs:23:5
+   |
+23 |     game_id: u64,
+   |     ^^^^^^^ help: if this is intentional, prefix it with an underscore: `_game_id`
+   |
+   = note: `#[warn(unused_variables)]` on by default
+
+Error: Function _ZN14cerberus_poker9__private8__global21shuffle_deck_callback17h2bb4e97433b5dec2E Stack offset of 7304 exceeded max offset of 4096 by 3208 bytes, please minimize large stack variables. Estimated function frame size: 7360 bytes. Exceeding the maximum stack offset may cause undefined behavior during execution.
+
+Error: A function call in method _ZN14cerberus_poker9__private8__global31deal_card_to_recipient_callback17he22883d892ddffb3E overwrites values in the frame. Please, decrease stack usage or remove parameters from the call. The function call may cause undefined behavior during execution.
+
+Error: Function _ZN141_$LT$cerberus_poker..DealCardToRecipientCallback$u20$as$u20$anchor_lang..Accounts$LT$cerberus_poker..DealCardToRecipientCallbackBumps$GT$$GT$12try_accounts17h7d0b12987d4f9819E Stack offset of 4536 exceeded max offset of 4096 by 440 bytes, please minimize large stack variables. Estimated function frame size: 4928 bytes. Exceeding the maximum stack offset may cause undefined behavior during execution.
+
+warning: `cerberus_poker` (lib) generated 32 warnings (5 duplicates) (run `cargo fix --lib -p cerberus_poker` to apply 4 suggestions)
+    Finished `release` profile [optimized] target(s) in 17.42s
+   Compiling cerberus_poker v0.1.0 (/Users/ola/Documents/Github/CerberusPoker/packages/programs/programs/cerberus_poker)
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:121:36
+    |
+121 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:125:36
+    |
+125 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:121:51
+    |
+121 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:125:51
+    |
+125 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:121:80
+    |
+121 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:125:80
+    |
+125 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:191:36
+    |
+191 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:179:36
+    |
+179 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:191:51
+    |
+191 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:179:51
+    |
+179 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:191:80
+    |
+191 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:179:80
+    |
+179 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:234:36
+    |
+234 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:234:36
+    |
+234 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:234:51
+    |
+234 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:234:51
+    |
+234 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:234:80
+    |
+234 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:234:80
+    |
+234 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:300:36
+    |
+300 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:286:36
+    |
+286 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:300:51
+    |
+300 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:286:51
+    |
+286 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:300:80
+    |
+300 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:286:80
+    |
+286 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:349:36
+    |
+349 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:313:36
+    |
+313 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:349:51
+    |
+349 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:313:51
+    |
+313 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:349:80
+    |
+349 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:313:80
+    |
+313 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:402:36
+    |
+402 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:340:36
+    |
+340 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:402:51
+    |
+402 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:340:51
+    |
+340 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:402:80
+    |
+402 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:340:80
+    |
+340 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:489:36
+    |
+489 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:384:36
+    |
+384 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:489:51
+    |
+489 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:384:51
+    |
+384 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:489:80
+    |
+489 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:384:80
+    |
+384 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:439:36
+    |
+439 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:535:36
+    |
+535 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:439:51
+    |
+439 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:535:51
+    |
+535 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:439:80
+    |
+439 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:535:80
+    |
+535 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:496:36
+    |
+496 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:584:36
+    |
+584 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                    ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:496:51
+    |
+496 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:584:51
+    |
+584 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/state_machine.rs:496:80
+    |
+496 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0637]: `&` without an explicit lifetime name cannot be used here
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:584:80
+    |
+584 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                                                ^ explicit lifetime name needed here
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/state_machine.rs:125:20
+    |
+125 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:121:20
+    |
+121 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/state_machine.rs:191:20
+    |
+191 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:179:20
+    |
+179 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/state_machine.rs:234:20
+    |
+234 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:234:20
+    |
+234 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/state_machine.rs:286:20
+    |
+286 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:300:20
+    |
+300 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/state_machine.rs:313:20
+    |
+313 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:349:20
+    |
+349 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:402:20
+    |
+402 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/state_machine.rs:340:20
+    |
+340 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:489:20
+    |
+489 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/state_machine.rs:384:20
+    |
+384 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:535:20
+    |
+535 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/state_machine.rs:439:20
+    |
+439 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:584:20
+    |
+584 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error[E0658]: `for<...>` binders for closures are experimental
+   --> programs/cerberus_poker/tests/state_machine.rs:496:20
+    |
+496 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ^^^^^^^^^^
+    |
+    = note: see issue #97362 <https://github.com/rust-lang/rust/issues/97362> for more information
+    = help: consider removing `for<...>`
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/state_machine.rs:125:86
+    |
+125 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:121:86
+    |
+121 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:179:86
+    |
+179 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/state_machine.rs:191:86
+    |
+191 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:234:86
+    |
+234 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/state_machine.rs:234:86
+    |
+234 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/state_machine.rs:286:86
+    |
+286 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:300:86
+    |
+300 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/state_machine.rs:313:86
+    |
+313 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:349:86
+    |
+349 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/state_machine.rs:340:86
+    |
+340 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:402:86
+    |
+402 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/state_machine.rs:384:86
+    |
+384 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/state_machine.rs:439:86
+    |
+439 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/state_machine.rs:496:86
+    |
+496 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:489:86
+    |
+489 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:535:86
+    |
+535 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: implicit types in closure signatures are forbidden when `for<...>` is present
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:584:86
+    |
+584 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                    ---------- `for<...>` is here                                     ^
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/state_machine.rs:125:87
+    |
+125 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/state_machine.rs:191:87
+    |
+191 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/state_machine.rs:234:87
+    |
+234 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/state_machine.rs:286:87
+    |
+286 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/state_machine.rs:313:87
+    |
+313 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/state_machine.rs:340:87
+    |
+340 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:121:87
+    |
+121 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/state_machine.rs:384:87
+    |
+384 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:179:87
+    |
+179 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:234:87
+    |
+234 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/state_machine.rs:439:87
+    |
+439 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:300:87
+    |
+300 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:349:87
+    |
+349 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/state_machine.rs:496:87
+    |
+496 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:402:87
+    |
+402 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:489:87
+    |
+489 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:535:87
+    |
+535 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+Some errors have detailed explanations: E0637, E0658.
+For more information about an error, try `rustc --explain E0637`.
+error: lifetime may not live long enough
+   --> programs/cerberus_poker/tests/deal_and_reveal_callbacks.rs:584:87
+    |
+584 |         processor!(for<'info> |pk: &Pubkey, accs: &[AccountInfo<'info>], data: &[u8]| cerberus_poker::entry(pk, accs, data)),
+    |                                                   -             -----                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ argument requires that `'1` must outlive `'2`
+    |                                                   |             |
+    |                                                   |             let's call this `'2`
+    |                                                   let's call the lifetime of this reference `'1`
+    |
+    = note: requirement occurs because of the type `__AccountInfo<'_>`, which makes the generic argument `'_` invariant
+    = note: the struct `__AccountInfo<'a>` is invariant over the parameter `'a`
+    = help: see <https://doc.rust-lang.org/nomicon/subtyping.html> for more information about variance
+
+error: could not compile `cerberus_poker` (test "state_machine") due to 54 previous errors
+warning: build failed, waiting for other jobs to finish...
+error: could not compile `cerberus_poker` (test "deal_and_reveal_callbacks") due to 54 previous errors
+Error: Building IDL failed. Run `ANCHOR_LOG=true anchor idl build` to see the logs.

@@ -17,7 +17,7 @@ import ActionBar from '../components/ActionBar';
 import { UIPhase, Action, GameState, PokerPhase } from '../types';
 import { Info, Menu, Maximize2, ShieldCheck, ChevronLeft, Loader2 } from 'lucide-react';
 import { useAnchorPrograms } from '../lib/anchor';
-import { playerAction, startShuffle, timeoutShuffle, timeoutReveal, timeoutBet } from '../lib/transactions';
+import { playerAction, startShuffle, timeoutShuffle, timeoutReveal, timeoutBet, dealCards, advancePhase, revealCard } from '../lib/transactions';
 import WalletBalances from '../components/WalletBalances';
 
 export default function GameTable() {
@@ -97,7 +97,6 @@ export default function GameTable() {
 
       // Extract the most useful part of SendTransactionError
       let message = 'Transaction failed';
-
       if (err?.transactionLogs?.length) {
         // Find the first meaningful program log line
         const logs: string[] = err.transactionLogs;
@@ -113,10 +112,38 @@ export default function GameTable() {
       }
 
       setStartError(message);
-    } finally {
       setIsStarting(false);
     }
   }, [programs, gameIdBigInt]);
+
+  const handleDealCards = useCallback(async () => {
+    if (!programs || !gameIdBigInt || !gameSession) return;
+    try {
+      await dealCards(programs.cerberusPoker, gameIdBigInt, gameSession.numPlayers);
+    } catch (err) { console.error('Deal cards failed:', err); }
+  }, [programs, gameIdBigInt, gameSession?.numPlayers]);
+
+  const handleAdvancePhase = useCallback(async () => {
+    if (!programs || !gameIdBigInt) return;
+    try {
+      await advancePhase(programs.texasHoldem, gameIdBigInt);
+    } catch (err) { console.error('Advance phase failed:', err); }
+  }, [programs, gameIdBigInt]);
+
+  const handleRevealCards = useCallback(async () => {
+    if (!programs || !gameIdBigInt || !pokerTable) return;
+    try {
+      let indicesToReveal: number[] = [];
+      const phaseKey = Object.keys(pokerTable.phase)[0] || '';
+      if (phaseKey === 'flop') indicesToReveal = [0, 1, 2];
+      else if (phaseKey === 'turn') indicesToReveal = [3];
+      else if (phaseKey === 'river') indicesToReveal = [4];
+      
+      for (const idx of indicesToReveal) {
+        await revealCard(programs.cerberusPoker, gameIdBigInt, idx);
+      }
+    } catch (err) { console.error('Reveal cards failed:', err); }
+  }, [programs, gameIdBigInt, pokerTable?.phase]);
 
   if (isLoading) {
     return (
@@ -243,6 +270,24 @@ export default function GameTable() {
              </button>
           </div>
         </div>
+
+        {/* Admin Controls */}
+        {displayMyPlayerIndex === 0 && (
+          <div className="flex justify-center pointer-events-auto">
+            <div className="bg-surface-raised/80 backdrop-blur-md px-4 py-2 rounded-xl border border-gold/50 flex items-center gap-4">
+              <span className="text-gold text-xs font-bold uppercase tracking-widest mr-2">Game Admin</span>
+              {gameSession?.state && Object.keys(gameSession.state)[0] === 'deal' && (
+                <button onClick={handleDealCards} className="px-3 py-1 bg-gold text-background rounded-md text-xs font-bold hover:scale-105 transition">Deal Cards</button>
+              )}
+              {pokerTable?.phase && Object.keys(pokerTable.phase)[0] !== 'showdown' && Object.keys(pokerTable.phase)[0] !== 'complete' && (
+                <>
+                  <button onClick={handleAdvancePhase} className="px-3 py-1 bg-gold text-background rounded-md text-xs font-bold hover:scale-105 transition">Advance Phase</button>
+                  <button onClick={handleRevealCards} className="px-3 py-1 bg-gold text-background rounded-md text-xs font-bold hover:scale-105 transition">Reveal Cards</button>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         <div className="flex justify-between items-end">
            <div className="bg-surface-raised/80 backdrop-blur-md px-4 py-3 rounded-2xl border border-zinc-800 flex items-center gap-4 pointer-events-auto">
