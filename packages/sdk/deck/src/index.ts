@@ -51,11 +51,11 @@ const POLL_INTERVAL_MS = 2000;
 
 /** Computation definition names matching MXE circuits */
 const COMP_DEF_NAMES = {
-  SHUFFLE_DECK: 'shuffle_deck',
+  SHUFFLE_DECK: 'shuffle_deck_demo',
   DEAL_CARD: 'deal_card_to_recipient',
   REVEAL_CARD: 'reveal_card',
   REVEAL_COMMUNITY_CARD: 'reveal_community_card',
-  ATOMIC_SHOWDOWN: 'atomic_showdown',
+  ATOMIC_SHOWDOWN: 'atomic_showdown_demo',
 } as const;
 
 /** Rank display names */

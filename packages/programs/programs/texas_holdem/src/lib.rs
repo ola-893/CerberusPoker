@@ -17,7 +17,7 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("TxHldXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+declare_id!("HmbTLCmaGvZhKnn1Zfa1JVnp7vkMV4DYVxPLWBVoN65");
 
 #[arcium_program]
 pub mod texas_holdem {
@@ -86,7 +86,7 @@ pub mod texas_holdem {
     }
 
     // MXE callback for atomic_showdown — settles pot to winner(s)
-    #[arcium_callback(encrypted_ix = "atomic_showdown")]
+    #[arcium_callback(encrypted_ix = "atomic_showdown_demo")]
     pub fn settle_showdown(
         ctx: Context<SettleShowdown>,
         game_id: u64,

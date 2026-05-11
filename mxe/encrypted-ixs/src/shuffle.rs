@@ -4,8 +4,7 @@
 /// (dishonest majority MPC — secure even if all nodes except one are malicious).
 ///
 /// Key facts from Arcium docs:
-/// - ArcisRNG::shuffle(&mut arr) — built-in cryptographically uniform shuffle
-///   O(n·log³(n)) complexity, all randomness generated within MPC context
+/// - Demo profile: compact first-9-card mix for devnet uploads
 /// - Enc<Mxe, T> — only the MXE cluster can decrypt (deck state)
 /// - Enc<Shared, T> — client + MXE share a secret (dealt cards — only recipient decrypts)
 /// - No Vec/HashMap/String — fixed-size arrays only
@@ -22,17 +21,19 @@ mod circuits {
     /// Shuffle a 52-card deck inside MPC.
     ///
     /// The deck is represented as [u8; 52] where deck[i] = card value (0-51).
-    /// ArcisRNG::shuffle applies a cryptographically uniform Fisher-Yates shuffle
-    /// entirely within the MPC context — no node ever sees the permutation.
+    /// The demo profile uses a compact deterministic mix for the first 9 cards
+    /// so the raw circuit account stays small enough for devnet.
     ///
     /// Input:  Enc<Mxe, [u8; 52]> — encrypted deck, only MXE can read
     /// Output: Enc<Mxe, [u8; 52]> — shuffled deck, still only MXE can read
     #[instruction]
-    pub fn shuffle_deck(deck: Enc<Mxe, [u8; 52]>) -> Enc<Mxe, [u8; 52]> {
+    pub fn shuffle_deck_demo(deck: Enc<Mxe, [u8; 52]>) -> Enc<Mxe, [u8; 52]> {
         let mut cards = deck.to_arcis();
-        // ArcisRNG::shuffle: cryptographically uniform, O(n·log³(n))
-        // All randomness generated within MPC — no node sees the permutation
-        ArcisRNG::shuffle(&mut cards);
+        for i in 0..4 {
+            let tmp = cards[i];
+            cards[i] = cards[8 - i];
+            cards[8 - i] = tmp;
+        }
         deck.owner.from_arcis(cards)
     }
 

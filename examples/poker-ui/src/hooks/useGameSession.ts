@@ -6,6 +6,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { GameSession, GameState } from '../types';
+import { DEMO_MAX_PLAYERS } from '../constants';
 
 // Mock connection for now - replace with actual Solana connection
 const connection = new Connection('https://api.devnet.solana.com');
@@ -31,13 +32,13 @@ export function useGameSession(gameId: string | null) {
       return {
         gameId: BigInt(gameId),
         state: GameState.Active,
-        maxPlayers: 6,
+        maxPlayers: DEMO_MAX_PLAYERS,
         deckSize: 52,
-        numPlayers: 4,
+        numPlayers: DEMO_MAX_PLAYERS,
         players: [] as PublicKey[],
         activeComputationOffset: BigInt(0),
         encryptedDeckHash: new Uint8Array(32),
-        shuffleBitmap: 0b1111, // all 4 players shuffled
+        shuffleBitmap: 0b11,
         revealBitmap: [BigInt(0b11111)], // 5 community cards revealed
         unmaskedCards: Array(52).fill(0xff),
         cardAssignedTo: Array(52).fill(0xfe),

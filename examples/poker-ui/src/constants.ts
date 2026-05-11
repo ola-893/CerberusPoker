@@ -4,14 +4,16 @@
 
 /** Deployed program IDs */
 export const PROGRAM_IDS = {
-  MXE: 'A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V',
-  CERBERUS_POKER: 'Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS',
+  MXE: 'Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ',
+  CERBERUS_POKER: '4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG',
   TEXAS_HOLDEM: 'HmbTLCmaGvZhKnn1Zfa1JVnp7vkMV4DYVxPLWBVoN65',
 } as const;
 
 export const CLUSTER = 'devnet';
 export const RPC_URL = 'https://api.devnet.solana.com';
 export const CLUSTER_OFFSET = 456;
+export const DEMO_MAX_PLAYERS = 2;
+export const DEMO_DEAL_WINDOW = 9;
 
 /** Card encoding helpers */
 const RANK_SYMBOLS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];

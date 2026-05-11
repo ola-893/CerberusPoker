@@ -38,7 +38,7 @@ export function usePokerTable(gameId: string | null) {
         playerStacks: Array(10).fill(PublicKey.default),
         playerBets: Array(10).fill(PublicKey.default),
         currentBet: BigInt(200), // 2 USDC+ in lamports
-        foldedBitmap: 0b0100, // player 2 folded
+        foldedBitmap: 0,
         allInBitmap: 0b0000,
         handVerifiedBitmap: 0b0000,
         smallBlind: BigInt(100),

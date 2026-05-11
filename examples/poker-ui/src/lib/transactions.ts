@@ -12,6 +12,9 @@ import {
   CERBERUS_POKER_PROGRAM_ID,
   TEXAS_HOLDEM_PROGRAM_ID 
 } from './anchor';
+import { DEMO_MAX_PLAYERS } from '../constants';
+
+const DECK_SIZE = 52;
 
 /**
  * Create a new game session
@@ -26,10 +29,11 @@ export async function createGame(
 ) {
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
   const [pokerTablePDA] = derivePokerTablePDA(gameId);
+  const demoMaxPlayers = Math.min(maxPlayers, DEMO_MAX_PLAYERS);
   
   // Step 1: Create game session (cerberus_poker)
   const createGameTx = await cerberusPokerProgram.methods
-    .createGame(gameId, maxPlayers, 52) // deck_size = 52
+    .createGame(gameId, demoMaxPlayers, DECK_SIZE)
     .accounts({
       gameSession: gameSessionPDA,
       creator: cerberusPokerProgram.provider.publicKey,

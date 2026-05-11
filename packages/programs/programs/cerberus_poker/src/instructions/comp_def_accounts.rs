@@ -1,11 +1,11 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
-const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck");
-const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card");
+const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck_demo");
+const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card_to_recipient");
 const COMP_DEF_OFFSET_REVEAL_CARD: u32 = comp_def_offset("reveal_card");
 const COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD: u32 = comp_def_offset("reveal_community_card");
-const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown");
+const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown_demo");
 
 /// Accounts for initializing the shuffle_deck computation definition.
 /// Called once after deployment.

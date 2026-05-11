@@ -5,7 +5,7 @@ use arcium_macros::comp_def_offset;
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, GameState, ShuffleStarted, SHUFFLE_TIMEOUT_SECS};
 
-const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck");
+const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck_demo");
 
 pub fn handler(
     ctx: Context<StartShuffle>,
@@ -63,7 +63,7 @@ pub fn handler(
     Ok(())
 }
 
-#[queue_computation_accounts("shuffle_deck", payer)]
+#[queue_computation_accounts("shuffle_deck_demo", payer)]
 #[derive(Accounts)]
 #[instruction(game_id: u64, computation_offset: u64)]
 pub struct StartShuffle<'info> {

@@ -5,11 +5,12 @@ import { useWallet } from '@solana/wallet-adapter-react';
 import { WalletMultiButton } from '@solana/wallet-adapter-react-ui';
 import { Users, Plus, ChevronLeft } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { DEMO_MAX_PLAYERS } from '../constants';
 
 export default function Lobby() {
   const navigate = useNavigate();
   const { connected } = useWallet();
-  const [maxPlayers, setMaxPlayers] = useState(4);
+  const [maxPlayers, setMaxPlayers] = useState(DEMO_MAX_PLAYERS);
   const [smallBlind, setSmallBlind] = useState('1');
   const [bigBlind, setBigBlind] = useState('2');
 
@@ -22,8 +23,8 @@ export default function Lobby() {
 
   // TODO: Replace with actual TanStack Query
   const mockTables = [
-    { id: 'a3f9', players: 2, maxPlayers: 6, blinds: '1/2', status: 'Waiting' },
-    { id: 'b7c2', players: 4, maxPlayers: 4, blinds: '5/10', status: 'Full' },
+    { id: 'a3f9', players: 1, maxPlayers: DEMO_MAX_PLAYERS, blinds: '1/2', status: 'Waiting' },
+    { id: 'b7c2', players: 2, maxPlayers: DEMO_MAX_PLAYERS, blinds: '5/10', status: 'Full' },
   ];
 
   const handleCreateTable = () => {
@@ -89,7 +90,7 @@ export default function Lobby() {
                     </label>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setMaxPlayers(Math.max(2, maxPlayers - 1))}
+                        onClick={() => setMaxPlayers(Math.max(DEMO_MAX_PLAYERS, maxPlayers - 1))}
                         className="w-10 h-10 bg-surface-raised border border-zinc-800 rounded-lg hover:border-gold/30 transition-colors"
                       >
                         −
@@ -98,13 +99,13 @@ export default function Lobby() {
                         {maxPlayers}
                       </div>
                       <button
-                        onClick={() => setMaxPlayers(Math.min(6, maxPlayers + 1))}
+                        onClick={() => setMaxPlayers(Math.min(DEMO_MAX_PLAYERS, maxPlayers + 1))}
                         className="w-10 h-10 bg-surface-raised border border-zinc-800 rounded-lg hover:border-gold/30 transition-colors"
                       >
                         +
                       </button>
                     </div>
-                    <p className="text-xs text-zinc-600 mt-1">2-6 players</p>
+                    <p className="text-xs text-zinc-600 mt-1">2 players</p>
                   </div>
 
                   {/* Small Blind */}

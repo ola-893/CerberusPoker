@@ -11,7 +11,7 @@ pub struct GameSession {
     pub game_id: u64,
     /// Current state machine phase
     pub state: GameState,
-    /// Maximum number of players allowed (2-6 for Texas Hold'em)
+    /// Maximum number of players allowed by this deployed demo profile
     pub max_players: u8,
     /// Deck size (52 for standard poker)
     pub deck_size: u8,
@@ -187,14 +187,14 @@ pub struct CardRevealed {
 #[event]
 pub struct ShowdownComplete {
     pub game_id: u64,
-    pub revealed_hands: [u8; 12], // up to 6 players × 2 cards
+    pub revealed_hands: [u8; 12], // demo uses first 2 players x 2 cards
     pub num_players: u8,
 }
 
 /// Constants
 pub const SHUFFLE_TIMEOUT_SECS: i64 = 300; // 5 minutes
 pub const REVEAL_TIMEOUT_SECS: i64 = 300;  // 5 minutes
-pub const MAX_PLAYERS: u8 = 6;
+pub const MAX_PLAYERS: u8 = 2;
 pub const DECK_SIZE: u8 = 52;
 pub const UNASSIGNED: u8 = 0xFE;
 pub const COMMUNITY_CARD: u8 = 0xFF;

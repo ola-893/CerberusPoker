@@ -21,6 +21,8 @@
     "start": "npm run dev",
     "setup:local": "node scripts/setup-local.js",
     "deploy:local": "cd packages/programs && anchor build && anchor deploy",
+    "init:demo-comp-defs": "npx ts-node scripts/init-demo-comp-defs.ts",
+    "upload:circuits": "npx ts-node scripts/upload-circuits.ts",
     "verify": "bash scripts/verify-setup.sh"
   },
   "devDependencies": {

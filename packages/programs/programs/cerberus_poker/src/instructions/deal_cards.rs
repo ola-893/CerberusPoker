@@ -79,7 +79,7 @@ pub fn handler(
     Ok(())
 }
 
-#[queue_computation_accounts("deal_card", payer)]
+#[queue_computation_accounts("deal_card_to_recipient", payer)]
 #[derive(Accounts)]
 #[instruction(game_id: u64, assignments: Vec<(u8, u8)>, computation_offset: u64)]
 pub struct DealCards<'info> {

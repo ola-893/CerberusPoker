@@ -6,13 +6,13 @@ use crate::errors::TexasHoldemError;
 use crate::state::PokerTable;
 use crate::hand_eval::{evaluate_hand, HandRank};
 
-const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown");
+const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown_demo");
 
 /// Output from atomic_showdown MXE instruction.
 /// All hole cards are revealed atomically at showdown.
 #[derive(AnchorDeserialize)]
 pub struct AtomicShowdownOutput {
-    /// All hole cards revealed (up to 6 players × 2 cards = 12 cards)
+    /// All hole cards revealed (demo uses first 2 players x 2 cards = 12 cards)
     /// Format: [player0_card0, player0_card1, player1_card0, player1_card1, ...]
     pub revealed_hands: [u8; 12],
     /// Number of active players (not folded)
@@ -64,7 +64,7 @@ pub fn handler(
 
     // Validate number of players is within bounds
     require!(
-        result.num_players > 0 && result.num_players <= 6,
+        result.num_players > 0 && result.num_players <= 2,
         TexasHoldemError::InvalidGameState
     );
 
@@ -202,7 +202,7 @@ pub fn handler(
     Ok(())
 }
 
-#[callback_accounts("atomic_showdown")]
+#[callback_accounts("atomic_showdown_demo")]
 #[derive(Accounts)]
 #[instruction(game_id: u64)]
 pub struct SettleShowdown<'info> {

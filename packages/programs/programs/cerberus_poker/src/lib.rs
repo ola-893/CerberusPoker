@@ -23,15 +23,15 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("CrbsPkrXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX");
+declare_id!("4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG");
 
 // Computation definition offsets — derived from instruction names via sha256
 // These identify each MXE circuit on-chain
-const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck");
+const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck_demo");
 const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card_to_recipient");
 const COMP_DEF_OFFSET_REVEAL_CARD: u32 = comp_def_offset("reveal_card");
 const COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD: u32 = comp_def_offset("reveal_community_card");
-const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown");
+const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown_demo");
 
 #[arcium_program]
 pub mod cerberus_poker {
@@ -94,7 +94,7 @@ pub mod cerberus_poker {
 
     // ─── MXE Callbacks ────────────────────────────────────────────────────────
 
-    #[arcium_callback(encrypted_ix = "shuffle_deck")]
+    #[arcium_callback(encrypted_ix = "shuffle_deck_demo")]
     pub fn shuffle_deck_callback(
         ctx: Context<ShuffleDeckCallback>,
         output: SignedComputationOutputs<ShuffleDeckOutput>,
@@ -126,7 +126,7 @@ pub mod cerberus_poker {
         instructions::reveal_community_card_callback::handler(ctx, output)
     }
 
-    #[arcium_callback(encrypted_ix = "atomic_showdown")]
+    #[arcium_callback(encrypted_ix = "atomic_showdown_demo")]
     pub fn atomic_showdown_callback(
         ctx: Context<AtomicShowdownCallback>,
         output: SignedComputationOutputs<AtomicShowdownOutput>,

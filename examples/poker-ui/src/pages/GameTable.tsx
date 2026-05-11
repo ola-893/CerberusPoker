@@ -15,6 +15,7 @@ import HoleCards from '../components/HoleCards';
 import ActionBar from '../components/ActionBar';
 import { UIPhase, Action, GameState } from '../types';
 import { Info, Menu, Maximize2, ShieldCheck, ChevronLeft } from 'lucide-react';
+import { DEMO_MAX_PLAYERS } from '../constants';
 
 export default function GameTable() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -79,12 +80,10 @@ export default function GameTable() {
   
   const mockGameSession = {
     gameId: gameIdBigInt,
-    numPlayers: 4,
-    maxPlayers: 6,
+    numPlayers: DEMO_MAX_PLAYERS,
+    maxPlayers: DEMO_MAX_PLAYERS,
     state: 0, // Lobby
     players: publicKey ? [
-      publicKey,
-      publicKey,
       publicKey,
       publicKey,
     ] : [],
@@ -113,21 +112,26 @@ export default function GameTable() {
   const displayPokerTable = useMockData ? mockPokerTable : pokerTable;
   const displayPhase = useMockData ? 'preflop' : phase;
   const displayMyPlayerIndex = useMockData ? 0 : myPlayerIndex;
-  const displayMyHoleCards = useMockData ? [0, 13] : myHoleCards; // Ace of Clubs, Ace of Diamonds
+  const displayMyHoleCards = useMockData ? [12, 25] : myHoleCards;
   const displayCommunityCards = useMockData ? [0xFF, 0xFF, 0xFF, 0xFF, 0xFF] : communityCards;
   const displayPot = useMockData ? 4.5 : pot;
   const displayIsMyTurn = useMockData ? true : isMyTurn;
 
-  // Position mapping for the oval table (6 max players)
+  // Position mapping for the oval table
   // Hero is always at bottom center
-  const seatPositions = [
-    "bottom-[-40px] left-1/2 -translate-x-1/2", // Hero (index 0 relative to hero)
-    "left-[-60px] top-1/2 -translate-y-1/2",    // Left
-    "left-[10%] top-[10%]",                      // Top-left
-    "top-[-40px] left-1/2 -translate-x-1/2",    // Top-center
-    "right-[10%] top-[10%]",                     // Top-right
-    "right-[-60px] top-1/2 -translate-y-1/2",   // Right
-  ];
+  const seatPositions = displayGameSession.numPlayers <= 2
+    ? [
+        "bottom-[-40px] left-1/2 -translate-x-1/2",
+        "top-[-40px] left-1/2 -translate-x-1/2",
+      ]
+    : [
+        "bottom-[-40px] left-1/2 -translate-x-1/2",
+        "left-[-60px] top-1/2 -translate-y-1/2",
+        "left-[10%] top-[10%]",
+        "top-[-40px] left-1/2 -translate-x-1/2",
+        "right-[10%] top-[10%]",
+        "right-[-60px] top-1/2 -translate-y-1/2",
+      ];
 
   // Rotate seats so hero is always at bottom
   const getRotatedSeatIndex = (absoluteIndex: number) => {

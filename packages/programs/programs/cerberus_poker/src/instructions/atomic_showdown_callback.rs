@@ -5,10 +5,10 @@ use arcium_macros::comp_def_offset;
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, GameState, ShowdownComplete};
 
-const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown");
+const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown_demo");
 
 /// Output from atomic_showdown MXE instruction.
-/// Returns [u8; 12] — up to 6 players × 2 hole cards, all revealed atomically.
+/// Returns [u8; 12] — demo uses first 2 players x 2 hole cards, all revealed atomically.
 /// Fits within the 1232 byte callback limit (12 bytes << 1232).
 #[derive(AnchorDeserialize)]
 pub struct AtomicShowdownOutput {
@@ -65,7 +65,7 @@ pub fn handler(
     Ok(())
 }
 
-#[callback_accounts("atomic_showdown")]
+#[callback_accounts("atomic_showdown_demo")]
 #[derive(Accounts)]
 pub struct AtomicShowdownCallback<'info> {
     pub arcium_program: Program<'info, Arcium>,

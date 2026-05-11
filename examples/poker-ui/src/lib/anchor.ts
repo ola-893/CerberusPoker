@@ -13,7 +13,7 @@ import cerberusPokerIdl from '../idl/cerberus_poker.json';
 import texasHoldemIdl from '../idl/texas_holdem.json';
 
 // Program IDs from Anchor.toml
-export const CERBERUS_POKER_PROGRAM_ID = new PublicKey('Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS');
+export const CERBERUS_POKER_PROGRAM_ID = new PublicKey('4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG');
 export const TEXAS_HOLDEM_PROGRAM_ID = new PublicKey('HmbTLCmaGvZhKnn1Zfa1JVnp7vkMV4DYVxPLWBVoN65');
 
 // RPC endpoint - use environment variable or default to devnet
@@ -73,7 +73,7 @@ export function deriveGameSessionPDA(gameId: bigint): [PublicKey, number] {
   gameIdBuffer.writeBigUInt64LE(gameId);
   
   return PublicKey.findProgramAddressSync(
-    [Buffer.from('game_session'), gameIdBuffer],
+    [Buffer.from('game'), gameIdBuffer],
     CERBERUS_POKER_PROGRAM_ID
   );
 }
@@ -83,7 +83,7 @@ export function derivePokerTablePDA(gameId: bigint): [PublicKey, number] {
   gameIdBuffer.writeBigUInt64LE(gameId);
   
   return PublicKey.findProgramAddressSync(
-    [Buffer.from('poker_table'), gameIdBuffer],
+    [Buffer.from('table'), gameIdBuffer],
     TEXAS_HOLDEM_PROGRAM_ID
   );
 }
