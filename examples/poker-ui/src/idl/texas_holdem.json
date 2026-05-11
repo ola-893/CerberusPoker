@@ -139,7 +139,7 @@
                   "kind": "type",
                   "type": {
                     "defined": {
-                      "name": "AtomicShowdownOutput"
+                      "name": "AtomicShowdownDemoOutput"
                     }
                   }
                 }
@@ -1207,7 +1207,7 @@
       }
     },
     {
-      "name": "AtomicShowdownOutput",
+      "name": "AtomicShowdownDemoOutput",
       "docs": [
         "The output of the callback instruction. Provided as a struct with ordered fields",
         "as anchor does not support tuples and tuple structs yet."
