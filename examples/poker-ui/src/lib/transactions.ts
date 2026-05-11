@@ -27,7 +27,7 @@ import {
   CERBERUS_POKER_PROGRAM_ID,
   type AnchorProgramClient,
 } from './anchor';
-import { CLUSTER_OFFSET } from '../constants';
+import { CLUSTER_OFFSET, DEMO_MAX_PLAYERS } from '../constants';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -36,7 +36,7 @@ const DEVNET_USDC_MINT = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJD
 
 // Computation definition names (must match MXE circuits)
 const COMP_DEF_NAMES = {
-  SHUFFLE_DECK: 'shuffle_deck',
+  SHUFFLE_DECK: 'shuffle_deck_demo',
   DEAL_CARD: 'deal_card_to_recipient',
   REVEAL_CARD: 'reveal_card',
   PLACE_BET: 'place_bet',
@@ -105,10 +105,11 @@ export async function createGame(
   const [pokerTablePDA] = derivePokerTablePDA(gameId);
   const [escrowPDA] = deriveEscrowPDA(gameId);
   const [potAccountPDA] = derivePotAccountPDA(gameId);
+  const demoMaxPlayers = Math.min(maxPlayers, DEMO_MAX_PLAYERS);
 
   // Step 1: create_game (cerberus_poker)
   const createGameTx = await cerberusPokerProgram.methods
-    .createGame(bn(gameId), maxPlayers, 52)
+    .createGame(bn(gameId), demoMaxPlayers, 52)
     .accounts({
       gameSession: gameSessionPDA,
       creator: cerberusPokerProgram.provider.publicKey,
@@ -204,7 +205,8 @@ export async function dealCards(
   // 2 hole cards per player + 5 community cards (0xFF = community)
   const assignments: { cardIndex: number; playerIndex: number }[] = [];
   let cardIndex = 0;
-  for (let p = 0; p < numPlayers; p++) {
+  const activePlayers = Math.min(numPlayers, DEMO_MAX_PLAYERS);
+  for (let p = 0; p < activePlayers; p++) {
     assignments.push({ cardIndex: cardIndex++, playerIndex: p });
     assignments.push({ cardIndex: cardIndex++, playerIndex: p });
   }

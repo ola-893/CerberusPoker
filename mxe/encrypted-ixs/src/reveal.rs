@@ -2,7 +2,7 @@
 ///
 /// Two operations:
 /// 1. reveal_community_card: reveal a single community card from the encrypted deck
-/// 2. atomic_showdown: reveal all hole cards simultaneously at showdown
+/// 2. atomic_showdown_demo: reveal the demo heads-up hole cards at showdown
 ///
 /// Both use threshold decryption via the Cerberus MPC protocol.
 /// All MPC nodes contribute partial decryptions to reveal card values.
@@ -55,16 +55,13 @@ mod circuits {
     /// attacks where some players see others' hands before revealing their own.
     ///
     /// Input:  deck: Enc<Mxe, [u8; 52]>     — the shuffled encrypted deck
-    ///         hole_card_indices: [u8; 12]  — indices for 6 players × 2 cards
+    ///         hole_card_indices: [u8; 12]  — demo uses the first 4 indices
     ///         num_players: u8               — number of active players (unused, for clarity)
     /// Output: [u8; 12]                     — all hole card values (plaintext)
     ///
-    /// Note: Arcis requires constant loop bounds. We always process all 12 slots.
-    /// The caller is responsible for:
-    /// - Setting unused indices to valid values (0-51)
-    /// - Ignoring unused slots in the output based on num_players
+    /// Returns: [u8; 12] - demo fills the first 4 slots for 2 players.
     #[instruction]
-    pub fn atomic_showdown(
+    pub fn atomic_showdown_demo(
         deck: Enc<Mxe, [u8; 52]>,
         hole_card_indices: [u8; 12],
         _num_players: u8,
@@ -73,18 +70,10 @@ mod circuits {
 
         let mut revealed_hands = [0u8; 12];
 
-        // Reveal all 12 hole card slots (6 players × 2 cards max)
-        // Arcis requires constant loop bounds, so we always iterate 12 times
-        // All cards are revealed atomically in this single MPC computation
-        for i in 0..12 {
+        // Demo profile reveals 4 hole card slots (2 players * 2 cards).
+        for i in 0..4 {
             let card_index = hole_card_indices[i] as usize;
-
-            // Bounds check: card_index must be 0-51
-            // If out of bounds, we use index 0 as a safe fallback
-            let safe_index = if card_index < 52 { card_index } else { 0 };
-
-            // Threshold decryption for this card
-            revealed_hands[i] = cards[safe_index].reveal();
+            revealed_hands[i] = cards[card_index].reveal();
         }
 
         revealed_hands

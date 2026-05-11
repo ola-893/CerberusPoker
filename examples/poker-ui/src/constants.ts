@@ -12,6 +12,8 @@ export const PROGRAM_IDS = {
 export const CLUSTER = 'devnet';
 export const RPC_URL = 'https://api.devnet.solana.com';
 export const CLUSTER_OFFSET = 456;
+export const DEMO_MAX_PLAYERS = 2;
+export const DEMO_DEAL_WINDOW = 9;
 
 /** Card encoding helpers */
 const RANK_SYMBOLS = ['2', '3', '4', '5', '6', '7', '8', '9', '10', 'J', 'Q', 'K', 'A'];

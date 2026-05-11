@@ -51,11 +51,11 @@ const POLL_INTERVAL_MS = 2000;
 
 /** Computation definition names matching MXE circuits */
 const COMP_DEF_NAMES = {
-  SHUFFLE_DECK: 'shuffle_deck',
+  SHUFFLE_DECK: 'shuffle_deck_demo',
   DEAL_CARD: 'deal_card_to_recipient',
   REVEAL_CARD: 'reveal_card',
   REVEAL_COMMUNITY_CARD: 'reveal_community_card',
-  ATOMIC_SHOWDOWN: 'atomic_showdown',
+  ATOMIC_SHOWDOWN: 'atomic_showdown_demo',
 } as const;
 
 /** Rank display names */
@@ -121,14 +121,14 @@ export class DeckModule {
    * Shuffle the deck by contributing a secret permutation
    *
    * Each player calls this to contribute their portion of the shuffle.
-   * The MXE combines all contributions using ArcisRNG::shuffle to produce
-   * a cryptographically uniform deck ordering that no single player controls.
+   * The demo MXE profile uses a compact first-9-card mix so the circuit stays
+   * small enough to upload on devnet.
    *
    * Internally:
    * 1. Generates a random permutation of [0..51]
    * 2. Encrypts it with x25519 for the MXE
    * 3. Calls `start_shuffle` which invokes `queue_computation` with the
-   *    `shuffle_deck` computation definition
+   *    `shuffle_deck_demo` computation definition
    * 4. Returns the computation offset for tracking
    *
    * @param gameId - Game session ID

@@ -10,6 +10,7 @@ import { useAnchorPrograms, CERBERUS_POKER_PROGRAM_ID, TEXAS_HOLDEM_PROGRAM_ID, 
 import { createGame, joinGame } from '../lib/transactions';
 import { SystemProgram, PublicKey } from '@solana/web3.js';
 import WalletBalances from '../components/WalletBalances';
+import { DEMO_MAX_PLAYERS } from '../constants';
 
 interface TableInfo {
   gameId: string;
@@ -51,6 +52,7 @@ function useOpenTables() {
 
           // Only show Lobby (waiting for players) tables
           if (stateKey !== 'lobby') continue;
+          if (Number(raw.maxPlayers) > DEMO_MAX_PLAYERS) continue;
 
           // Look up PokerTable by game_session PDA pubkey
           const pokerTable = tableMap.get(s.publicKey.toString());
@@ -87,7 +89,7 @@ export default function Lobby() {
   const navigate = useNavigate();
   const { connected, publicKey } = useWallet();
   const programs = useAnchorPrograms();
-  const [maxPlayers, setMaxPlayers] = useState(4);
+  const [maxPlayers, setMaxPlayers] = useState(DEMO_MAX_PLAYERS);
   const [smallBlind, setSmallBlind] = useState('1');
   const [bigBlind, setBigBlind] = useState('2');
   const [isCreating, setIsCreating] = useState(false);
@@ -207,16 +209,16 @@ export default function Lobby() {
                     <label className="block text-sm font-medium text-zinc-400 mb-2">Max Players</label>
                     <div className="flex items-center gap-2">
                       <button
-                        onClick={() => setMaxPlayers(Math.max(2, maxPlayers - 1))}
+                        onClick={() => setMaxPlayers(Math.max(DEMO_MAX_PLAYERS, maxPlayers - 1))}
                         className="w-10 h-10 bg-surface-raised border border-zinc-800 rounded-lg hover:border-gold/30 transition-colors"
                       >−</button>
                       <div className="flex-1 text-center font-mono text-2xl font-bold">{maxPlayers}</div>
                       <button
-                        onClick={() => setMaxPlayers(Math.min(6, maxPlayers + 1))}
+                        onClick={() => setMaxPlayers(Math.min(DEMO_MAX_PLAYERS, maxPlayers + 1))}
                         className="w-10 h-10 bg-surface-raised border border-zinc-800 rounded-lg hover:border-gold/30 transition-colors"
                       >+</button>
                     </div>
-                    <p className="text-xs text-zinc-600 mt-1">2–6 players</p>
+                    <p className="text-xs text-zinc-600 mt-1">2 players</p>
                   </div>
 
                   {/* Small Blind */}

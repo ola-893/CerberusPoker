@@ -144,5 +144,5 @@ export const SHUFFLE_TIMEOUT_SECS = 300; // 5 minutes
 export const REVEAL_TIMEOUT_SECS = 300;  // 5 minutes
 export const BETTING_TIMEOUT_SECS = 120; // 2 minutes
 
-export const MAX_PLAYERS = 6;
+export const MAX_PLAYERS = 2;
 export const DECK_SIZE = 52;

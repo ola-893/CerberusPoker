@@ -69,14 +69,14 @@ async function main() {
   const addressLookupTable = getLookupTableAddress(CERBERUS_POKER_PROGRAM_ID, lutOffset);
 
   const compDefs = [
-    'shuffle_deck',
-    'deal_card_to_recipient',
-    'reveal_card',
-    'reveal_community_card',
-    'atomic_showdown'
+    { defName: 'shuffle_deck_demo', methodName: 'initShuffleDeckCompDef' },
+    { defName: 'deal_card_to_recipient', methodName: 'initDealCardCompDef' },
+    { defName: 'reveal_card', methodName: 'initRevealCardCompDef' },
+    { defName: 'reveal_community_card', methodName: 'initRevealCommunityCardCompDef' },
+    { defName: 'atomic_showdown_demo', methodName: 'initAtomicShowdownCompDef' },
   ];
 
-  for (const defName of compDefs) {
+  for (const { defName, methodName } of compDefs) {
     const offset = compDefOffset(defName);
     const compDefAccount = getCompDefAccAddress(CERBERUS_POKER_PROGRAM_ID, offset);
 
@@ -89,14 +89,6 @@ async function main() {
 
     console.log(`-> Initializing ${defName}...`);
     try {
-      // Determine instruction name
-      let methodName = '';
-      if (defName === 'shuffle_deck') methodName = 'initShuffleDeckCompDef';
-      else if (defName === 'deal_card_to_recipient') methodName = 'initDealCardCompDef';
-      else if (defName === 'reveal_card') methodName = 'initRevealCardCompDef';
-      else if (defName === 'reveal_community_card') methodName = 'initRevealCommunityCardCompDef';
-      else if (defName === 'atomic_showdown') methodName = 'initAtomicShowdownCompDef';
-
       const tx = await program.methods[methodName]()
         .accounts({
           compDefAccount,

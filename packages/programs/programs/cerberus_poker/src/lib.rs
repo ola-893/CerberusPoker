@@ -11,11 +11,11 @@ declare_id!("4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG");
 
 // Computation definition offsets — derived from instruction names via sha256
 // These identify each MXE circuit on-chain
-const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck");
+const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck_demo");
 const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card_to_recipient");
 const COMP_DEF_OFFSET_REVEAL_CARD: u32 = comp_def_offset("reveal_card");
 const COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD: u32 = comp_def_offset("reveal_community_card");
-const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown");
+const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown_demo");
 
 /// Card assignment for deal_cards instruction
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -83,10 +83,10 @@ pub mod cerberus_poker {
 
     // ─── MXE Callbacks ────────────────────────────────────────────────────────
 
-    #[arcium_callback(encrypted_ix = "shuffle_deck")]
+    #[arcium_callback(encrypted_ix = "shuffle_deck_demo")]
     pub fn shuffle_deck_callback(
         ctx: Context<ShuffleDeckCallback>,
-        output: SignedComputationOutputs<ShuffleDeckOutput>,
+        output: SignedComputationOutputs<ShuffleDeckDemoOutput>,
     ) -> Result<()> {
         instructions::shuffle_deck_callback::handler(ctx, output)
     }
@@ -115,10 +115,10 @@ pub mod cerberus_poker {
         instructions::reveal_community_card_callback::handler(ctx, output)
     }
 
-    #[arcium_callback(encrypted_ix = "atomic_showdown")]
+    #[arcium_callback(encrypted_ix = "atomic_showdown_demo")]
     pub fn atomic_showdown_callback(
         ctx: Context<AtomicShowdownCallback>,
-        output: SignedComputationOutputs<AtomicShowdownOutput>,
+        output: SignedComputationOutputs<AtomicShowdownDemoOutput>,
     ) -> Result<()> {
         instructions::atomic_showdown_callback::handler(ctx, output)
     }
@@ -163,7 +163,7 @@ use errors::CerberusPokerError as ErrorCode;
 use instructions::deal_card_to_recipient_callback::DealtCard;
 use state::GameSession;
 
-#[callback_accounts("shuffle_deck")]
+#[callback_accounts("shuffle_deck_demo")]
 #[derive(Accounts)]
 pub struct ShuffleDeckCallback<'info> {
     pub arcium_program: Program<'info, Arcium>,
@@ -294,7 +294,7 @@ pub struct RevealCommunityCardCallback<'info> {
     pub game_session: Box<Account<'info, GameSession>>,
 }
 
-#[callback_accounts("atomic_showdown")]
+#[callback_accounts("atomic_showdown_demo")]
 #[derive(Accounts)]
 pub struct AtomicShowdownCallback<'info> {
     pub arcium_program: Program<'info, Arcium>,

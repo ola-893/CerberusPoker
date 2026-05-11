@@ -6,7 +6,7 @@ use crate::state::{GameState, ShowdownComplete};
 
 pub fn handler(
     ctx: Context<crate::AtomicShowdownCallback>,
-    output: SignedComputationOutputs<crate::AtomicShowdownOutput>,
+    output: SignedComputationOutputs<crate::AtomicShowdownDemoOutput>,
 ) -> Result<()> {
     let revealed_hands = output
         .verify_output(
@@ -19,7 +19,7 @@ pub fn handler(
     let game = &mut ctx.accounts.game_session;
 
     // Determine number of players from game state
-    let num_players = game.num_players;
+    let num_players = game.num_players.min(crate::state::MAX_PLAYERS);
 
     // Store all revealed hole card values
     for i in 0..(num_players as usize * 2) {

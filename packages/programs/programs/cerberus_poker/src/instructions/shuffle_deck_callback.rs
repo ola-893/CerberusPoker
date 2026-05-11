@@ -7,7 +7,7 @@ use crate::state::{GameState, ShuffleComplete};
 
 pub fn handler(
     ctx: Context<crate::ShuffleDeckCallback>,
-    output: SignedComputationOutputs<crate::ShuffleDeckOutput>,
+    output: SignedComputationOutputs<crate::ShuffleDeckDemoOutput>,
 ) -> Result<()> {
     let deck_encrypted = output
         .verify_output(

@@ -19,6 +19,7 @@ import { Info, Menu, Maximize2, ShieldCheck, ChevronLeft, Loader2 } from 'lucide
 import { useAnchorPrograms } from '../lib/anchor';
 import { playerAction, startShuffle, timeoutShuffle, timeoutReveal, timeoutBet, dealCards, advancePhase, revealCard } from '../lib/transactions';
 import WalletBalances from '../components/WalletBalances';
+import { DEMO_MAX_PLAYERS } from '../constants';
 
 export default function GameTable() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -163,10 +164,10 @@ export default function GameTable() {
   
   const mockGameSession = {
     gameId: gameIdBigInt,
-    numPlayers: 4,
-    maxPlayers: 6,
+    numPlayers: DEMO_MAX_PLAYERS,
+    maxPlayers: DEMO_MAX_PLAYERS,
     state: GameState.Active,
-    players: Array(4).fill(publicKey ?? PublicKey.default),
+    players: Array(DEMO_MAX_PLAYERS).fill(publicKey ?? PublicKey.default),
     shuffleBitmap: 0,
     shuffleDeadline: BigInt(0),
     revealBitmap: Array(52).fill(BigInt(0)),
@@ -191,7 +192,7 @@ export default function GameTable() {
     allInBitmap: 0,
     handVerifiedBitmap: 0,
     lastActionTime: BigInt(0),
-    numPlayers: 4,
+    numPlayers: DEMO_MAX_PLAYERS,
     actedBitmap: 0,
     winnersBitmap: 0,
     winnerCount: 0,
@@ -214,16 +215,21 @@ export default function GameTable() {
   const isInLobby = !useMockData && gameSession?.state === GameState.Lobby;
   const canStartGame = isTableFull && isInLobby && displayMyPlayerIndex === 0;
 
-  // Position mapping for the oval table (6 max players)
+  // Position mapping for the oval table
   // Hero is always at bottom center
-  const seatPositions = [
-    "bottom-[-40px] left-1/2 -translate-x-1/2", // Hero (index 0 relative to hero)
-    "left-[-60px] top-1/2 -translate-y-1/2",    // Left
-    "left-[10%] top-[10%]",                      // Top-left
-    "top-[-40px] left-1/2 -translate-x-1/2",    // Top-center
-    "right-[10%] top-[10%]",                     // Top-right
-    "right-[-60px] top-1/2 -translate-y-1/2",   // Right
-  ];
+  const seatPositions = displayGameSession.numPlayers <= 2
+    ? [
+        "bottom-[-40px] left-1/2 -translate-x-1/2",
+        "top-[-40px] left-1/2 -translate-x-1/2",
+      ]
+    : [
+        "bottom-[-40px] left-1/2 -translate-x-1/2",
+        "left-[-60px] top-1/2 -translate-y-1/2",
+        "left-[10%] top-[10%]",
+        "top-[-40px] left-1/2 -translate-x-1/2",
+        "right-[10%] top-[10%]",
+        "right-[-60px] top-1/2 -translate-y-1/2",
+      ];
 
   // Rotate seats so hero is always at bottom
   const getRotatedSeatIndex = (absoluteIndex: number) => {

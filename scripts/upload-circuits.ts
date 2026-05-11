@@ -12,8 +12,8 @@
  *      a. Creates raw-circuit accounts and uploads data in chunks
  *      b. Calls `finalizeComputationDefinition` to mark it complete
  *
- * IMPORTANT: The signer must be the uploadAuth for the comp-defs.
- * Currently that is: cBFy1BJvvMrpNDi4eSg7BL9YosDMuu4LLEhF64CFhZR
+ * IMPORTANT: The signer must be the uploadAuth for the demo comp-defs.
+ * That is normally the same wallet that ran scripts/init-mxe.ts.
  *
  * Usage:
  *   npx ts-node scripts/upload-circuits.ts [--keypair /path/to/authority.json]
@@ -45,14 +45,12 @@ const CERBERUS_POKER_PROGRAM_ID = new PublicKey(
 
 const RPC_URL = 'https://api.devnet.solana.com';
 
-/** Map of comp-def name → .arcis file path (relative to repo root) */
+/** Map of demo comp-def name → .arcis file path (relative to repo root) */
 const CIRCUITS: Record<string, string> = {
-  shuffle_deck: 'mxe/build/shuffle_deck.arcis',
-  deal_card_to_recipient: 'mxe/build/deal_card_to_recipient.arcis',
-  reveal_card: 'mxe/build/reveal_card.arcis',
-  reveal_community_card: 'mxe/build/reveal_community_card.arcis',
-  atomic_showdown: 'mxe/build/atomic_showdown.arcis',
+  shuffle_deck_demo: 'mxe/build/shuffle_deck_demo.arcis',
+  atomic_showdown_demo: 'mxe/build/atomic_showdown_demo.arcis',
 };
+const CHUNK_SIZE = Number(process.env.ARCIUM_UPLOAD_CHUNK_SIZE ?? '20');
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -176,7 +174,7 @@ async function main() {
         CERBERUS_POKER_PROGRAM_ID,
         rawCircuit,
         true, // logging
-        500, // chunkSize
+        CHUNK_SIZE, // chunkSize
         { commitment: 'confirmed' }
       );
       console.log(`   ✅ Done! ${sigs.length} transaction(s)`);

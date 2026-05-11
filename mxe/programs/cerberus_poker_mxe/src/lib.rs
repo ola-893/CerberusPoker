@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
-const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck");
+const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck_demo");
 
 declare_id!("A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V");
 
@@ -14,7 +14,7 @@ pub mod cerberus_poker_mxe {
         Ok(())
     }
 
-    pub fn shuffle_deck(
+    pub fn shuffle_deck_demo(
         ctx: Context<ShuffleDeck>,
         computation_offset: u64,
         deck_ciphertext: [[u8; 32]; 52],
@@ -49,16 +49,16 @@ pub mod cerberus_poker_mxe {
         Ok(())
     }
 
-    #[arcium_callback(encrypted_ix = "shuffle_deck")]
+    #[arcium_callback(encrypted_ix = "shuffle_deck_demo")]
     pub fn shuffle_deck_callback(
         ctx: Context<ShuffleDeckCallback>,
-        output: SignedComputationOutputs<ShuffleDeckOutput>,
+        output: SignedComputationOutputs<ShuffleDeckDemoOutput>,
     ) -> Result<()> {
         let o = match output.verify_output(
             &ctx.accounts.cluster_account,
             &ctx.accounts.computation_account,
         ) {
-            Ok(ShuffleDeckOutput { field_0 }) => field_0,
+            Ok(ShuffleDeckDemoOutput { field_0 }) => field_0,
             Err(_) => return Err(ErrorCode::AbortedComputation.into()),
         };
 
@@ -70,7 +70,7 @@ pub mod cerberus_poker_mxe {
     }
 }
 
-#[queue_computation_accounts("shuffle_deck", payer)]
+#[queue_computation_accounts("shuffle_deck_demo", payer)]
 #[derive(Accounts)]
 #[instruction(computation_offset: u64)]
 pub struct ShuffleDeck<'info> {
@@ -130,7 +130,7 @@ pub struct ShuffleDeck<'info> {
     pub arcium_program: Program<'info, Arcium>,
 }
 
-#[callback_accounts("shuffle_deck")]
+#[callback_accounts("shuffle_deck_demo")]
 #[derive(Accounts)]
 pub struct ShuffleDeckCallback<'info> {
     pub arcium_program: Program<'info, Arcium>,
@@ -153,7 +153,7 @@ pub struct ShuffleDeckCallback<'info> {
     pub instructions_sysvar: AccountInfo<'info>,
 }
 
-#[init_computation_definition_accounts("shuffle_deck", payer)]
+#[init_computation_definition_accounts("shuffle_deck_demo", payer)]
 #[derive(Accounts)]
 pub struct InitShuffleDeckCompDef<'info> {
     #[account(mut)]

@@ -2,8 +2,8 @@ use crate::ID;
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
-/// Accounts for initializing the shuffle_deck computation definition.
-#[init_computation_definition_accounts("shuffle_deck", payer)]
+/// Accounts for initializing the shuffle_deck_demo computation definition.
+#[init_computation_definition_accounts("shuffle_deck_demo", payer)]
 #[derive(Accounts)]
 pub struct InitShuffleDeckCompDef<'info> {
     #[account(mut)]
@@ -130,8 +130,8 @@ pub struct InitRevealCommunityCardCompDef<'info> {
     pub system_program: Program<'info, System>,
 }
 
-/// Accounts for initializing the atomic_showdown computation definition.
-#[init_computation_definition_accounts("atomic_showdown", payer)]
+/// Accounts for initializing the atomic_showdown_demo computation definition.
+#[init_computation_definition_accounts("atomic_showdown_demo", payer)]
 #[derive(Accounts)]
 pub struct InitAtomicShowdownCompDef<'info> {
     #[account(mut)]

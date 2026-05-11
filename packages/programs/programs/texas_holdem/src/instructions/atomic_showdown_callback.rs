@@ -7,7 +7,7 @@ use arcium_anchor::prelude::*;
 
 /// Settle showdown: transfer pot to winner based on MXE-attested showdown result.
 ///
-/// This instruction is triggered by the `atomic_showdown` callback from the MXE.
+/// This instruction is triggered by the `atomic_showdown_demo` callback from the MXE.
 /// It performs the following:
 /// 1. Verifies the MXE output signature (ensures authenticity)
 /// 2. Evaluates all revealed hands using the on-chain hand evaluator
@@ -30,7 +30,7 @@ use arcium_anchor::prelude::*;
 /// * `SettlementFailed` - If pot transfer fails
 pub fn handler(
     _ctx: Context<crate::AtomicShowdownCallback>,
-    output: ComputationOutputs<crate::AtomicShowdownOutput>,
+    output: ComputationOutputs<crate::AtomicShowdownDemoOutput>,
 ) -> Result<()> {
     // Match on the ComputationOutputs enum
     // The macro generates a tuple struct with field_0

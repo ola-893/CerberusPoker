@@ -7,7 +7,7 @@ use crate::state::{GameSession, GameState, ShuffleStarted, SHUFFLE_TIMEOUT_SECS}
 use crate::ShuffleDeckCallback;
 use crate::{ArciumSignerAccount, ID, ID_CONST};
 
-const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck");
+const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck_demo");
 
 #[inline(never)]
 pub fn handler(ctx: Context<StartShuffle>, game_id: u64, computation_offset: u64) -> Result<()> {
@@ -34,7 +34,7 @@ pub fn handler(ctx: Context<StartShuffle>, game_id: u64, computation_offset: u64
     // - For Enc<Mxe, T>: pass nonce + ciphertext (no pubkey needed)
     // - The client encrypts the initial deck with the MXE's public key
     //   before calling this instruction
-    // TODO: Build arguments for shuffle_deck computation once the frontend
+    // TODO: Build arguments for shuffle_deck_demo computation once the frontend
     // passes encrypted deck input. Keep a valid empty ArgumentList for now.
     let args = ArgBuilder::new().build();
 
@@ -50,7 +50,7 @@ pub fn handler(ctx: Context<StartShuffle>, game_id: u64, computation_offset: u64
         &callback_accounts,
     )?;
 
-    // Queue the shuffle_deck computation on the Arcium MXE
+    // Queue the shuffle_deck_demo computation on the Arcium MXE
     queue_computation(
         ctx.accounts,
         computation_offset,
@@ -73,7 +73,7 @@ pub fn handler(ctx: Context<StartShuffle>, game_id: u64, computation_offset: u64
     Ok(())
 }
 
-#[queue_computation_accounts("shuffle_deck", payer)]
+#[queue_computation_accounts("shuffle_deck_demo", payer)]
 #[derive(Accounts)]
 #[instruction(game_id: u64, computation_offset: u64)]
 pub struct StartShuffle<'info> {

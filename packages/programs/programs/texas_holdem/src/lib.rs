@@ -14,7 +14,7 @@ declare_id!("h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9");
 
 // Computation definition offsets
 const COMP_DEF_OFFSET_PLACE_BET: u32 = comp_def_offset("place_bet");
-const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown");
+const COMP_DEF_OFFSET_ATOMIC_SHOWDOWN: u32 = comp_def_offset("atomic_showdown_demo");
 
 #[arcium_program]
 pub mod texas_holdem {
@@ -85,11 +85,11 @@ pub mod texas_holdem {
         instructions::place_bet_callback::handler(ctx, output)
     }
 
-    // MXE callback for atomic_showdown — settles pot to winner(s)
-    #[arcium_callback(encrypted_ix = "atomic_showdown")]
+    // MXE callback for atomic_showdown_demo — settles pot to winner(s)
+    #[arcium_callback(encrypted_ix = "atomic_showdown_demo")]
     pub fn atomic_showdown_callback(
         ctx: Context<AtomicShowdownCallback>,
-        output: ComputationOutputs<AtomicShowdownOutput>,
+        output: ComputationOutputs<AtomicShowdownDemoOutput>,
     ) -> Result<()> {
         instructions::atomic_showdown_callback::handler(ctx, output)
     }
@@ -124,7 +124,7 @@ pub struct PlaceBetCallback<'info> {
     pub instructions_sysvar: AccountInfo<'info>,
 }
 
-#[callback_accounts("atomic_showdown")]
+#[callback_accounts("atomic_showdown_demo")]
 #[derive(Accounts)]
 #[instruction(game_id: u64)]
 pub struct AtomicShowdownCallback<'info> {
