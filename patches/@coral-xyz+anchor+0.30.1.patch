@@ -1,0 +1,26 @@
+diff --git a/node_modules/@coral-xyz/anchor/dist/cjs/coder/borsh/instruction.js b/node_modules/@coral-xyz/anchor/dist/cjs/coder/borsh/instruction.js
+index d2bf36d..7e39a72 100644
+--- a/node_modules/@coral-xyz/anchor/dist/cjs/coder/borsh/instruction.js
++++ b/node_modules/@coral-xyz/anchor/dist/cjs/coder/borsh/instruction.js
+@@ -55,7 +55,7 @@ class BorshInstructionCoder {
+      * Encodes a program instruction.
+      */
+     encode(ixName, ix) {
+-        const buffer = buffer_1.Buffer.alloc(1000); // TODO: use a tighter buffer.
++        const buffer = buffer_1.Buffer.alloc(4096); // Patched: 1000 is too small for large instruction data
+         const encoder = this.ixLayouts.get(ixName);
+         if (!encoder) {
+             throw new Error(`Unknown method: ${ixName}`);
+diff --git a/node_modules/@coral-xyz/anchor/dist/esm/coder/borsh/instruction.js b/node_modules/@coral-xyz/anchor/dist/esm/coder/borsh/instruction.js
+index 39efa2d..dded96b 100644
+--- a/node_modules/@coral-xyz/anchor/dist/esm/coder/borsh/instruction.js
++++ b/node_modules/@coral-xyz/anchor/dist/esm/coder/borsh/instruction.js
+@@ -26,7 +26,7 @@ export class BorshInstructionCoder {
+      * Encodes a program instruction.
+      */
+     encode(ixName, ix) {
+-        const buffer = Buffer.alloc(1000); // TODO: use a tighter buffer.
++        const buffer = Buffer.alloc(4096); // Patched: 1000 is too small for large instruction data (e.g. deck ciphertext arrays)
+         const encoder = this.ixLayouts.get(ixName);
+         if (!encoder) {
+             throw new Error(`Unknown method: ${ixName}`);

@@ -7,11 +7,11 @@ pub mod state;
 
 use instructions::*;
 
-declare_id!("4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG");
+declare_id!("CMtyqKPtwG3Eyfwg36cZXycNsdHBXANW6ZHY5SWVa6ye");
 
 // Computation definition offsets — derived from instruction names via sha256
 // These identify each MXE circuit on-chain
-const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck_demo");
+const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck_v3");
 const COMP_DEF_OFFSET_DEAL_CARD: u32 = comp_def_offset("deal_card_to_recipient");
 const COMP_DEF_OFFSET_REVEAL_CARD: u32 = comp_def_offset("reveal_card");
 const COMP_DEF_OFFSET_REVEAL_COMMUNITY_CARD: u32 = comp_def_offset("reveal_community_card");
@@ -31,7 +31,7 @@ pub mod cerberus_poker {
     // ─── Computation Definition Initialization ────────────────────────────────
     // Each must be called once after deployment to register the MXE circuit on-chain
 
-    pub fn init_shuffle_deck_comp_def(ctx: Context<InitShuffleDeckCompDef>) -> Result<()> {
+    pub fn init_shuffle_deck_v3_comp_def(ctx: Context<InitShuffleDeckV3CompDef>) -> Result<()> {
         init_comp_def(ctx.accounts, None, None)?;
         Ok(())
     }
@@ -77,16 +77,17 @@ pub mod cerberus_poker {
         ctx: Context<StartShuffle>,
         game_id: u64,
         computation_offset: u64,
+        deck: [u8; 52],
     ) -> Result<()> {
-        instructions::start_shuffle::handler(ctx, game_id, computation_offset)
+        instructions::start_shuffle::handler(ctx, game_id, computation_offset, deck)
     }
 
     // ─── MXE Callbacks ────────────────────────────────────────────────────────
 
-    #[arcium_callback(encrypted_ix = "shuffle_deck_demo")]
-    pub fn shuffle_deck_callback(
-        ctx: Context<ShuffleDeckCallback>,
-        output: SignedComputationOutputs<ShuffleDeckDemoOutput>,
+    #[arcium_callback(encrypted_ix = "shuffle_deck_v3")]
+    pub fn shuffle_deck_v3_callback(
+        ctx: Context<ShuffleDeckV3Callback>,
+        output: SignedComputationOutputs<ShuffleDeckV3Output>,
     ) -> Result<()> {
         instructions::shuffle_deck_callback::handler(ctx, output)
     }
@@ -116,8 +117,8 @@ pub mod cerberus_poker {
     }
 
     #[arcium_callback(encrypted_ix = "atomic_showdown_demo")]
-    pub fn atomic_showdown_callback(
-        ctx: Context<AtomicShowdownCallback>,
+    pub fn atomic_showdown_demo_callback(
+        ctx: Context<AtomicShowdownDemoCallback>,
         output: SignedComputationOutputs<AtomicShowdownDemoOutput>,
     ) -> Result<()> {
         instructions::atomic_showdown_callback::handler(ctx, output)
@@ -130,13 +131,20 @@ pub mod cerberus_poker {
         game_id: u64,
         assignments: Vec<CardAssignment>, // (card_index, player_index)
         computation_offset: u64,
+        deck: [u8; 52],
     ) -> Result<()> {
         // Convert CardAssignment structs to tuples for the handler
         let assignments_tuples: Vec<(u8, u8)> = assignments
             .into_iter()
             .map(|a| (a.card_index, a.player_index))
             .collect();
-        instructions::deal_cards::handler(ctx, game_id, assignments_tuples, computation_offset)
+        instructions::deal_cards::handler(
+            ctx,
+            game_id,
+            assignments_tuples,
+            computation_offset,
+            deck,
+        )
     }
 
     pub fn reveal_card(
@@ -144,8 +152,15 @@ pub mod cerberus_poker {
         game_id: u64,
         card_index: u8,
         computation_offset: u64,
+        deck: [u8; 52],
     ) -> Result<()> {
-        instructions::reveal_card::handler(ctx, game_id, card_index, computation_offset)
+        instructions::reveal_card::handler(
+            ctx,
+            game_id,
+            card_index,
+            computation_offset,
+            deck,
+        )
     }
 
     pub fn timeout_shuffle(ctx: Context<TimeoutShuffle>, game_id: u64) -> Result<()> {
@@ -163,9 +178,9 @@ use errors::CerberusPokerError as ErrorCode;
 use instructions::deal_card_to_recipient_callback::DealtCard;
 use state::GameSession;
 
-#[callback_accounts("shuffle_deck_demo")]
+#[callback_accounts("shuffle_deck_v3")]
 #[derive(Accounts)]
-pub struct ShuffleDeckCallback<'info> {
+pub struct ShuffleDeckV3Callback<'info> {
     pub arcium_program: Program<'info, Arcium>,
 
     #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_SHUFFLE_DECK))]
@@ -296,7 +311,7 @@ pub struct RevealCommunityCardCallback<'info> {
 
 #[callback_accounts("atomic_showdown_demo")]
 #[derive(Accounts)]
-pub struct AtomicShowdownCallback<'info> {
+pub struct AtomicShowdownDemoCallback<'info> {
     pub arcium_program: Program<'info, Arcium>,
 
     #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_ATOMIC_SHOWDOWN))]

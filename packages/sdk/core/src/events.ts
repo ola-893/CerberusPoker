@@ -99,6 +99,11 @@ export class EventManager {
           );
           
           const currentUnmaskedCards = gameSession.unmaskedCards;
+
+          if (previousUnmaskedCards.length === 0) {
+            previousUnmaskedCards = [...currentUnmaskedCards];
+            return;
+          }
           
           // Find newly revealed cards (compare with previous state)
           for (let i = 0; i < currentUnmaskedCards.length; i++) {

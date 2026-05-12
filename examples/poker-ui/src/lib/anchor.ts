@@ -58,6 +58,12 @@ export function useAnchorPrograms() {
       provider
     ) as unknown as AnchorProgramClient;
 
+    // Patch the instruction coder buffer size.
+    // Anchor's BorshInstructionCoder.encode() hardcodes Buffer.alloc(1000)
+    // but our deck ciphertext instructions need ~1736 bytes.
+    patchInstructionCoder(cerberusPoker);
+    patchInstructionCoder(texasHoldem);
+
     return {
       cerberusPoker,
       texasHoldem,
@@ -111,4 +117,34 @@ export function deriveDealtCardPDA(
  */
 export function getConnection(): Connection {
   return new Connection(RPC_ENDPOINT, 'confirmed');
+}
+
+/**
+ * Monkey-patch Anchor's instruction coder to use a larger encode buffer.
+ *
+ * Anchor's BorshInstructionCoder.encode() allocates a fixed 1000-byte buffer,
+ * but our instructions carry [[u8;32];52] ciphertext arrays (~1736 bytes).
+ * This replaces the encode method in-place so the entire Anchor method-builder
+ * chain works transparently with a 4096-byte buffer.
+ */
+function patchInstructionCoder(program: AnchorProgramClient) {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const coder = (program as any).coder?.instruction;
+  if (!coder || !coder.encode) return;
+
+  const originalEncode = coder.encode.bind(coder);
+
+  coder.encode = function patchedEncode(ixName: string, ix: Record<string, unknown>) {
+    // Access the layout map that BorshInstructionCoder stores internally
+    const encoder = this.ixLayouts?.get(ixName);
+    if (!encoder) {
+      // Fall back to original for unknown methods
+      return originalEncode(ixName, ix);
+    }
+
+    const buffer = Buffer.alloc(4096);
+    const len = encoder.layout.encode(ix, buffer);
+    const data = buffer.slice(0, len);
+    return Buffer.concat([Buffer.from(encoder.discriminator), data]);
+  };
 }

@@ -109,7 +109,7 @@ arcium test
 | Program | Address |
 |---------|---------|
 | Arcium MXE | `A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V` |
-| CerberusPoker | `4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG` |
+| CerberusPoker | `CMtyqKPtwG3Eyfwg36cZXycNsdHBXANW6ZHY5SWVa6ye` |
 | Texas Hold'em | `h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9` |
 
 **Devnet RPC**: https://api.devnet.solana.com  

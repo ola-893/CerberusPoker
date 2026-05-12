@@ -11,7 +11,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 const DEVNET_RPC = 'https://api.devnet.solana.com';
-const CERBERUS_POKER_PROGRAM_ID = '4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG';
+const CERBERUS_POKER_PROGRAM_ID = 'CMtyqKPtwG3Eyfwg36cZXycNsdHBXANW6ZHY5SWVa6ye';
 
 async function main() {
   // Load wallet from default Solana CLI location

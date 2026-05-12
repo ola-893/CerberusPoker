@@ -88,8 +88,8 @@ describe('DeckModule', () => {
       expect(card.name).toBe('Ace of Spades');
     });
 
-    it('should decode card value 39 as Ace of Hearts', () => {
-      const card = deckModule.decodeCard(38);
+    it('should decode card value 37 as King of Hearts', () => {
+      const card = deckModule.decodeCard(37);
       expect(card.suit).toBe(Suit.Hearts);
       expect(card.rank).toBe(Rank.King);
       expect(card.name).toBe('King of Hearts');
@@ -199,7 +199,7 @@ describe('DeckModule', () => {
       const privateKey = new Uint8Array(32).fill(0);
       const nonce = new Uint8Array(32).fill(0);
       // XOR of privateKey[0] and nonce[0] = 0, so ciphertext[0] XOR 0 = ciphertext[0]
-      const cardValue = 25; // Some valid card
+      const cardValue = 24; // King of Diamonds
       const ciphertext = new Uint8Array([cardValue]);
 
       const dealtCard = {

@@ -358,6 +358,9 @@ describe('TransactionBuilder', () => {
   
   describe('buildSignSendConfirmVersioned', () => {
     it('should execute full versioned transaction flow', async () => {
+      const serializeSpy = vi
+        .spyOn(VersionedTransaction.prototype, 'serialize')
+        .mockReturnValue(Buffer.from('serialized'));
       const instruction = SystemProgram.transfer({
         fromPubkey: wallet.publicKey,
         toPubkey: wallet.publicKey,
@@ -377,6 +380,8 @@ describe('TransactionBuilder', () => {
       expect(wallet.signTransaction).toHaveBeenCalled();
       expect(connection.sendRawTransaction).toHaveBeenCalled();
       expect(connection.confirmTransaction).toHaveBeenCalled();
+
+      serializeSpy.mockRestore();
     });
   });
   

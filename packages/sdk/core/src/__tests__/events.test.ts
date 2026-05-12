@@ -10,7 +10,7 @@ import { GameState, Action } from '../types';
 
 // Mock program
 const createMockProgram = () => {
-  const programId = new PublicKey('CerberusPoker11111111111111111111111111111');
+  const programId = new PublicKey('11111111111111111111111111111111');
   
   return {
     programId,

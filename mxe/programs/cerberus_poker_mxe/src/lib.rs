@@ -3,7 +3,7 @@ use arcium_anchor::prelude::*;
 
 const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck_demo");
 
-declare_id!("A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V");
+declare_id!("5AbRFyPJqzmiSk8jGPWQWcHjAf4W9ETbvHBYNn7rAD4Z");
 
 #[arcium_program]
 pub mod cerberus_poker_mxe {

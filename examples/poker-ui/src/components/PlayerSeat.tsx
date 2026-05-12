@@ -138,7 +138,7 @@ export default function PlayerSeat({
             <div className="w-6 h-6 bg-raise-dim rounded-full" />
           </div>
           <div className="font-mono text-[10px] text-gold font-bold mt-1">
-            {(currentBet / 100).toFixed(2)}
+            {(currentBet / 1_000_000).toFixed(2)}
           </div>
         </div>
       )}

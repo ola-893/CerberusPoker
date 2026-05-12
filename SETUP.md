@@ -167,7 +167,7 @@ anchor build
 anchor deploy
 
 # Output will show program IDs like:
-# Program Id: 4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG
+# Program Id: CMtyqKPtwG3Eyfwg36cZXycNsdHBXANW6ZHY5SWVa6ye
 ```
 
 ### Step 7: Update Program IDs

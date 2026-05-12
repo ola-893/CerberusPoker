@@ -5,9 +5,10 @@ use solana_sha256_hasher::hashv;
 use crate::errors::CerberusPokerError;
 use crate::state::{GameState, ShuffleComplete};
 
+#[inline(never)]
 pub fn handler(
-    ctx: Context<crate::ShuffleDeckCallback>,
-    output: SignedComputationOutputs<crate::ShuffleDeckDemoOutput>,
+    ctx: Context<crate::ShuffleDeckV3Callback>,
+    output: SignedComputationOutputs<crate::ShuffleDeckV3Output>,
 ) -> Result<()> {
     let deck_encrypted = output
         .verify_output(
@@ -55,3 +56,4 @@ pub fn handler(
 }
 
 // The ShuffleDeckCallback accounts struct is defined in lib.rs
+

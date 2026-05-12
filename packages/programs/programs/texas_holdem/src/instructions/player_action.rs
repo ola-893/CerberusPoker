@@ -44,6 +44,7 @@ pub fn handler(
     let player_index = ctx.accounts.poker_table.current_player;
     let clock = Clock::get()?;
     let mut queue_bet_computation = false;
+    let mut queued_bet_amount = 0u64;
 
     {
         let table = &mut ctx.accounts.poker_table;
@@ -176,6 +177,7 @@ pub fn handler(
                 .checked_add(transfer_amount)
                 .ok_or(TexasHoldemError::Overflow)?;
             queue_bet_computation = true;
+            queued_bet_amount = transfer_amount;
         }
 
         if table.betting_round_complete() {
@@ -189,7 +191,10 @@ pub fn handler(
     }
 
     if queue_bet_computation {
-        let args = vec![];
+        let args = vec![
+            Argument::PlaintextU64(queued_bet_amount),
+            Argument::PlaintextU8(player_index),
+        ];
 
         ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 

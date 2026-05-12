@@ -99,7 +99,7 @@ cd packages/programs && anchor build --no-idl
 
 ### Devnet Programs
 - **MXE**: `A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V` ✅
-- **cerberus_poker**: `4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG` ✅
+- **cerberus_poker**: `CMtyqKPtwG3Eyfwg36cZXycNsdHBXANW6ZHY5SWVa6ye` ✅
 - **texas_holdem**: `h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9` ✅
 - **Frontend**: Running at `http://127.0.0.1:3000/` ✅
 

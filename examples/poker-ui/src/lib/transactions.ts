@@ -36,11 +36,14 @@ const DEVNET_USDC_MINT = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJD
 
 // Computation definition names (must match MXE circuits)
 const COMP_DEF_NAMES = {
-  SHUFFLE_DECK: 'shuffle_deck_demo',
+  SHUFFLE_DECK: 'shuffle_deck_v3',
   DEAL_CARD: 'deal_card_to_recipient',
   REVEAL_CARD: 'reveal_card',
   PLACE_BET: 'place_bet',
 } as const;
+
+/** Standard 52-card deck in natural order [0, 1, 2, ..., 51] */
+const STANDARD_DECK: number[] = Array.from({ length: 52 }, (_, i) => i);
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -69,6 +72,10 @@ function derivePotAccountPDA(gameId: bigint): [PublicKey, number] {
  * Arcium's Anchor macros use crate::ID as the MXE program id.
  */
 function deriveArciumAccounts(programId: PublicKey, computationOffset: BN, compDefName: string) {
+  if (programId.equals(TEXAS_HOLDEM_PROGRAM_ID)) {
+    return deriveLegacyArciumAccounts(programId, computationOffset, compDefName);
+  }
+
   const [signPdaAccount] = PublicKey.findProgramAddressSync(
     [Buffer.from('ArciumSignerAccount')],
     programId
@@ -88,6 +95,60 @@ function deriveArciumAccounts(programId: PublicKey, computationOffset: BN, compD
     clockAccount: getClockAccAddress(),
     systemProgram: SystemProgram.programId,
     arciumProgram: getArciumProgramId(),
+  };
+}
+
+function deriveLegacyArciumAccounts(
+  programId: PublicKey,
+  computationOffset: BN,
+  compDefName: string
+) {
+  const arciumProgramId = getArciumProgramId();
+  const compDefOffset = Buffer.from(getCompDefAccOffset(compDefName)).readUInt32LE(0);
+  const compDefOffsetBuffer = Buffer.alloc(4);
+  compDefOffsetBuffer.writeUInt32LE(compDefOffset, 0);
+
+  const [signPdaAccount] = PublicKey.findProgramAddressSync(
+    [Buffer.from('SignerAccount')],
+    programId
+  );
+  const [mxeAccount] = PublicKey.findProgramAddressSync(
+    [Buffer.from('MXEAccount'), programId.toBuffer()],
+    arciumProgramId
+  );
+  const [mempoolAccount] = PublicKey.findProgramAddressSync(
+    [Buffer.from('Mempool'), programId.toBuffer()],
+    arciumProgramId
+  );
+  const [executingPool] = PublicKey.findProgramAddressSync(
+    [Buffer.from('Execpool'), programId.toBuffer()],
+    arciumProgramId
+  );
+  const [computationAccount] = PublicKey.findProgramAddressSync(
+    [
+      Buffer.from('ComputationAccount'),
+      programId.toBuffer(),
+      computationOffset.toArrayLike(Buffer, 'le', 8),
+    ],
+    arciumProgramId
+  );
+  const [compDefAccount] = PublicKey.findProgramAddressSync(
+    [Buffer.from('ComputationDefinitionAccount'), programId.toBuffer(), compDefOffsetBuffer],
+    arciumProgramId
+  );
+
+  return {
+    signPdaAccount,
+    mxeAccount,
+    mempoolAccount,
+    executingPool,
+    computationAccount,
+    compDefAccount,
+    clusterAccount: getClusterAccAddress(CLUSTER_OFFSET),
+    poolAccount: getFeePoolAccAddress(),
+    clockAccount: getClockAccAddress(),
+    systemProgram: SystemProgram.programId,
+    arciumProgram: arciumProgramId,
   };
 }
 
@@ -160,6 +221,8 @@ export async function startShuffle(
   cerberusPokerProgram: AnchorProgramClient,
   gameId: bigint
 ) {
+  console.log('[startShuffle] Starting shuffle for game:', gameId);
+  
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
   const computationOffset = randomOffset();
   const arcium = deriveArciumAccounts(
@@ -168,11 +231,13 @@ export async function startShuffle(
     COMP_DEF_NAMES.SHUFFLE_DECK
   );
 
-  const noncePDA = SystemProgram.programId;
-  const deckCiphertext0 = SystemProgram.programId;
-
+  console.log('[startShuffle] Calling program method with plaintext deck...');
   const signature = await cerberusPokerProgram.methods
-    .startShuffle(bn(gameId), computationOffset)
+    .startShuffle(
+      bn(gameId),
+      computationOffset,
+      Buffer.from(STANDARD_DECK)
+    )
     .accounts({
       gameSession: gameSessionPDA,
       payer: cerberusPokerProgram.provider.publicKey,
@@ -187,11 +252,10 @@ export async function startShuffle(
       clockAccount: arcium.clockAccount,
       systemProgram: arcium.systemProgram,
       arciumProgram: arcium.arciumProgram,
-      nonce: noncePDA,
-      deckCiphertext0: deckCiphertext0,
     })
     .rpc();
 
+  console.log('[startShuffle] Transaction sent:', signature);
   return { signature, gameId, computationOffset: BigInt(computationOffset.toString()) };
 }
 
@@ -222,7 +286,12 @@ export async function dealCards(
   );
 
   const signature = await cerberusPokerProgram.methods
-    .dealCards(bn(gameId), assignments, computationOffset)
+    .dealCards(
+      bn(gameId),
+      assignments,
+      computationOffset,
+      Buffer.from(STANDARD_DECK)
+    )
     .accounts({
       gameSession: gameSessionPDA,
       payer: cerberusPokerProgram.provider.publicKey,
@@ -237,8 +306,6 @@ export async function dealCards(
       clockAccount: arcium.clockAccount,
       systemProgram: arcium.systemProgram,
       arciumProgram: arcium.arciumProgram,
-      encryptedCardC1: SystemProgram.programId,
-      encryptedCardC2: SystemProgram.programId,
     })
     .rpc();
 
@@ -327,7 +394,12 @@ export async function revealCard(
   );
 
   const signature = await cerberusPokerProgram.methods
-    .revealCard(bn(gameId), cardIndex, computationOffset)
+    .revealCard(
+      bn(gameId),
+      cardIndex,
+      computationOffset,
+      Buffer.from(STANDARD_DECK)
+    )
     .accounts({
       gameSession: gameSessionPDA,
       payer: cerberusPokerProgram.provider.publicKey,
@@ -342,8 +414,6 @@ export async function revealCard(
       clockAccount: arcium.clockAccount,
       systemProgram: arcium.systemProgram,
       arciumProgram: arcium.arciumProgram,
-      encryptedCardC1: SystemProgram.programId,
-      encryptedCardC2: SystemProgram.programId,
     })
     .rpc();
 

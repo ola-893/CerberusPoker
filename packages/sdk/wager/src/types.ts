@@ -5,7 +5,13 @@
  * including card types, encryption types, and wager-specific structures.
  */
 
-import { PublicKey, Connection, Transaction, VersionedTransaction } from '@solana/web3.js';
+import {
+  PublicKey,
+  Connection,
+  Transaction,
+  TransactionInstruction,
+  VersionedTransaction,
+} from '@solana/web3.js';
 import { Program } from '@coral-xyz/anchor';
 
 // ============================================================================
@@ -581,6 +587,24 @@ export interface WagerModuleConfig {
   
   /** Cluster offset for Arcium (456 for devnet, 2026 for mainnet) */
   clusterOffset: number;
+
+  /**
+   * Optional Reflect Protocol mint instruction builder.
+   *
+   * When omitted, players must already hold enough USDC+ in their associated
+   * token account. This keeps the SDK runnable while Reflect's TypeScript SDK
+   * package/API is supplied by the host app.
+   */
+  reflectMintInstructionBuilder?: (
+    params: ReflectMintInstructionParams
+  ) => Promise<TransactionInstruction | TransactionInstruction[]>;
+}
+
+export interface ReflectMintInstructionParams {
+  amount: string;
+  sourceAccount: PublicKey;
+  destinationAccount: PublicKey;
+  owner: PublicKey;
 }
 
 /**

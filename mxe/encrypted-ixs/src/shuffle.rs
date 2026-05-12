@@ -17,17 +17,17 @@ mod circuits {
 
     // ─── Shuffle ──────────────────────────────────────────────────────────────
 
-    /// Shuffle a 52-card deck inside MPC.
+    /// Shuffle a 52-card deck inside MPC and return 9 dealt cards.
     ///
-    /// The deck is represented as [u8; 52] where deck[i] = card value (0-51).
-    /// The demo profile uses a compact deterministic mix for the first 9 cards
-    /// so the raw circuit account stays small enough for devnet.
+    /// Only returns the first 9 cards (4 hole cards + 5 community) to stay
+    /// within BPF's 4096-byte stack frame limit on callback deserialization.
+    /// 9 ciphertexts × 32 bytes = 288 bytes (vs 1664 for 52).
     ///
-    /// Input:  Enc<Mxe, [u8; 52]> — encrypted deck, only MXE can read
-    /// Output: Enc<Mxe, [u8; 52]> — shuffled deck, still encrypted
+    /// Input:  [u8; 52] — plaintext deck (public knowledge)
+    /// Output: Enc<Mxe, [u8; 9]> — first 9 shuffled cards, encrypted
     #[instruction]
-    pub fn shuffle_deck_demo(deck: Enc<Mxe, [u8; 52]>) -> Enc<Mxe, [u8; 52]> {
-        let mut cards = deck.to_arcis();
+    pub fn shuffle_deck_v3(deck: [u8; 52]) -> Enc<Mxe, [u8; 9]> {
+        let mut cards = deck;
 
         // Demo profile: only mix the first 9 cards used by heads-up Texas Hold'em.
         for i in 0..4 {
@@ -36,7 +36,14 @@ mod circuits {
             cards[8 - i] = tmp;
         }
 
-        deck.owner.from_arcis(cards)
+        // Extract first 9 cards for the 2-player demo
+        let result: [u8; 9] = [
+            cards[0], cards[1], cards[2], cards[3], cards[4],
+            cards[5], cards[6], cards[7], cards[8],
+        ];
+
+        // Return only the 9 dealt cards encrypted to the MXE cluster.
+        Mxe::get().from_arcis(result)
     }
 
     // ─── Deal ─────────────────────────────────────────────────────────────────

@@ -17,6 +17,7 @@ pub fn handler(
     game_id: u64,
     assignments: Vec<(u8, u8)>, // (card_index, player_index)
     computation_offset: u64,
+    deck: [u8; 52],
 ) -> Result<()> {
     let game = &mut ctx.accounts.game_session;
 
@@ -59,13 +60,6 @@ pub fn handler(
     // Queue deal_card_to_recipient computation for the first assigned card.
     // The MXE will perform threshold decryption to reveal the card value
     // to the specific recipient.
-    //
-    // Arguments for deal_card_to_recipient(card: Enc<Mxe, EncryptedCard>, card_index: u8):
-    // - Encrypted card from the shuffled deck (Enc<Mxe, EncryptedCard>)
-    // - Card index (plaintext u8)
-    //
-    // The encrypted deck is passed via the encrypted_card_c1 and encrypted_card_c2 accounts
-    // which contain the ElGamal ciphertext (C1, C2) for the card at the specified index.
     let first_dealt_card = assignments
         .iter()
         .find(|(_, player_index)| *player_index != COMMUNITY_CARD);
@@ -87,9 +81,11 @@ pub fn handler(
         game.state = GameState::Active;
     }
 
-    // TODO: Build arguments for deal_card_to_recipient once encrypted card
-    // inputs are wired through. Keep a valid empty ArgumentList for now.
-    let args = ArgBuilder::new().build();
+    let mut args = ArgBuilder::new();
+    for card in deck.iter() {
+        args = args.plaintext_u8(*card);
+    }
+    let args = args.plaintext_u8(*first_card_index).build();
 
     ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -210,11 +206,4 @@ pub struct DealCards<'info> {
 
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
-
-    // Encrypted card input for deal_card_to_recipient MXE instruction
-    // The card is represented as an ElGamal ciphertext (C1, C2)
-    /// CHECK: encrypted_card_c1 - first component of ElGamal ciphertext
-    pub encrypted_card_c1: UncheckedAccount<'info>,
-    /// CHECK: encrypted_card_c2 - second component of ElGamal ciphertext
-    pub encrypted_card_c2: UncheckedAccount<'info>,
 }

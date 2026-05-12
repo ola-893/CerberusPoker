@@ -1,41 +1,32 @@
 use crate::errors::TexasHoldemError;
-use crate::hand_eval::{evaluate_hand, HandRank};
-use crate::state::PokerTable;
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount, Transfer};
 use arcium_anchor::prelude::*;
 
-/// Settle showdown: transfer pot to winner based on MXE-attested showdown result.
+/// Verify the MXE-attested atomic showdown reveal.
 ///
 /// This instruction is triggered by the `atomic_showdown_demo` callback from the MXE.
 /// It performs the following:
-/// 1. Verifies the MXE output signature (ensures authenticity)
-/// 2. Evaluates all revealed hands using the on-chain hand evaluator
-/// 3. Determines the winner (or winners in case of a tie)
-/// 4. Transfers the full pot from escrow PDA to winner(s)
+/// 1. Confirms the computation succeeded
+/// 2. Validates revealed hole-card values are in range
+/// 3. Marks non-folded hands as verified for the settlement instruction
 ///
-/// # Settlement Rules
-/// - Single winner: receives full pot
-/// - Tie: pot split equally between tied winners
-/// - Folded players: excluded from evaluation
+/// Pot settlement is handled by `showdown`, which has the GameSession account
+/// and winner token accounts needed to evaluate hands and transfer escrow funds.
 ///
 /// # Arguments
 /// * `game_id` - Unique identifier for the game (used as PDA seed)
 /// * `community_cards` - The 5 community cards (flop, turn, river)
 ///
 /// # Errors
-/// * `AbortedComputation` - If MXE output verification fails
-/// * `InvalidGameState` - If game state is invalid
-/// * `NoWinner` - If no winner can be determined
-/// * `SettlementFailed` - If pot transfer fails
+/// * `AbortedComputation` - If MXE computation failed
+/// * `InvalidMxeOutput` - If any revealed card value is out of range
 pub fn handler(
-    _ctx: Context<crate::AtomicShowdownCallback>,
+    ctx: Context<crate::AtomicShowdownDemoCallback>,
     output: ComputationOutputs<crate::AtomicShowdownDemoOutput>,
 ) -> Result<()> {
     // Match on the ComputationOutputs enum
     // The macro generates a tuple struct with field_0
-    // Note: The MXE circuit is not yet implemented, so this is a placeholder
-    let _result = match output {
+    let revealed_hands = match output {
         ComputationOutputs::Success(out) => out.field_0,
         ComputationOutputs::Failure => {
             msg!("Atomic showdown MXE computation failed");
@@ -43,18 +34,22 @@ pub fn handler(
         }
     };
 
-    msg!("Atomic showdown MXE computation completed");
+    let table = &mut ctx.accounts.poker_table;
+    let cards_to_validate = (table.num_players as usize).saturating_mul(2).min(12);
+    for card_value in revealed_hands.iter().take(cards_to_validate) {
+        require!(*card_value < 52, TexasHoldemError::InvalidMxeOutput);
+    }
 
-    // TODO: Once MXE circuit is implemented:
-    // 1. Extract revealed hands from encrypted output
-    // 2. Evaluate all hands using the on-chain hand evaluator
-    // 3. Determine the winner (or winners in case of a tie)
-    // 4. Transfer the full pot from escrow PDA to winner(s)
-    //
-    // Settlement Rules:
-    // - Single winner: receives full pot
-    // - Tie: pot split equally between tied winners
-    // - Folded players: excluded from evaluation
+    for player_index in 0..table.num_players {
+        if !table.is_folded(player_index) {
+            table.hand_verified_bitmap |= 1u16 << player_index;
+        }
+    }
+
+    msg!(
+        "Atomic showdown MXE computation completed; verified {} revealed hole cards",
+        cards_to_validate
+    );
 
     Ok(())
 }

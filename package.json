@@ -21,7 +21,8 @@
     "start": "npm run dev",
     "setup:local": "node scripts/setup-local.js",
     "deploy:local": "cd packages/programs && anchor build && anchor deploy",
-    "verify": "bash scripts/verify-setup.sh"
+    "verify": "bash scripts/verify-setup.sh",
+    "postinstall": "bash scripts/postinstall.sh"
   },
   "devDependencies": {
     "concurrently": "^8.2.2",

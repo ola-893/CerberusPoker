@@ -1,5 +1,5 @@
 import { PublicKey } from '@solana/web3.js';
-const cerberus = new PublicKey('4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG');
+const cerberus = new PublicKey('CMtyqKPtwG3Eyfwg36cZXycNsdHBXANW6ZHY5SWVa6ye');
 const arcium = new PublicKey('Arcj82pX7HxYKLR92qvgZUAd7vGS1k4hQvAFcPATFdEQ');
 
 const [mxe1] = PublicKey.findProgramAddressSync([Buffer.from('mxe'), cerberus.toBuffer()], arcium);

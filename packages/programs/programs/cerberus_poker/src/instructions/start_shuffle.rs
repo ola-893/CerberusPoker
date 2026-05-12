@@ -4,13 +4,18 @@ use arcium_client::idl::arcium::types::CallbackAccount;
 
 use crate::errors::CerberusPokerError;
 use crate::state::{GameSession, GameState, ShuffleStarted, SHUFFLE_TIMEOUT_SECS};
-use crate::ShuffleDeckCallback;
+use crate::ShuffleDeckV3Callback;
 use crate::{ArciumSignerAccount, ID, ID_CONST};
 
-const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck_demo");
+const COMP_DEF_OFFSET_SHUFFLE_DECK: u32 = comp_def_offset("shuffle_deck_v3");
 
 #[inline(never)]
-pub fn handler(ctx: Context<StartShuffle>, game_id: u64, computation_offset: u64) -> Result<()> {
+pub fn handler(
+    ctx: Context<StartShuffle>,
+    game_id: u64,
+    computation_offset: u64,
+    deck: [u8; 52],
+) -> Result<()> {
     let game = &mut ctx.accounts.game_session;
 
     // Must be in Lobby with enough players
@@ -26,17 +31,15 @@ pub fn handler(ctx: Context<StartShuffle>, game_id: u64, computation_offset: u64
     game.active_computation_offset = computation_offset;
     game.shuffle_deadline = clock.unix_timestamp + SHUFFLE_TIMEOUT_SECS;
 
-    // Build the encrypted deck input for the MXE.
-    // The initial deck [0, 1, 2, ..., 51] is passed as Enc<Mxe, [u8; 52]>.
-    // The MXE will shuffle it and return the shuffled deck via callback.
-    //
-    // ArgBuilder pattern (from Arcium docs):
-    // - For Enc<Mxe, T>: pass nonce + ciphertext (no pubkey needed)
-    // - The client encrypts the initial deck with the MXE's public key
-    //   before calling this instruction
-    // TODO: Build arguments for shuffle_deck_demo computation once the frontend
-    // passes encrypted deck input. Keep a valid empty ArgumentList for now.
-    let args = ArgBuilder::new().build();
+    // Build the plaintext deck input for the MXE.
+    // The initial deck [0, 1, 2, ..., 51] is public knowledge — no encryption
+    // needed. The MXE will apply a secret random permutation internally and
+    // return the shuffled deck via callback.
+    let mut args = ArgBuilder::new();
+    for card in deck.iter() {
+        args = args.plaintext_u8(*card);
+    }
+    let args = args.build();
 
     ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -44,13 +47,13 @@ pub fn handler(ctx: Context<StartShuffle>, game_id: u64, computation_offset: u64
         pubkey: ctx.accounts.game_session.key(),
         is_writable: true,
     }];
-    let callback_ix = ShuffleDeckCallback::callback_ix(
+    let callback_ix = ShuffleDeckV3Callback::callback_ix(
         computation_offset,
         &ctx.accounts.mxe_account,
         &callback_accounts,
     )?;
 
-    // Queue the shuffle_deck_demo computation on the Arcium MXE
+    // Queue the shuffle_deck_v2 computation on the Arcium MXE
     queue_computation(
         ctx.accounts,
         computation_offset,
@@ -73,7 +76,7 @@ pub fn handler(ctx: Context<StartShuffle>, game_id: u64, computation_offset: u64
     Ok(())
 }
 
-#[queue_computation_accounts("shuffle_deck_demo", payer)]
+#[queue_computation_accounts("shuffle_deck_v3", payer)]
 #[derive(Accounts)]
 #[instruction(game_id: u64, computation_offset: u64)]
 pub struct StartShuffle<'info> {
@@ -145,10 +148,4 @@ pub struct StartShuffle<'info> {
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
 
-    // Placeholder accounts for encrypted deck input
-    // In practice the client passes the encrypted deck ciphertext
-    /// CHECK: nonce for encryption
-    pub nonce: UncheckedAccount<'info>,
-    /// CHECK: encrypted deck ciphertext chunk 0
-    pub deck_ciphertext_0: UncheckedAccount<'info>,
 }

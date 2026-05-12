@@ -87,8 +87,8 @@ pub mod texas_holdem {
 
     // MXE callback for atomic_showdown_demo — settles pot to winner(s)
     #[arcium_callback(encrypted_ix = "atomic_showdown_demo")]
-    pub fn atomic_showdown_callback(
-        ctx: Context<AtomicShowdownCallback>,
+    pub fn atomic_showdown_demo_callback(
+        ctx: Context<AtomicShowdownDemoCallback>,
         output: ComputationOutputs<AtomicShowdownDemoOutput>,
     ) -> Result<()> {
         instructions::atomic_showdown_callback::handler(ctx, output)
@@ -127,7 +127,7 @@ pub struct PlaceBetCallback<'info> {
 #[callback_accounts("atomic_showdown_demo")]
 #[derive(Accounts)]
 #[instruction(game_id: u64)]
-pub struct AtomicShowdownCallback<'info> {
+pub struct AtomicShowdownDemoCallback<'info> {
     pub arcium_program: Program<'info, Arcium>,
 
     #[account(address = derive_comp_def_pda!(COMP_DEF_OFFSET_ATOMIC_SHOWDOWN))]

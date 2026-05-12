@@ -5,7 +5,7 @@ use crate::errors::CerberusPokerError;
 use crate::state::{GameState, ShowdownComplete};
 
 pub fn handler(
-    ctx: Context<crate::AtomicShowdownCallback>,
+    ctx: Context<crate::AtomicShowdownDemoCallback>,
     output: SignedComputationOutputs<crate::AtomicShowdownDemoOutput>,
 ) -> Result<()> {
     let revealed_hands = output

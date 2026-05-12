@@ -40,15 +40,14 @@ import path from 'path';
 // ─── Configuration ───────────────────────────────────────────────────────────
 
 const CERBERUS_POKER_PROGRAM_ID = new PublicKey(
-  '4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG'
+  'CMtyqKPtwG3Eyfwg36cZXycNsdHBXANW6ZHY5SWVa6ye'
 );
 
 const RPC_URL = 'https://api.devnet.solana.com';
 
 /** Map of demo comp-def name → .arcis file path (relative to repo root) */
 const CIRCUITS: Record<string, string> = {
-  shuffle_deck_demo: 'mxe/build/shuffle_deck_demo.arcis',
-  atomic_showdown_demo: 'mxe/build/atomic_showdown_demo.arcis',
+  shuffle_deck_v3: 'mxe/build/shuffle_deck_v3.arcis',
 };
 const CHUNK_SIZE = Number(process.env.ARCIUM_UPLOAD_CHUNK_SIZE ?? '20');
 

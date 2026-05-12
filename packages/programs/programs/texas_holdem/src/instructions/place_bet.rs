@@ -93,9 +93,10 @@ pub fn handler(
     // The MXE will store Enc<Mxe, u64> — hidden from all observers
     // The callback (place_bet_callback) will confirm the encrypted bet was stored
 
-    // TODO: Build arguments for place_bet computation
-    // In 0.4.0, arguments are Vec<Argument> from arcium_client::idl::arcium::types
-    let args = vec![];
+    let args = vec![
+        Argument::PlaintextU64(amount),
+        Argument::PlaintextU8(player_index),
+    ];
 
     ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 

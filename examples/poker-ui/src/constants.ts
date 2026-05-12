@@ -5,7 +5,7 @@
 /** Deployed program IDs */
 export const PROGRAM_IDS = {
   MXE: 'A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V',
-  CERBERUS_POKER: '4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG',
+  CERBERUS_POKER: 'CMtyqKPtwG3Eyfwg36cZXycNsdHBXANW6ZHY5SWVa6ye',
   TEXAS_HOLDEM: 'h9xwoEpELRp4tUExQDpyjg2cfzvEUL53wy76sUZWok9',
 } as const;
 

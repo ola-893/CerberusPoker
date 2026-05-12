@@ -14,9 +14,9 @@ import {
   Connection,
   PublicKey,
   Transaction,
+  TransactionInstruction,
   TransactionSignature,
   SystemProgram,
-  SYSVAR_CLOCK_PUBKEY,
 } from '@solana/web3.js';
 import {
   getAssociatedTokenAddress,
@@ -24,36 +24,14 @@ import {
   TOKEN_PROGRAM_ID,
 } from '@solana/spl-token';
 import { AnchorProvider, Program, BN } from '@coral-xyz/anchor';
-import type { AnchorWallet, WagerModuleConfig } from './types';
+import type { AnchorWallet, ReflectMintInstructionParams, WagerModuleConfig } from './types';
 
 // Re-export all types
 export * from './types';
 
-// TODO: Import ReflectSDK when the actual SDK is available
-// import { ReflectSDK } from '@reflect-protocol/sdk';
-// For now, we'll use a placeholder interface
-interface ReflectSDK {
-  createMintInstruction(params: {
-    amount: string;
-    sourceAccount: PublicKey;
-    destinationAccount: PublicKey;
-    owner: PublicKey;
-  }): Promise<any>;
-}
-
-class PlaceholderReflectSDK implements ReflectSDK {
-  constructor(private connection: Connection) {}
-  
-  async createMintInstruction(params: {
-    amount: string;
-    sourceAccount: PublicKey;
-    destinationAccount: PublicKey;
-    owner: PublicKey;
-  }): Promise<any> {
-    // TODO: Replace with actual Reflect SDK implementation
-    throw new Error('Reflect SDK not yet integrated. Please implement USDC+ minting.');
-  }
-}
+type ReflectMintInstructionBuilder = (
+  params: ReflectMintInstructionParams
+) => Promise<TransactionInstruction | TransactionInstruction[]>;
 
 /**
  * WagerModule - Handles confidential betting operations
@@ -86,7 +64,7 @@ export class WagerModule {
   private usdcMint: PublicKey;
   private arciumProgramId: PublicKey;
   private clusterOffset: number;
-  private reflectSDK: PlaceholderReflectSDK;
+  private reflectMintInstructionBuilder: ReflectMintInstructionBuilder | undefined;
 
   constructor(config: WagerModuleConfig) {
     this.connection = config.connection;
@@ -96,10 +74,7 @@ export class WagerModule {
     this.usdcMint = config.usdcMint;
     this.arciumProgramId = config.arciumProgramId;
     this.clusterOffset = config.clusterOffset;
-    
-    // Initialize Reflect SDK for USDC+ minting
-    // TODO: Replace with actual ReflectSDK when available
-    this.reflectSDK = new PlaceholderReflectSDK(config.connection);
+    this.reflectMintInstructionBuilder = config.reflectMintInstructionBuilder;
   }
 
   /**
@@ -142,25 +117,25 @@ export class WagerModule {
     );
 
     // 2. Check if player has enough USDC+ balance
-    let needsToMint = false;
+    let mintAmount = 0n;
     try {
       const accountInfo = await this.connection.getAccountInfo(playerUsdcPlusAccount);
       if (!accountInfo) {
-        needsToMint = true;
+        mintAmount = amount;
       } else {
         const tokenAccount = await this.connection.getTokenAccountBalance(playerUsdcPlusAccount);
         const balance = BigInt(tokenAccount.value.amount);
         if (balance < amount) {
-          needsToMint = true;
+          mintAmount = amount - balance;
         }
       }
     } catch (error) {
-      needsToMint = true;
+      mintAmount = amount;
     }
 
     // 3. Mint USDC+ if needed
-    if (needsToMint) {
-      await this.mintUsdcPlus(amount);
+    if (mintAmount > 0n) {
+      await this.mintUsdcPlus(mintAmount);
     }
 
     // 4. Derive the poker table PDA
@@ -218,6 +193,12 @@ export class WagerModule {
    * @private
    */
   private async mintUsdcPlus(amount: bigint): Promise<TransactionSignature> {
+    if (!this.reflectMintInstructionBuilder) {
+      throw new Error(
+        'Insufficient USDC+ balance. Pre-fund the wallet or pass reflectMintInstructionBuilder in WagerModuleConfig.'
+      );
+    }
+
     // Get player's USDC token account
     const playerUsdcAccount = await getAssociatedTokenAddress(
       this.usdcMint,
@@ -245,17 +226,14 @@ export class WagerModule {
       );
     }
 
-    // Use Reflect SDK to mint USDC+
-    // Note: The actual Reflect SDK API may differ - this is a placeholder
-    // based on typical SPL token minting patterns. Adjust based on actual SDK.
-    const mintIx = await this.reflectSDK.createMintInstruction({
+    const mintInstructions = await this.reflectMintInstructionBuilder({
       amount: amount.toString(),
       sourceAccount: playerUsdcAccount,
       destinationAccount: playerUsdcPlusAccount,
       owner: this.wallet.publicKey,
     });
 
-    tx.add(mintIx);
+    tx.add(...(Array.isArray(mintInstructions) ? mintInstructions : [mintInstructions]));
 
     // Sign and send transaction
     const provider = new AnchorProvider(
@@ -298,66 +276,72 @@ export class WagerModule {
   }> {
     // Derive sign PDA
     const [signPdaAccount] = PublicKey.findProgramAddressSync(
-      [Buffer.from('arcium_sign_pda')],
+      [Buffer.from('SignerAccount')],
       this.tableProgram.programId
     );
 
     // Derive MXE account
     const [mxeAccount] = PublicKey.findProgramAddressSync(
-      [Buffer.from('mxe')],
+      [Buffer.from('MXEAccount'), this.tableProgram.programId.toBuffer()],
       this.arciumProgramId
     );
 
     // Derive mempool account
     const [mempoolAccount] = PublicKey.findProgramAddressSync(
-      [Buffer.from('mempool'), mxeAccount.toBuffer()],
+      [Buffer.from('Mempool'), this.tableProgram.programId.toBuffer()],
       this.arciumProgramId
     );
 
     // Derive executing pool account
     const [executingPool] = PublicKey.findProgramAddressSync(
-      [Buffer.from('execpool'), mxeAccount.toBuffer()],
+      [Buffer.from('Execpool'), this.tableProgram.programId.toBuffer()],
       this.arciumProgramId
     );
 
     // Derive computation account
     const [computationAccount] = PublicKey.findProgramAddressSync(
       [
-        Buffer.from('computation'),
+        Buffer.from('ComputationAccount'),
+        this.tableProgram.programId.toBuffer(),
         computationOffset.toArrayLike(Buffer, 'le', 8),
-        mxeAccount.toBuffer(),
       ],
       this.arciumProgramId
     );
 
-    // Derive computation definition account
-    // comp_def_offset("place_bet") - this should match the Rust side
-    const compDefOffset = this.computeCompDefOffset('place_bet');
+    const compDefOffset = await this.computeCompDefOffset('place_bet');
     const [compDefAccount] = PublicKey.findProgramAddressSync(
-      [Buffer.from('comp_def'), Buffer.from(compDefOffset.toString(16).padStart(8, '0'), 'hex')],
+      [
+        Buffer.from('ComputationDefinitionAccount'),
+        this.tableProgram.programId.toBuffer(),
+        compDefOffset,
+      ],
       this.arciumProgramId
     );
 
     // Derive cluster account
+    const clusterOffset = Buffer.alloc(4);
+    clusterOffset.writeUInt32LE(this.clusterOffset, 0);
     const [clusterAccount] = PublicKey.findProgramAddressSync(
-      [Buffer.from('cluster'), mxeAccount.toBuffer()],
+      [Buffer.from('Cluster'), clusterOffset],
       this.arciumProgramId
     );
 
-    // Arcium fee pool account (constant address)
-    const poolAccount = new PublicKey('ArciumFeePoolAddress11111111111111111111111'); // Placeholder
+    const [poolAccount] = PublicKey.findProgramAddressSync(
+      [Buffer.from('FeePool')],
+      this.arciumProgramId
+    );
 
-    // Arcium clock account (constant address)
-    const clockAccount = SYSVAR_CLOCK_PUBKEY;
+    const [clockAccount] = PublicKey.findProgramAddressSync(
+      [Buffer.from('ClockAccount')],
+      this.arciumProgramId
+    );
 
-    // Derive MXE lookup table
     const [addressLookupTable] = PublicKey.findProgramAddressSync(
-      [Buffer.from('lut'), mxeAccount.toBuffer()],
+      [Buffer.from('AddressLookupTable'), mxeAccount.toBuffer()],
       this.arciumProgramId
     );
 
-    // Address Lookup Table program
-    const lutProgram = new PublicKey('AddressLookupTab1e1111111111111111111111111'); // Placeholder
+    const lutProgram = new PublicKey('AddressLookupTab1e1111111111111111111111111');
 
     return {
       signPdaAccount,
@@ -386,15 +370,16 @@ export class WagerModule {
    * 
    * @private
    */
-  private computeCompDefOffset(instructionName: string): number {
-    // This is a simple hash function that should match the Rust implementation
-    // The actual implementation may differ - adjust based on Arcium SDK
-    let hash = 0;
-    for (let i = 0; i < instructionName.length; i++) {
-      hash = ((hash << 5) - hash) + instructionName.charCodeAt(i);
-      hash = hash & hash; // Convert to 32-bit integer
+  private async computeCompDefOffset(instructionName: string): Promise<Buffer> {
+    if (!globalThis.crypto?.subtle) {
+      throw new Error('Web Crypto is required to derive Arcium computation definition accounts');
     }
-    return Math.abs(hash);
+
+    const digest = await globalThis.crypto.subtle.digest(
+      'SHA-256',
+      new TextEncoder().encode(instructionName)
+    );
+    return Buffer.from(new Uint8Array(digest).slice(0, 4));
   }
 
   /**
@@ -555,11 +540,16 @@ export class WagerModule {
     const escrowAccount = pokerTable.escrowAccount as PublicKey;
     const gameSessionPda = pokerTable.gameSession as PublicKey;
 
-    // 3. Derive table PDA authority (for escrow signing)
-    const [tablePdaAuthority] = PublicKey.findProgramAddressSync(
-      [Buffer.from('table_authority'), gameIdBytes],
-      this.tableProgram.programId
-    );
+    // 3. Pass every known player stack as a writable remaining account.
+    // The on-chain settlement code selects only the winning destinations.
+    const playerStacks = (pokerTable.playerStacks as PublicKey[] | undefined) ?? [];
+    const remainingAccounts = playerStacks
+      .filter((stack) => stack && !stack.equals(PublicKey.default))
+      .map((pubkey) => ({
+        pubkey,
+        isWritable: true,
+        isSigner: false,
+      }));
 
     // 4. Build and send the showdown transaction
     const tx = await (this.tableProgram.methods as any)['showdown'](
@@ -569,12 +559,10 @@ export class WagerModule {
         pokerTable: pokerTablePda,
         gameSession: gameSessionPda,
         escrowAccount: escrowAccount,
-        tablePdaAuthority: tablePdaAuthority,
-        player: this.wallet.publicKey,
-        payer: this.wallet.publicKey,
         tokenProgram: TOKEN_PROGRAM_ID,
-        systemProgram: SystemProgram.programId,
+        caller: this.wallet.publicKey,
       })
+      .remainingAccounts(remainingAccounts)
       .rpc();
 
     return tx;

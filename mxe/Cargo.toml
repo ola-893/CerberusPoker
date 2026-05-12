@@ -4,6 +4,7 @@ resolver = "2"
 
 [patch.crates-io]
 indexmap = { git = "https://github.com/indexmap-rs/indexmap", tag = "2.13.0" }
+zmij = { path = "../packages/programs/patches/zmij" }
 
 [profile.release]
 overflow-checks = true

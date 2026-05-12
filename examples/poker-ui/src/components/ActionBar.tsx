@@ -4,12 +4,13 @@
  */
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Action } from '../types';
 
 interface ActionBarProps {
   isMyTurn: boolean;
   currentBet: bigint;
+  myCurrentBet: bigint;
   myStack: number;
   bigBlind: bigint;
   canCheck: boolean;
@@ -19,13 +20,31 @@ interface ActionBarProps {
 export default function ActionBar({ 
   isMyTurn, 
   currentBet, 
+  myCurrentBet,
   myStack, 
   bigBlind,
   canCheck,
   onAction 
 }: ActionBarProps) {
-  const [raiseAmount, setRaiseAmount] = useState(Number(currentBet + bigBlind));
+  const currentBetNumber = Number(currentBet);
+  const myCurrentBetNumber = Number(myCurrentBet);
+  const bigBlindNumber = Number(bigBlind);
+  const minRaise = currentBetNumber + bigBlindNumber;
+  const maxRaise = myStack;
+  const canRaise = maxRaise >= minRaise;
+  const callAmount = Math.max(0, currentBetNumber - myCurrentBetNumber);
+
+  const initialRaise = useMemo(() => {
+    if (!canRaise) return maxRaise;
+    return Math.min(Math.max(minRaise, currentBetNumber), maxRaise);
+  }, [canRaise, currentBetNumber, maxRaise, minRaise]);
+
+  const [raiseAmount, setRaiseAmount] = useState(initialRaise);
   const [showRaiseSlider, setShowRaiseSlider] = useState(false);
+
+  useEffect(() => {
+    setRaiseAmount(initialRaise);
+  }, [initialRaise]);
   
   if (!isMyTurn) {
     return (
@@ -37,19 +56,15 @@ export default function ActionBar({
     );
   }
 
-  const minRaise = Number(currentBet + bigBlind);
-  const maxRaise = myStack;
-  const callAmount = Number(currentBet);
-
   return (
     <div className="fixed bottom-0 left-0 right-0 h-24 bg-surface-raised/80 backdrop-blur-xl border-t border-zinc-800 flex items-center justify-center gap-4 px-6 z-30 shadow-[0_-10px_40px_rgba(0,0,0,0.5)]">
       {/* Raise Slider */}
-      {showRaiseSlider && (
+      {showRaiseSlider && canRaise && (
         <div className="flex flex-col gap-2 mr-8 w-64">
           <div className="flex justify-between font-mono text-[10px] text-zinc-500 uppercase tracking-widest font-bold">
-            <span>Min: {(minRaise / 100).toFixed(2)}</span>
-            <span>{(raiseAmount / 100).toFixed(2)} USDC+</span>
-            <span>Max: {(maxRaise / 100).toFixed(2)}</span>
+            <span>Min: {(minRaise / 1_000_000).toFixed(2)}</span>
+            <span>{(raiseAmount / 1_000_000).toFixed(2)} USDC+</span>
+            <span>Max: {(maxRaise / 1_000_000).toFixed(2)}</span>
           </div>
           <input 
             type="range"
@@ -114,7 +129,7 @@ export default function ActionBar({
           onClick={() => onAction(Action.Call, currentBet)}
           className="h-12 flex-1 max-w-[140px] bg-call border border-blue-700 rounded-xl text-white font-bold uppercase tracking-widest text-xs hover:bg-call/80 transition-colors"
         >
-          Call {(callAmount / 100).toFixed(2)}
+          Call {(callAmount / 1_000_000).toFixed(2)}
         </motion.button>
       )}
       
@@ -122,6 +137,7 @@ export default function ActionBar({
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => {
+          if (!canRaise) return;
           if (showRaiseSlider) {
             onAction(Action.Raise, BigInt(raiseAmount));
             setShowRaiseSlider(false);
@@ -129,16 +145,18 @@ export default function ActionBar({
             setShowRaiseSlider(true);
           }
         }}
-        className="h-12 flex-1 max-w-[140px] bg-gold text-background rounded-xl font-bold uppercase tracking-widest text-xs shadow-gold-glow transition-all"
+        disabled={!canRaise}
+        className="h-12 flex-1 max-w-[140px] bg-gold text-background rounded-xl font-bold uppercase tracking-widest text-xs shadow-gold-glow transition-all disabled:opacity-50 disabled:cursor-not-allowed"
       >
-        {showRaiseSlider ? `Raise to ${(raiseAmount / 100).toFixed(2)}` : 'Raise'}
+        {showRaiseSlider ? `Raise to ${(raiseAmount / 1_000_000).toFixed(2)}` : 'Raise'}
       </motion.button>
 
       <motion.button 
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
-        onClick={() => onAction(Action.AllIn, BigInt(myStack))}
-        className="h-12 flex-1 max-w-[120px] bg-allIn border border-purple-700 rounded-xl text-white font-bold uppercase tracking-widest text-xs hover:bg-allIn/80 transition-colors"
+        onClick={() => onAction(Action.AllIn, BigInt(maxRaise))}
+        disabled={maxRaise <= myCurrentBetNumber}
+        className="h-12 flex-1 max-w-[120px] bg-allIn border border-purple-700 rounded-xl text-white font-bold uppercase tracking-widest text-xs hover:bg-allIn/80 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
       >
         All-In
       </motion.button>

@@ -26,7 +26,7 @@ const idl = JSON.parse(
   )
 );
 
-const CERBERUS_POKER_PROGRAM_ID = new PublicKey('4yBn3sLRyWK1VuMmkdf7zRB3w9ptM43qaQPicJq3LqbG');
+const CERBERUS_POKER_PROGRAM_ID = new PublicKey('CMtyqKPtwG3Eyfwg36cZXycNsdHBXANW6ZHY5SWVa6ye');
 const ARCIUM_PROGRAM_ID = getArciumProgramId();
 
 function compDefOffset(name: string): number {
@@ -69,7 +69,7 @@ async function main() {
   const addressLookupTable = getLookupTableAddress(CERBERUS_POKER_PROGRAM_ID, lutOffset);
 
   const compDefs = [
-    { defName: 'shuffle_deck_demo', methodName: 'initShuffleDeckCompDef' },
+    { defName: 'shuffle_deck_v3', methodName: 'initShuffleDeckV3CompDef' },
     { defName: 'deal_card_to_recipient', methodName: 'initDealCardCompDef' },
     { defName: 'reveal_card', methodName: 'initRevealCardCompDef' },
     { defName: 'reveal_community_card', methodName: 'initRevealCommunityCardCompDef' },

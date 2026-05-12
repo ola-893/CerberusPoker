@@ -7,7 +7,7 @@ resolution = true
 skip-lint = false
 
 [programs.devnet]
-cerberus_poker_mxe = "A6ceZoK8XgD6rBASfe6FvxQ2vSaqWzfSdira8H4wzM5V"
+cerberus_poker_mxe = "5AbRFyPJqzmiSk8jGPWQWcHjAf4W9ETbvHBYNn7rAD4Z"
 
 [programs.localnet]
 cerberus_poker_mxe = "Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS"

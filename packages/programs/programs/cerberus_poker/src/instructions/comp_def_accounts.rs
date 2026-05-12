@@ -2,10 +2,10 @@ use crate::ID;
 use anchor_lang::prelude::*;
 use arcium_anchor::prelude::*;
 
-/// Accounts for initializing the shuffle_deck_demo computation definition.
-#[init_computation_definition_accounts("shuffle_deck_demo", payer)]
+/// Accounts for initializing the shuffle_deck_v3 computation definition.
+#[init_computation_definition_accounts("shuffle_deck_v3", payer)]
 #[derive(Accounts)]
-pub struct InitShuffleDeckCompDef<'info> {
+pub struct InitShuffleDeckV3CompDef<'info> {
     #[account(mut)]
     pub payer: Signer<'info>,
 

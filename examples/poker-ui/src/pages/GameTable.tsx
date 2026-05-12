@@ -20,6 +20,15 @@ import { useAnchorPrograms } from '../lib/anchor';
 import { playerAction, startShuffle, timeoutShuffle, timeoutReveal, timeoutBet, dealCards, advancePhase, revealCard } from '../lib/transactions';
 import WalletBalances from '../components/WalletBalances';
 import { DEMO_MAX_PLAYERS } from '../constants';
+import { useTableTokenBalances } from '../hooks/useTableTokenBalances';
+
+function enumKey(value: unknown): string {
+  if (typeof value === 'string') return value.toLowerCase();
+  if (value && typeof value === 'object') {
+    return Object.keys(value)[0]?.toLowerCase() ?? '';
+  }
+  return '';
+}
 
 export default function GameTable() {
   const { gameId } = useParams<{ gameId: string }>();
@@ -60,6 +69,7 @@ export default function GameTable() {
     revealTimeout,
     betTimeout,
   } = useGameState(gameId || null);
+  const { data: tableTokenBalances } = useTableTokenBalances(pokerTable, gameSession);
 
   // Handle action button clicks — calls player_action on-chain
   const handleAction = useCallback(async (action: Action, amount?: bigint) => {
@@ -135,16 +145,22 @@ export default function GameTable() {
     if (!programs || !gameIdBigInt || !pokerTable) return;
     try {
       let indicesToReveal: number[] = [];
-      const phaseKey = Object.keys(pokerTable.phase)[0] || '';
-      if (phaseKey === 'flop') indicesToReveal = [0, 1, 2];
-      else if (phaseKey === 'turn') indicesToReveal = [3];
-      else if (phaseKey === 'river') indicesToReveal = [4];
+      const phaseKey = enumKey(pokerTable.phase);
+      const fallbackCommunityStart = Math.min(gameSession?.numPlayers ?? DEMO_MAX_PLAYERS, DEMO_MAX_PLAYERS) * 2;
+      const communityIndices = gameSession?.cardAssignedTo
+        .map((assignedTo, cardIndex) => ({ assignedTo, cardIndex }))
+        .filter(({ assignedTo }) => assignedTo === 0xff)
+        .map(({ cardIndex }) => cardIndex) ?? Array.from({ length: 5 }, (_, i) => fallbackCommunityStart + i);
+
+      if (phaseKey === 'flop') indicesToReveal = communityIndices.slice(0, 3);
+      else if (phaseKey === 'turn') indicesToReveal = communityIndices.slice(3, 4);
+      else if (phaseKey === 'river') indicesToReveal = communityIndices.slice(4, 5);
       
       for (const idx of indicesToReveal) {
         await revealCard(programs.cerberusPoker, gameIdBigInt, idx);
       }
     } catch (err) { console.error('Reveal cards failed:', err); }
-  }, [programs, gameIdBigInt, pokerTable?.phase]);
+  }, [programs, gameIdBigInt, pokerTable?.phase, gameSession?.cardAssignedTo, gameSession?.numPlayers]);
 
   if (isLoading) {
     return (
@@ -209,6 +225,17 @@ export default function GameTable() {
   const displayCommunityCards = useMockData ? [0xFF, 0xFF, 0xFF, 0xFF, 0xFF] : communityCards;
   const displayPot = useMockData ? 4.5 : pot;
   const displayIsMyTurn = useMockData ? true : isMyTurn;
+  const displayStackBalances = useMockData
+    ? Array<bigint>(10).fill(BigInt(5_000_000_000))
+    : tableTokenBalances ?? Array<bigint>(10).fill(0n);
+  const displayPlayerRoundBets = displayPokerTable.playerRoundBets ?? Array<bigint>(10).fill(0n);
+  const displayMyRoundBet = displayMyPlayerIndex === null
+    ? 0n
+    : displayPlayerRoundBets[displayMyPlayerIndex] ?? 0n;
+  const displayMyStack = displayMyPlayerIndex === null
+    ? 0n
+    : displayStackBalances[displayMyPlayerIndex] ?? 0n;
+  const displayMyActionStack = displayMyStack + displayMyRoundBet;
 
   // Lobby state helpers
   const isTableFull = displayGameSession.numPlayers >= displayGameSession.maxPlayers;
@@ -282,10 +309,10 @@ export default function GameTable() {
           <div className="flex justify-center pointer-events-auto">
             <div className="bg-surface-raised/80 backdrop-blur-md px-4 py-2 rounded-xl border border-gold/50 flex items-center gap-4">
               <span className="text-gold text-xs font-bold uppercase tracking-widest mr-2">Game Admin</span>
-              {gameSession?.state && Object.keys(gameSession.state)[0] === 'deal' && (
+              {enumKey(gameSession?.state) === 'deal' && (
                 <button onClick={handleDealCards} className="px-3 py-1 bg-gold text-background rounded-md text-xs font-bold hover:scale-105 transition">Deal Cards</button>
               )}
-              {pokerTable?.phase && Object.keys(pokerTable.phase)[0] !== 'showdown' && Object.keys(pokerTable.phase)[0] !== 'complete' && (
+              {pokerTable?.phase && enumKey(pokerTable.phase) !== 'showdown' && enumKey(pokerTable.phase) !== 'complete' && (
                 <>
                   <button onClick={handleAdvancePhase} className="px-3 py-1 bg-gold text-background rounded-md text-xs font-bold hover:scale-105 transition">Advance Phase</button>
                   <button onClick={handleRevealCards} className="px-3 py-1 bg-gold text-background rounded-md text-xs font-bold hover:scale-105 transition">Reveal Cards</button>
@@ -431,8 +458,8 @@ export default function GameTable() {
                 key={absoluteIndex}
                 playerAddress={playerAddress!}
                 playerIndex={absoluteIndex}
-                stack={0} // TODO: Read from player_stacks token account
-                currentBet={0} // TODO: Read from player_bets
+                stack={Number(displayStackBalances[absoluteIndex] ?? 0n)}
+                currentBet={Number(displayPlayerRoundBets[absoluteIndex] ?? 0n)}
                 isFolded={isFoldedPlayer}
                 isAllIn={isAllInPlayer}
                 isCurrentTurn={isCurrentTurnPlayer}
@@ -457,9 +484,10 @@ export default function GameTable() {
         <ActionBar 
           isMyTurn={displayIsMyTurn && !isFolded && !isAllIn}
           currentBet={displayPokerTable.currentBet}
-          myStack={0} // TODO: Read from my token account
+          myCurrentBet={displayMyRoundBet}
+          myStack={Number(displayMyActionStack)}
           bigBlind={displayPokerTable.bigBlind}
-          canCheck={displayPokerTable.currentBet === BigInt(0)}
+          canCheck={displayMyRoundBet >= displayPokerTable.currentBet}
           onAction={handleAction}
         />
       )}

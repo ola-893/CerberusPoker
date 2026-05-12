@@ -23,6 +23,7 @@ pub fn handler(
     _game_id: u64,
     card_index: u8,
     computation_offset: u64,
+    deck: [u8; 52],
 ) -> Result<()> {
     let game = &mut ctx.accounts.game_session;
 
@@ -78,15 +79,11 @@ pub fn handler(
     game.active_computation_offset = computation_offset;
     game.pending_reveal_card_index = card_index;
 
-    // Build arguments for reveal_card MXE instruction:
-    // reveal_card(card: Enc<Mxe, EncryptedCard>, card_index: u8) -> u8
-    //
-    // Arguments:
-    // - Encrypted card (ElGamal ciphertext: C1, C2)
-    // - Card index (plaintext u8)
-    // TODO: Build arguments for reveal_card once encrypted card inputs are
-    // wired through. Keep a valid empty ArgumentList for now.
-    let args = ArgBuilder::new().build();
+    let mut args = ArgBuilder::new();
+    for card in deck.iter() {
+        args = args.plaintext_u8(*card);
+    }
+    let args = args.plaintext_u8(card_index).build();
 
     ctx.accounts.sign_pda_account.bump = ctx.bumps.sign_pda_account;
 
@@ -183,11 +180,4 @@ pub struct RevealCard<'info> {
 
     pub system_program: Program<'info, System>,
     pub arcium_program: Program<'info, Arcium>,
-
-    // Encrypted card input for reveal_card MXE instruction
-    // The card is represented as an ElGamal ciphertext (C1, C2)
-    /// CHECK: encrypted_card_c1 - first component of ElGamal ciphertext
-    pub encrypted_card_c1: UncheckedAccount<'info>,
-    /// CHECK: encrypted_card_c2 - second component of ElGamal ciphertext
-    pub encrypted_card_c2: UncheckedAccount<'info>,
 }
