@@ -37,7 +37,7 @@ const DEVNET_USDC_MINT = new PublicKey('4zMMC9srt5Ri5X14GAgXhaHii3GnPAEERYPJgZJD
 // Computation definition names (must match MXE circuits)
 const COMP_DEF_NAMES = {
   SHUFFLE_DECK: 'shuffle_deck_v3',
-  DEAL_CARD: 'deal_card_to_recipient',
+  DEAL_CARD: 'deal_card_to_recipient_v2',
   REVEAL_CARD: 'reveal_card',
   PLACE_BET: 'place_bet',
 } as const;
@@ -267,15 +267,16 @@ export async function dealCards(
   const [gameSessionPDA] = deriveGameSessionPDA(gameId);
 
   // 2 hole cards per player + 5 community cards (0xFF = community)
-  const assignments: { cardIndex: number; playerIndex: number }[] = [];
+  // Rust expects Vec<(u8, u8)> which is an array of 2-element arrays in TypeScript
+  const assignments: [number, number][] = [];
   let cardIndex = 0;
   const activePlayers = Math.min(numPlayers, DEMO_MAX_PLAYERS);
   for (let p = 0; p < activePlayers; p++) {
-    assignments.push({ cardIndex: cardIndex++, playerIndex: p });
-    assignments.push({ cardIndex: cardIndex++, playerIndex: p });
+    assignments.push([cardIndex++, p]);
+    assignments.push([cardIndex++, p]);
   }
   for (let i = 0; i < 5; i++) {
-    assignments.push({ cardIndex: cardIndex++, playerIndex: 0xff });
+    assignments.push([cardIndex++, 0xff]);
   }
 
   const computationOffset = randomOffset();
@@ -290,7 +291,7 @@ export async function dealCards(
       bn(gameId),
       assignments,
       computationOffset,
-      Buffer.from(STANDARD_DECK)
+      Array.from(STANDARD_DECK) // Convert to number[] for [u8; 52]
     )
     .accounts({
       gameSession: gameSessionPDA,

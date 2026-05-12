@@ -5,7 +5,7 @@
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useMemo, useCallback, useState } from 'react';
+import { useMemo, useCallback, useState, useEffect, useRef } from 'react';
 import { useWallet } from '@solana/wallet-adapter-react';
 import { PublicKey } from '@solana/web3.js';
 import { useGameState } from '../hooks/useGameState';
@@ -161,6 +161,35 @@ export default function GameTable() {
       }
     } catch (err) { console.error('Reveal cards failed:', err); }
   }, [programs, gameIdBigInt, pokerTable?.phase, gameSession?.cardAssignedTo, gameSession?.numPlayers]);
+
+  // Auto-trigger deal when game enters Deal state (player 0 only)
+  const hasAutoDealt = useRef(false);
+  useEffect(() => {
+    // Check if any cards have already been assigned (deal already happened)
+    const hasAssignedCards = gameSession?.cardAssignedTo?.some((assigned) => assigned !== 0xFE);
+    
+    if (
+      phase === UIPhase.Deal &&
+      myPlayerIndex === 0 &&
+      programs &&
+      gameSession &&
+      !hasAutoDealt.current &&
+      !hasAssignedCards // Don't auto-deal if cards already assigned
+    ) {
+      hasAutoDealt.current = true;
+      console.log('[auto-deal] Triggering deal cards...');
+      dealCards(programs.cerberusPoker, gameIdBigInt, gameSession.numPlayers)
+        .then(() => console.log('[auto-deal] Deal cards sent'))
+        .catch((err) => {
+          console.error('[auto-deal] Deal cards failed:', err);
+          // Don't retry — circuit may not be uploaded yet
+        });
+    }
+    // Reset ref when phase changes away from Deal
+    if (phase !== UIPhase.Deal) {
+      hasAutoDealt.current = false;
+    }
+  }, [phase, myPlayerIndex, programs, gameSession, gameIdBigInt]);
 
   if (isLoading) {
     return (
@@ -532,17 +561,20 @@ export default function GameTable() {
 
         {displayPhase === UIPhase.Deal && (
           <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-50 bg-background/60 backdrop-blur-sm flex items-center justify-center"
+            className="fixed top-16 left-1/2 -translate-x-1/2 z-50 bg-surface-raised/90 backdrop-blur-md px-6 py-3 rounded-xl border border-gold/30 shadow-lg"
           >
-            <div className="text-center">
-              <h3 className="text-3xl font-sans font-bold tracking-tight mb-2">Dealing Cards</h3>
-              <p className="text-zinc-500 font-mono text-sm tracking-widest uppercase">
-                MXE Threshold Decryption
-              </p>
+            <div className="flex items-center gap-3">
+              <div className="w-5 h-5 border-2 border-gold/30 border-t-gold rounded-full animate-spin" />
+              <div className="text-center">
+                <h3 className="text-sm font-sans font-bold tracking-tight">Dealing Cards</h3>
+                <p className="text-zinc-500 font-mono text-[10px] tracking-widest uppercase">
+                  MXE Threshold Decryption
+                </p>
+              </div>
             </div>
           </motion.div>
         )}

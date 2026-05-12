@@ -127,16 +127,16 @@
       ]
     },
     {
-      "name": "deal_card_to_recipient_callback",
+      "name": "deal_card_to_recipient_v2_callback",
       "discriminator": [
-        65,
-        122,
-        247,
-        65,
-        229,
-        161,
-        180,
-        231
+        24,
+        108,
+        6,
+        6,
+        245,
+        50,
+        111,
+        38
       ],
       "accounts": [
         {
@@ -189,7 +189,7 @@
                   "kind": "type",
                   "type": {
                     "defined": {
-                      "name": "DealCardToRecipientOutput"
+                      "name": "DealCardToRecipientV2Output"
                     }
                   }
                 }
@@ -1873,7 +1873,7 @@
       }
     },
     {
-      "name": "DealCardToRecipientOutput",
+      "name": "DealCardToRecipientV2Output",
       "docs": [
         "The output of the callback instruction. Provided as a struct with ordered fields",
         "as anchor does not support tuples and tuple structs yet."
